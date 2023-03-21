@@ -2,6 +2,8 @@
 #include <ratr0/debug_utils.h>
 #include <ratr0/timers.h>
 
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[35mTIMERS\033[0m", __VA_ARGS__)
+
 void ratr0_update_timer(Ratr0Timer *timer)
 {
     if (timer && timer->running) {
@@ -30,15 +32,15 @@ void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot, void (*
 
 void ratr0_timers_startup()
 {
-    PRINT_DEBUG("TIMERS - Start up...");
+    PRINT_DEBUG("Start up...\n");
     // TODO: Initialize a pool of timers
-    PRINT_DEBUG("Done.\n");
+    PRINT_DEBUG("Startup finished.\n");
 }
 
 void ratr0_timers_shutdown()
 {
-    PRINT_DEBUG("TIMERS - Shutting down...");
+    PRINT_DEBUG("Shutting down...\n");
     // TODO: Free resources
-    PRINT_DEBUG("Done.\n");
+    PRINT_DEBUG("Shutdown finished.\n");
 }
 
