@@ -19,7 +19,7 @@ clean:
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-main: main.o engine.o timers.o
+main: main.o engine.o timers.o events.o memory.o audio.o
 	$(CC) -o $@ $^
 
 
