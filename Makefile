@@ -1,6 +1,6 @@
 CC = gcc
 #CFLAGS=-I$(NDK_INC) -c99 -O2 -I../include
-CFLAGS=-Iinclude
+CFLAGS=-Iinclude -DDEBUG
 TEST_CFLAGS=-Iinclude -Ichibi_test
 EXES=main
 TEST_PRGS=timer_test
@@ -19,7 +19,7 @@ clean:
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-main: main.o timers.o
+main: main.o engine.o timers.o
 	$(CC) -o $@ $^
 
 

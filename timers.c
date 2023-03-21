@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ratr0/debug_utils.h>
 #include <ratr0/timers.h>
 
 void ratr0_update_timer(Ratr0Timer *timer)
@@ -26,3 +27,18 @@ void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot, void (*
         timer->timeout_fun = timeout_fun;
     }
 }
+
+void ratr0_timers_startup()
+{
+    PRINT_DEBUG("TIMERS - Start up...");
+    // TODO: Initialize a pool of timers
+    PRINT_DEBUG("Done.\n");
+}
+
+void ratr0_timers_shutdown()
+{
+    PRINT_DEBUG("TIMERS - Shutting down...");
+    // TODO: Free resources
+    PRINT_DEBUG("Done.\n");
+}
+
