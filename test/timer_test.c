@@ -47,6 +47,72 @@ CHIBI_TEST(TestUpdateTimerNotRunning)
     chibi_assert_eq_int(5, timer.current_value);
 }
 
+/*
+ * Check that timer function is notified and value is reset when timer value reaches 0.
+ */
+static int was_notified1 = 0;
+void notify1()
+{
+    was_notified1++;
+}
+
+CHIBI_TEST(TestUpdateTimerTimeout)
+{
+    Ratr0Timer timer;
+    ratr0_init_timer(&timer, 3, 0, notify1);
+
+    /* Count down the timer */
+    for (int i = 0; i < 3; i++) {
+        ratr0_update_timer(&timer);
+    }
+
+    chibi_assert_eq_int(1, was_notified1);
+    chibi_assert_eq_int(3, timer.current_value);
+
+    /* Count down the timer a second time */
+    for (int i = 0; i < 3; i++) {
+        ratr0_update_timer(&timer);
+    }
+
+    /* now there are 2 notifications */
+    chibi_assert_eq_int(2, was_notified1);
+    chibi_assert_eq_int(3, timer.current_value);
+}
+
+/*
+ * Check that timer function is notified and value is reset when timer value reaches 0.
+ * This is one-shot mode, so the timer will be stopped and the counter is 0 at the end
+ */
+static int was_notified2 = 0;
+void notify2()
+{
+    was_notified2++;
+}
+
+CHIBI_TEST(TestUpdateTimerTimeoutOneShot)
+{
+    Ratr0Timer timer;
+    ratr0_init_timer(&timer, 3, 1, notify2);
+
+    /* Count down the timer */
+    for (int i = 0; i < 3; i++) {
+        ratr0_update_timer(&timer);
+    }
+
+    chibi_assert_eq_int(1, was_notified2);
+    chibi_assert_eq_int(0, timer.current_value);
+    chibi_assert_eq_int(0, timer.running);
+
+    /* Count down the timer a second time */
+    for (int i = 0; i < 3; i++) {
+        ratr0_update_timer(&timer);
+    }
+
+    /* still only 1 notification */
+    chibi_assert_eq_int(1, was_notified2);
+    chibi_assert_eq_int(0, timer.current_value);
+}
+
 
 /*
  * SUITE DEFINITION
@@ -58,6 +124,8 @@ chibi_suite *CoreSuite(void)
     chibi_suite_add_test(suite, TestInitTimer);
     chibi_suite_add_test(suite, TestUpdateTimerIsRunning);
     chibi_suite_add_test(suite, TestUpdateTimerNotRunning);
+    chibi_suite_add_test(suite, TestUpdateTimerTimeout);
+    chibi_suite_add_test(suite, TestUpdateTimerTimeoutOneShot);
 
     return suite;
 }
