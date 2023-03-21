@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __TIMERS_H__
-#define __TIMERS_H__
+#ifndef __RATR0_TIMERS_H__
+#define __RATR0_TIMERS_H__
 
 #ifdef __VBCC__
 #include <exec/types.h>
@@ -17,9 +17,10 @@ typedef struct _Timer {
     BOOL oneshot;
     BOOL running;
     void (*timeout_fun)(void);
-} Timer;
+} Ratr0Timer;
 
-extern void update_timer(Timer *timer);
-extern void init_timer(Timer *timer, LONG start_value, BOOL oneshot, void (*timeout_fun)(void));
+extern void ratr0_update_timer(Ratr0Timer *timer);
+extern void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot,
+                             void (*timeout_fun)(void));
 
-#endif /* __TIMERS_H__ */
+#endif /* __RATR0_TIMERS_H__ */

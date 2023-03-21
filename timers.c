@@ -1,7 +1,7 @@
-#include "timers.h"
 #include <stdio.h>
+#include <ratr0/timers.h>
 
-void update_timer(Timer *timer)
+void ratr0_update_timer(Ratr0Timer *timer)
 {
     if (timer && timer->running) {
         timer->current_value--;
@@ -16,7 +16,7 @@ void update_timer(Timer *timer)
     }
 }
 
-void init_timer(Timer *timer, LONG start_value, BOOL oneshot, void (*timeout_fun)(void))
+void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot, void (*timeout_fun)(void))
 {
     if (timer) {
         timer->start_value = start_value;

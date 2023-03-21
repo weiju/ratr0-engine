@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "timers.h"
+#include <ratr0/timers.h>
 
 void notify_timeout()
 {
@@ -8,8 +8,8 @@ void notify_timeout()
 
 int main(int argc, char **argv)
 {
-    Timer timer;
-    init_timer(&timer, 5, 0, notify_timeout);
-    for (int i = 0; i < 15; i++) update_timer(&timer);
+    Ratr0Timer timer;
+    ratr0_init_timer(&timer, 5, 0, notify_timeout);
+    for (int i = 0; i < 15; i++) ratr0_update_timer(&timer);
     return 0;
 }
