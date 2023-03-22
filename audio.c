@@ -6,12 +6,12 @@
 
 extern void ratr0_audio_startup()
 {
-    PRINT_DEBUG("Start up...\n");
-    PRINT_DEBUG("Startup finished.\n");
+    PRINT_DEBUG("Start up...");
+    PRINT_DEBUG("Startup finished.");
 }
 
 extern void ratr0_audio_shutdown()
 {
-    PRINT_DEBUG("Shutting down...\n");
-    PRINT_DEBUG("Shutdown finished.\n");
+    PRINT_DEBUG("Shutting down...");
+    PRINT_DEBUG("Shutdown finished.");
 }

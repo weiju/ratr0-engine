@@ -19,7 +19,7 @@ void ratr0_update_timer(Ratr0Timer *timer)
     }
 }
 
-void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot, void (*timeout_fun)(void))
+void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot, void (*timeout_fun)(void))
 {
     if (timer) {
         timer->start_value = start_value;
@@ -32,15 +32,14 @@ void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot, void (*
 
 void ratr0_timers_startup()
 {
-    PRINT_DEBUG("Start up...\n");
+    PRINT_DEBUG("Start up...");
     // TODO: Initialize a pool of timers
-    PRINT_DEBUG("Startup finished.\n");
+    PRINT_DEBUG("Startup finished.");
 }
 
 void ratr0_timers_shutdown()
 {
-    PRINT_DEBUG("Shutting down...\n");
+    PRINT_DEBUG("Shutting down...");
     // TODO: Free resources
-    PRINT_DEBUG("Shutdown finished.\n");
+    PRINT_DEBUG("Shutdown finished.");
 }
-

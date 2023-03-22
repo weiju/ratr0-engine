@@ -5,18 +5,12 @@
 /**
  * RATR0 Timer Subsystem. This system helps with the management of timers.
  */
-#ifdef __VBCC__
-#include <exec/types.h>
-#else
-#include <stdint.h>
-typedef int32_t LONG;
-typedef int16_t BOOL;
-#endif
+#include <ratr0/data_types.h>
 
 
 typedef struct _Timer {
-    LONG start_value;
-    LONG current_value;
+    INT32 start_value;
+    INT32 current_value;
     BOOL oneshot;
     BOOL running;
     void (*timeout_fun)(void);
@@ -30,7 +24,7 @@ extern void ratr0_update_timer(Ratr0Timer *timer);
 /**
  * Initializes a timer instance.
  */
-extern void ratr0_init_timer(Ratr0Timer *timer, LONG start_value, BOOL oneshot,
+extern void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot,
                              void (*timeout_fun)(void));
 
 /**

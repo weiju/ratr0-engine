@@ -9,7 +9,7 @@
  * Standard debug print function, prints the tag and the log time.
  */
 #ifdef DEBUG
-#define PRINT_DEBUG_TAG(tag, ...) { time_t now; time(&now); printf("%s [%s] - ", tag, strtok(ctime(&now), "\n")); printf(__VA_ARGS__); }
+#define PRINT_DEBUG_TAG(tag, ...) { time_t now; time(&now); printf("%s [%s] - ", tag, strtok(ctime(&now), "\n")); printf(__VA_ARGS__); puts("");}
 #else
 #define PRINT_DEBUG_TAG(tag, ...)
 #endif
