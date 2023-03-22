@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <SDL2/SDL.h>
+
 #include <ratr0/timers.h>
 #include <ratr0/engine.h>
 #include <ratr0/memory.h>
@@ -17,6 +19,37 @@ int main(int argc, char **argv)
     for (int i = 0; i < 5; i++) ratr0_update_timer(&timer);
 
     Ratr0MemHandle memblock1 = ratr0_memory_allocate_block(RATR0_MEM_CHIP, 1024);
+
+    SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
+                                          SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED,
+                                          680, 480,
+                                          0);
+
+    if(!window) {
+        printf("Failed to create window\n");
+        return -1;
+    }
+    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+
+    if (!window_surface) {
+        printf("Failed to get the surface from the window\n");
+        return -1;
+    }
+
+
+    SDL_Event e;
+    BOOL keep_window_open = TRUE;
+    while(keep_window_open) {
+        while(SDL_PollEvent(&e) > 0) {
+            switch(e.type) {
+            case SDL_QUIT:
+                keep_window_open = FALSE;
+                break;
+            }
+            SDL_UpdateWindowSurface(window);
+        }
+    }
 
     ratr0_engine_shutdown();
 

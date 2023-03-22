@@ -1,10 +1,11 @@
 CC = gcc
 #CFLAGS=-I$(NDK_INC) -c99 -O2 -I../include
-CFLAGS=-Iinclude -DDEBUG
+CFLAGS=-Iinclude -DDEBUG -DUSE_SDL2
 TEST_CFLAGS=-Iinclude -Ichibi_test
 EXES=main
 TEST_PRGS=timer_test
-
+LDFLAGS=-lsdl2
+ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o display.o input.o physics.o resources.o scripting.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c
@@ -19,8 +20,8 @@ clean:
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-main: main.o engine.o timers.o events.o memory.o audio.o
-	$(CC) -o $@ $^
+main: $(ENGINE_OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $^
 
 
 #
