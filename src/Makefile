@@ -1,7 +1,7 @@
 CC = gcc
 #CFLAGS=-I$(NDK_INC) -c99 -O2 -I../include
 CFLAGS=-Iinclude -DDEBUG -DUSE_SDL2
-TEST_CFLAGS=-Iinclude -Ichibi_test
+TEST_CFLAGS=-Iinclude -I../chibi_test
 EXES=main
 TEST_PRGS=timer_test
 LDFLAGS=-lsdl2
@@ -28,7 +28,7 @@ main: $(ENGINE_OBJECTS)
 # TESTS
 #
 
-chibi.o: chibi_test/chibi.c
+chibi.o: ../chibi_test/chibi.c
 	$(CC) $(TEST_CFLAGS) -c -o $@ $^
 
 timer_test: timer_test.o timers.o chibi.o
