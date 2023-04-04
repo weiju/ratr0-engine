@@ -15,12 +15,12 @@
 /**
  * Start up the memory subsystem.
  */
-extern void ratr0_memory_startup();
+extern void ratr0_memory_startup(void);
 
 /**
  * Shut down the memory subsystem.
  */
-extern void ratr0_memory_shutdown();
+extern void ratr0_memory_shutdown(void);
 
 /**
  * Type of memory to reserve. Some systems (e.g.) will require special memory

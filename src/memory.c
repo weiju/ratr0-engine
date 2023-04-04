@@ -10,7 +10,7 @@ const int SYSTEM_MEM_SIZE = 10;
 static void **system_mem_table;
 static INT32 first_free_entry;
 
-extern void ratr0_memory_startup()
+void ratr0_memory_startup(void)
 {
     PRINT_DEBUG("Start up...");
 
@@ -23,7 +23,7 @@ extern void ratr0_memory_startup()
     PRINT_DEBUG("Startup finished.");
 }
 
-extern void ratr0_memory_shutdown()
+void ratr0_memory_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
 
@@ -42,7 +42,7 @@ extern void ratr0_memory_shutdown()
 
 Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, INT32 num_bytes)
 {
-    Ratr0MemHandle result;
+    Ratr0MemHandle result = first_free_entry;
     void *mem_block = malloc(sizeof(char) * num_bytes);
     system_mem_table[first_free_entry++] = mem_block;
     return result;

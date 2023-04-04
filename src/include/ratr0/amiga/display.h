@@ -7,12 +7,12 @@
 /**
  * Start up the display subsystem.
  */
-extern void ratr0_amiga_display_startup();
+extern void ratr0_amiga_display_startup(void);
 
 /**
  * Shut down the display subsystem.
  */
-extern void ratr0_amiga_display_shutdown();
+extern void ratr0_amiga_display_shutdown(void);
 
 
 #endif /* __RATR0_AMIGA_DISPLAY_H__ */

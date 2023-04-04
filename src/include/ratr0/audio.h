@@ -7,11 +7,11 @@
 /**
  * Start up the audio subsystem.
  */
-extern void ratr0_audio_startup();
+void ratr0_audio_startup(void);
 
 /**
  * Shut down the memory subsystem.
  */
-extern void ratr0_audio_shutdown();
+void ratr0_audio_shutdown(void);
 
 #endif /* __RATR0_AUDIO_H__ */

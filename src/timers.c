@@ -30,14 +30,14 @@ void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot, void (
     }
 }
 
-void ratr0_timers_startup()
+void ratr0_timers_startup(void)
 {
     PRINT_DEBUG("Start up...");
     // TODO: Initialize a pool of timers
     PRINT_DEBUG("Startup finished.");
 }
 
-void ratr0_timers_shutdown()
+void ratr0_timers_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
     // TODO: Free resources

@@ -1,10 +1,10 @@
 # We support 2 types of builds: Amiga and non-Amiga (Mac/Linux)
 ifdef AMIGA
-CC=gcc
+CC=vc +kick13
+ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
 SYS_OBJECTS=amiga/display.o
-#CFLAGS=-I$(NDK_INC) -c99 -O2 -I../include
-CFLAGS=-Iinclude -DDEBUG -DAMIGA
-LDFLAGS=
+CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
+LDFLAGS=-lamiga -lauto
 TEST_CFLAGS=-Iinclude -I../chibi_test
 else
 CC=gcc

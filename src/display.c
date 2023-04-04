@@ -8,13 +8,13 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
 
-extern void ratr0_display_startup()
+void ratr0_display_startup(void)
 {
     PRINT_DEBUG("Start up...");
     PRINT_DEBUG("Startup finished.");
 }
 
-extern void ratr0_display_shutdown()
+void ratr0_display_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
     PRINT_DEBUG("Shutdown finished.");

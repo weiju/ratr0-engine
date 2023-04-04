@@ -30,11 +30,11 @@ extern void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot,
 /**
  * Start up the timer subsystem.
  */
-extern void ratr0_timers_startup();
+extern void ratr0_timers_startup(void);
 
 /**
  * Shut down the timer subsystem.
  */
-extern void ratr0_timers_shutdown();
+extern void ratr0_timers_shutdown(void);
 
 #endif /* __RATR0_TIMERS_H__ */

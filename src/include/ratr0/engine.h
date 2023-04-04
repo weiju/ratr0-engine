@@ -8,11 +8,11 @@
 /**
  * Startup the engine and all its subsystems.
  */
-extern void ratr0_engine_startup();
+extern void ratr0_engine_startup(void);
 
 /**
  * Shutdown the engine and all its subsystems.
  */
-extern void ratr0_engine_shutdown();
+extern void ratr0_engine_shutdown(void);
 
 #endif /* __RATR0_ENGINE_H__ */

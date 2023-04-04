@@ -18,7 +18,7 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
 
-extern void ratr0_engine_startup()
+void ratr0_engine_startup(void)
 {
     PRINT_DEBUG("Start up...");
 
@@ -43,7 +43,7 @@ extern void ratr0_engine_startup()
     PRINT_DEBUG("Startup finished.");
 }
 
-extern void ratr0_engine_shutdown()
+void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
     ratr0_scripting_shutdown();

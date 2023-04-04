@@ -1,11 +1,14 @@
 #include <stdio.h>
+
+#ifndef AMIGA
 #include <SDL2/SDL.h>
+#endif
 
 #include <ratr0/timers.h>
 #include <ratr0/engine.h>
 #include <ratr0/memory.h>
 
-void notify_timeout()
+void notify_timeout(void)
 {
     printf("timer_timeout !!!\n");
 }
@@ -20,6 +23,7 @@ int main(int argc, char **argv)
 
     Ratr0MemHandle memblock1 = ratr0_memory_allocate_block(RATR0_MEM_CHIP, 1024);
 
+#ifndef AMIGA
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
@@ -50,7 +54,7 @@ int main(int argc, char **argv)
             SDL_UpdateWindowSurface(window);
         }
     }
-
+#endif /* AMIGA */
     ratr0_engine_shutdown();
 
     return 0;
