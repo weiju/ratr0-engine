@@ -11,11 +11,17 @@
 void ratr0_display_startup(void)
 {
     PRINT_DEBUG("Start up...");
+#ifdef AMIGA
+    ratr0_amiga_display_startup();
+#endif
     PRINT_DEBUG("Startup finished.");
 }
 
 void ratr0_display_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
+#ifdef AMIGA
+    ratr0_amiga_display_shutdown();
+#endif
     PRINT_DEBUG("Shutdown finished.");
 }

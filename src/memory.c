@@ -50,4 +50,5 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, INT32 num_b
 
 void ratr0_memory_free_block(Ratr0MemHandle handle)
 {
+    // This is a no-op for now
 }
