@@ -3,15 +3,30 @@
 #define __RATR0_DATA_TYPES_H__
 
 #ifdef __VBCC__
+/*
+ * We only use the BOOL definitions from here, while other primitives use
+ * a more generic name.
+ */
+#include <exec/types.h>
 typedef int INT32;
-typedef char BOOL;
+typedef unsigned int UINT32;
+typedef short INT16;
+typedef unsigned short UINT16;
+typedef char INT8;
+typedef unsigned char UINT8;
 
-#define TRUE (1)
-#define FALSE (0)
+typedef char CHAR;
 
 #else
 #include <stdint.h>
 typedef int32_t INT32;
+typedef uint32_t UINT32;
+typedef int16_t INT16;
+typedef uint16_t UINT16;
+typedef int8_t INT8;
+typedef uint8_t UINT8;
+
+typedef char CHAR;
 typedef int16_t BOOL;
 
 #define TRUE (1)

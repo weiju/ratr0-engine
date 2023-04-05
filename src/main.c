@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     ratr0_init_timer(&timer, 5, 0, notify_timeout);
     for (int i = 0; i < 5; i++) ratr0_update_timer(&timer);
 
-    Ratr0MemHandle memblock1 = ratr0_memory_allocate_block(RATR0_MEM_CHIP, 1024);
+    Ratr0MemHandle memblock1 = Ratr0MemoryService.allocate_block(RATR0_MEM_CHIP, 1024);
 
 #ifndef AMIGA
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",

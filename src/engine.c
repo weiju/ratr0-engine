@@ -20,6 +20,9 @@
 
 void ratr0_engine_startup(void)
 {
+    /* Just an example */
+    struct Ratr0DisplayInfo display_init = { 320, 200, 3 };
+
     PRINT_DEBUG("Start up...");
 
 #ifdef USE_SDL2
@@ -35,7 +38,9 @@ void ratr0_engine_startup(void)
     ratr0_events_startup();
     ratr0_timers_startup();
     ratr0_audio_startup();
-    ratr0_display_startup();
+
+    ratr0_display_startup(&display_init);
+
     ratr0_input_startup();
     ratr0_physics_startup();
     ratr0_resources_startup();

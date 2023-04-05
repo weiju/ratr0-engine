@@ -10,6 +10,16 @@ const int SYSTEM_MEM_SIZE = 10;
 static void **system_mem_table;
 static INT32 first_free_entry;
 
+/*
+ * The global memory service instance.
+ */
+struct Ratr0MemoryService Ratr0MemoryService;
+
+// Forward declarations for the generic memory allocator
+Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size);
+void ratr0_memory_free_block(Ratr0MemHandle handle);
+
+
 void ratr0_memory_startup(void)
 {
     PRINT_DEBUG("Start up...");
@@ -19,6 +29,9 @@ void ratr0_memory_startup(void)
     system_mem_table = (void **) malloc(sizeof(void *) * memtable_size);
     first_free_entry = 0;
     for (INT32 i = 0; i < memtable_size; i++) system_mem_table[i] = NULL;
+
+    Ratr0MemoryService.allocate_block = &ratr0_memory_allocate_block;
+    Ratr0MemoryService.free_block = &ratr0_memory_free_block;
 
     PRINT_DEBUG("Startup finished.");
 }
@@ -40,7 +53,7 @@ void ratr0_memory_shutdown(void)
     PRINT_DEBUG("Shutdown finished.");
 }
 
-Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, INT32 num_bytes)
+Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 num_bytes)
 {
     Ratr0MemHandle result = first_free_entry;
     void *mem_block = malloc(sizeof(char) * num_bytes);
