@@ -20,8 +20,12 @@
 
 void ratr0_engine_startup(void)
 {
-    /* Just an example */
+    /* Just an example for a configuration, should come from a config file */
     struct Ratr0DisplayInfo display_init = { 320, 200, 3 };
+    struct Ratr0MemoryConfig mem_config = {
+        4096, 10,
+        4096, 10
+    };
 
     PRINT_DEBUG("Start up...");
 
@@ -34,7 +38,7 @@ void ratr0_engine_startup(void)
     PRINT_DEBUG("SDL initialized.");
 #endif /* USE_SDL2 */
 
-    ratr0_memory_startup();
+    ratr0_memory_startup(&mem_config);
     ratr0_events_startup();
     ratr0_timers_startup();
     ratr0_audio_startup();

@@ -38,7 +38,9 @@ to communicate up or across the hierarchy
 
 Below are the subsystems of the engine. In general every subsystem aims to be
 updated once per frame, assuming a frame rate of 60fps, or 50 on retro systems
-in the PAL region
+in the PAL region.
+Each subsystem has a globally available service object that can be used to
+access its functionality.
 
 ### Memory subsystem
 

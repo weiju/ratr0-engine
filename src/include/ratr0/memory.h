@@ -9,7 +9,8 @@
  * layer for allocating large blocks of memory that are used by different
  * subsystems of RATR0.
  * Subsystems should only allocate memory through this service, so memory
- * leaks are avoided.
+ * leaks are avoided. The general idea is that the subsystems allocate
+ * larger blocks and manage specific object themselves.
  */
 /**
  * Type of memory to reserve. Some systems (e.g.) will require special memory
@@ -22,6 +23,13 @@ typedef enum { RATR0_MEM_DEFAULT, RATR0_MEM_CHIP } Ratr0MemoryType;
  */
 typedef INT32 Ratr0MemHandle;
 
+struct Ratr0MemoryConfig {
+    UINT32 general_pool_size;  // pool size in bytes
+    UINT32 general_table_size; // num entries in table
+
+    UINT32 chip_pool_size;   // pool size in bytes
+    UINT32 chip_table_size;  // num entries in table
+};
 
 /*
  * The service interface is used to access the functions of the memory subsystem.
@@ -29,13 +37,14 @@ typedef INT32 Ratr0MemHandle;
 struct Ratr0MemoryService {
     Ratr0MemHandle (*allocate_block)(Ratr0MemoryType mem_type, UINT32 size);
     void (*free_block)(Ratr0MemHandle handle);
+    void *(*block_address)(Ratr0MemHandle handle);
 };
 extern struct Ratr0MemoryService Ratr0MemoryService;
 
 /**
  * Start up the memory subsystem.
  */
-extern void ratr0_memory_startup(void);
+extern void ratr0_memory_startup(struct Ratr0MemoryConfig *);
 
 /**
  * Shut down the memory subsystem.
