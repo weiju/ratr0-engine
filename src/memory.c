@@ -21,24 +21,24 @@ static INT32 first_free_table, first_free;
 /*
  * The global memory service instance.
  */
-struct Ratr0MemoryService Ratr0MemoryService;
+static struct Ratr0MemorySystem memory_system;
 
 // Forward declarations for the generic memory allocator
 Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size);
 void ratr0_memory_free_block(Ratr0MemHandle handle);
 void *ratr0_memory_block_address(Ratr0MemHandle handle);
+void ratr0_memory_shutdown(void);
 
 
-void ratr0_memory_startup(struct Ratr0MemoryConfig *config)
+struct Ratr0MemorySystem *ratr0_memory_startup(struct Ratr0MemoryConfig *config)
 {
-    PRINT_DEBUG("Start up...");
-
+    memory_system.shutdown = &ratr0_memory_shutdown;
  #ifdef AMIGA
     ratr0_amiga_memory_startup(config);
 
-    Ratr0MemoryService.allocate_block = &ratr0_amiga_memory_allocate_block;
-    Ratr0MemoryService.free_block = &ratr0_amiga_memory_free_block;
-    Ratr0MemoryService.block_address = &ratr0_amiga_memory_block_address;
+    memory_system.allocate_block = &ratr0_amiga_memory_allocate_block;
+    memory_system.free_block = &ratr0_amiga_memory_free_block;
+    memory_system.block_address = &ratr0_amiga_memory_block_address;
  #else
     // Initialize the memory table
     general_table_size = config->general_table_size;
@@ -49,18 +49,17 @@ void ratr0_memory_startup(struct Ratr0MemoryConfig *config)
 
     first_free = first_free_table = 0;
 
-    Ratr0MemoryService.allocate_block = &ratr0_memory_allocate_block;
-    Ratr0MemoryService.free_block = &ratr0_memory_free_block;
-    Ratr0MemoryService.block_address = &ratr0_memory_block_address;
+    memory_system.allocate_block = &ratr0_memory_allocate_block;
+    memory_system.free_block = &ratr0_memory_free_block;
+    memory_system.block_address = &ratr0_memory_block_address;
 #endif
 
     PRINT_DEBUG("Startup finished.");
+    return &memory_system;
 }
 
 void ratr0_memory_shutdown(void)
 {
-    PRINT_DEBUG("Shutting down...");
-
 #ifdef AMIGA
     ratr0_amiga_memory_shutdown();
 #else

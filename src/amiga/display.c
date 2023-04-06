@@ -8,9 +8,10 @@
 #include <ratr0/debug_utils.h>
 #include <ratr0/amiga/hw_registers.h>
 #include <ratr0/amiga/display.h>
+#include <ratr0/engine.h>
 #include <ratr0/memory.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY[AMIGA]\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
 
 /*
   Copper instructions as reference
@@ -45,6 +46,7 @@ extern struct Custom custom;
 static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
+static Ratr0Engine *ratr0_engine;
 
 // Data fetch
 #define DDFSTRT_VALUE      0x0038
@@ -75,6 +77,13 @@ UINT16 _cop_wait_end(UINT16 index)
     return index;
 }
 
+#define NUM_BITPLANES (3)
+#define SCREEN_ROW_BYTES (320 / 8)
+#define PLANE_SIZE (SCREEN_ROW_BYTES * 200)
+#define BPL_MOD    (SCREEN_ROW_BYTES * (NUM_BITPLANES - 1))
+#define DISPLAY_BUFFER_SIZE (PLANE_SIZE * NUM_BITPLANES)
+static int copperlist_size = 0;
+
 void build_copper_list()
 {
     int cl_index = 0;
@@ -99,18 +108,34 @@ void build_copper_list()
     }
 
     // TODO: set up the bitmap for the display
-    // 1. BPLCONx
-    // 2. BPLxMOD
-    // 3. COLORxx
-    // 4. BPLxPTH/BPLxPTL
+    // 1. BPLCONx (8 bytes)
+    cl_index = _cop_move(BPLCON0, 0x3200, cl_index); // 3 bitplanes
+    cl_index = _cop_move(BPLCON2, 0x0060, cl_index); // playfield 2 priority+sprite priority
+
+    // 2. BPLxMOD (8 bytes)
+    cl_index = _cop_move(BPL1MOD, BPL_MOD, cl_index);
+    cl_index = _cop_move(BPL2MOD, BPL_MOD, cl_index);
+
+    // 3. COLORxx (32 colors => 32 * 4 = 128 bytes)
+    for (int i = 0; i < 32; i++) {
+        cl_index = _cop_move(COLOR00 + i * 2, 0, cl_index);
+    }
+    // 4. BPLxPTH/BPLxPTL (NUM_BITLANES * 8 bytes => 12 bytes)
+    for (int i = 0; i < NUM_BITPLANES; i++) {
+        cl_index = _cop_move(BPL1PTH + i * 2, 0, cl_index);
+        cl_index = _cop_move(BPL1PTL + i * 2, 0, cl_index);
+    }
     // TODO: save the indexes for quick access so we can change them in the game
 
     // End the copper list (4 bytes)
     cl_index = _cop_wait_end(cl_index);
+
+    // Just for diagnostics
+    copperlist_size = cl_index;
 }
-void ratr0_amiga_display_startup(struct Ratr0AmigaDisplayInfo *init_data)
+void ratr0_amiga_display_startup(Ratr0Engine *engine, struct Ratr0AmigaDisplayInfo *init_data)
 {
-    PRINT_DEBUG("Start up...");
+    ratr0_engine = engine;
     LoadView(NULL);  // clear display, reset hardware registers
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and
     WaitTOF();       // 2. short frame copper lists to finish (if interlaced)
@@ -123,23 +148,21 @@ void ratr0_amiga_display_startup(struct Ratr0AmigaDisplayInfo *init_data)
     display_info.depth = init_data->depth;
     display_info.is_pal = (((struct GfxBase *) GfxBase)->DisplayFlags & PAL) == PAL;
 
-    int cl_num_bytes = 96;
-    h_copper_list = Ratr0MemoryService.allocate_block(RATR0_MEM_CHIP, cl_num_bytes);
-    copper_list = Ratr0MemoryService.block_address(h_copper_list);
+    int cl_num_bytes = 260;
+    h_copper_list = engine->memory_system->allocate_block(RATR0_MEM_CHIP, cl_num_bytes);
+    copper_list = engine->memory_system->block_address(h_copper_list);
     build_copper_list();
     custom.cop1lc = (ULONG) copper_list;
-    PRINT_DEBUG("Startup finished.");
 }
 
 void ratr0_amiga_display_shutdown(void)
 {
-    PRINT_DEBUG("Shutting down...");
-    Ratr0MemoryService.free_block(h_copper_list);
+    PRINT_DEBUG("Copper list size: %d", copperlist_size);
+    ratr0_engine->memory_system->free_block(h_copper_list);
     // Restore the Workbench display by restoring the original copper list
     LoadView(((struct GfxBase *) GfxBase)->ActiView);
     WaitTOF();
     WaitTOF();
     custom.cop1lc = (ULONG) ((struct GfxBase *) GfxBase)->copinit;
     RethinkDisplay();
-    PRINT_DEBUG("Shutdown finished.");
 }

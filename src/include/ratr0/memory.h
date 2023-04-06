@@ -34,22 +34,16 @@ struct Ratr0MemoryConfig {
 /*
  * The service interface is used to access the functions of the memory subsystem.
  */
-struct Ratr0MemoryService {
+struct Ratr0MemorySystem {
     Ratr0MemHandle (*allocate_block)(Ratr0MemoryType mem_type, UINT32 size);
     void (*free_block)(Ratr0MemHandle handle);
     void *(*block_address)(Ratr0MemHandle handle);
+    void (*shutdown)(void);
 };
-extern struct Ratr0MemoryService Ratr0MemoryService;
 
 /**
  * Start up the memory subsystem.
  */
-extern void ratr0_memory_startup(struct Ratr0MemoryConfig *);
-
-/**
- * Shut down the memory subsystem.
- */
-extern void ratr0_memory_shutdown(void);
-
+extern struct Ratr0MemorySystem *ratr0_memory_startup(struct Ratr0MemoryConfig *);
 
 #endif /* __RATR0_MEMORY_H__ */

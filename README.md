@@ -12,8 +12,17 @@ it will be direct hardware abstraction.
 ## Architecture
 
 The engine implements the standard architecture of having a collection
-of subsystems that are tied and coordinated in a larger system.
+of subsystems that are tied and coordinated by the engine.
+The engine is responsible for starting and shutting down all of the
+sub systems.
+The general concept is that each system is initialized with a `*_startup()`
+function that returns an interface pointer. Each interface of a system
+also contains a shutdown() function to cleanup the sub sytem.
 
+All subsystems should not depend on each other's existence on startup(), with the
+exception of Memory, which is so fundamental to the operation of the subsystems,
+that it is the first subsystem that is initialized and every other subsystem
+can safely use it at any time.
 
 The following subsystems are planned
 
@@ -44,13 +53,13 @@ access its functionality.
 
 ### Memory subsystem
 
+### Display subsystem
+
 ### Event subsystem
 
 ### Timer subsystem
 
 ### Resource / File subsystem
-
-### Display subsystem
 
 ### Audio  subsystem
 

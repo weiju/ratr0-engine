@@ -9,7 +9,6 @@
 
 void ratr0_input_startup(void)
 {
-    PRINT_DEBUG("Start up...");
 #ifdef AMIGA
     ratr0_amiga_input_startup();
 #endif
@@ -18,7 +17,6 @@ void ratr0_input_startup(void)
 
 void ratr0_input_shutdown(void)
 {
-    PRINT_DEBUG("Shutting down...");
 #ifdef AMIGA
     ratr0_amiga_input_shutdown();
 #endif

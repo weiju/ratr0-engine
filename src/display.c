@@ -9,22 +9,26 @@ static struct Ratr0AmigaDisplayInfo display_info;
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
 
-void ratr0_display_startup(struct Ratr0DisplayInfo *init_data)
+static struct Ratr0DisplaySystem display_system;
+void ratr0_display_shutdown(void);
+
+struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *engine, struct Ratr0DisplayInfo *init_data)
 {
-    PRINT_DEBUG("Start up...");
+    display_system.shutdown = &ratr0_display_shutdown;
+
 #ifdef AMIGA
     display_info.width = init_data->width;
     display_info.height = init_data->height;
     display_info.depth = init_data->depth;
 
-    ratr0_amiga_display_startup(&display_info);
+    ratr0_amiga_display_startup(engine, &display_info);
 #endif
     PRINT_DEBUG("Startup finished.");
+    return &display_system;
 }
 
 void ratr0_display_shutdown(void)
 {
-    PRINT_DEBUG("Shutting down...");
 #ifdef AMIGA
     ratr0_amiga_display_shutdown();
 #endif

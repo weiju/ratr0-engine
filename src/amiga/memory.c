@@ -2,7 +2,7 @@
 
 #include <ratr0/amiga/memory.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33mMEMORY[AMIGA]\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33mMEMORY\033[0m", __VA_ARGS__)
 
 /*
  * Amiga Memory Subsystem

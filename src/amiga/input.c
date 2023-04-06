@@ -11,7 +11,7 @@ extern struct ExecBase *SysBase;
 #include <ratr0/debug_utils.h>
 #include <ratr0/amiga/input.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mINPUT[AMIGA]\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mINPUT\033[0m", __VA_ARGS__)
 
 
 // To handle input
@@ -54,9 +54,7 @@ static int is_keydown(BYTE keycode) {
 
 void ratr0_amiga_input_startup(void)
 {
-    PRINT_DEBUG("Start up...");
     init_keyboard_device();
-    PRINT_DEBUG("Startup finished.");
 }
 
 /**
@@ -64,7 +62,5 @@ void ratr0_amiga_input_startup(void)
  */
 void ratr0_amiga_input_shutdown(void)
 {
-    PRINT_DEBUG("Shutting down...");
     cleanup_keyboard_device();
-    PRINT_DEBUG("Shutdown finished.");
 }

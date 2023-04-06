@@ -18,8 +18,14 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
 
-void ratr0_engine_startup(void)
+static Ratr0Engine engine;
+void ratr0_engine_shutdown(void);
+
+Ratr0Engine *ratr0_engine_startup(void)
 {
+    // hook in the shutdown function
+    engine.shutdown = &ratr0_engine_shutdown;
+
     /* Just an example for a configuration, should come from a config file */
     struct Ratr0DisplayInfo display_init = { 320, 200, 3 };
     struct Ratr0MemoryConfig mem_config = {
@@ -38,18 +44,19 @@ void ratr0_engine_startup(void)
     PRINT_DEBUG("SDL initialized.");
 #endif /* USE_SDL2 */
 
-    ratr0_memory_startup(&mem_config);
+    engine.memory_system = ratr0_memory_startup(&mem_config);
     ratr0_events_startup();
     ratr0_timers_startup();
     ratr0_audio_startup();
 
-    ratr0_display_startup(&display_init);
+    engine.display_system = ratr0_display_startup(&engine, &display_init);
 
     ratr0_input_startup();
     ratr0_physics_startup();
     ratr0_resources_startup();
     ratr0_scripting_startup();
     PRINT_DEBUG("Startup finished.");
+    return &engine;
 }
 
 void ratr0_engine_shutdown(void)
@@ -59,11 +66,11 @@ void ratr0_engine_shutdown(void)
     ratr0_resources_shutdown();
     ratr0_physics_shutdown();
     ratr0_input_shutdown();
-    ratr0_display_shutdown();
+    engine.display_system->shutdown();
     ratr0_audio_shutdown();
     ratr0_timers_shutdown();
     ratr0_events_shutdown();
-    ratr0_memory_shutdown();
+    engine.memory_system->shutdown();
 
 #ifdef USE_SDL2
     // SDL shutdown

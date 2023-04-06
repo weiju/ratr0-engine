@@ -6,12 +6,10 @@
 
 void ratr0_physics_startup(void)
 {
-    PRINT_DEBUG("Start up...");
     PRINT_DEBUG("Startup finished.");
 }
 
 void ratr0_physics_shutdown(void)
 {
-    PRINT_DEBUG("Shutting down...");
     PRINT_DEBUG("Shutdown finished.");
 }
