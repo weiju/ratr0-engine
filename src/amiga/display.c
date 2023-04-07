@@ -47,6 +47,7 @@ static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
 static Ratr0Engine *ratr0_engine;
+extern UINT16 *ENGINE_SPLASH_SCREEN;
 
 // Data fetch
 #define DDFSTRT_VALUE      0x0038
@@ -59,7 +60,7 @@ static Ratr0Engine *ratr0_engine;
 
 
 /* This is a bit of a trick: I pre-allocate dummy sprite data */
-UWORD __chip NULL_SPRITE_DATA[] = {
+UINT16 __chip NULL_SPRITE_DATA[] = {
     0x0000, 0x0000,
     0x0000, 0x0000
 };
@@ -77,12 +78,14 @@ UINT16 _cop_wait_end(UINT16 index)
     return index;
 }
 
-#define NUM_BITPLANES (3)
+#define NUM_BITPLANES (2)
 #define SCREEN_ROW_BYTES (320 / 8)
-#define PLANE_SIZE (SCREEN_ROW_BYTES * 200)
+#define PLANE_SIZE (SCREEN_ROW_BYTES * 256)
 #define BPL_MOD    (SCREEN_ROW_BYTES * (NUM_BITPLANES - 1))
 #define DISPLAY_BUFFER_SIZE (PLANE_SIZE * NUM_BITPLANES)
 static int copperlist_size = 0;
+static int bpl1pth_idx;
+static int color00_idx;
 
 void build_copper_list()
 {
@@ -109,7 +112,7 @@ void build_copper_list()
 
     // TODO: set up the bitmap for the display
     // 1. BPLCONx (8 bytes)
-    cl_index = _cop_move(BPLCON0, 0x3200, cl_index); // 3 bitplanes
+    cl_index = _cop_move(BPLCON0, 0x2200, cl_index); // 2 bitplanes for splash screen
     cl_index = _cop_move(BPLCON2, 0x0060, cl_index); // playfield 2 priority+sprite priority
 
     // 2. BPLxMOD (8 bytes)
@@ -117,19 +120,41 @@ void build_copper_list()
     cl_index = _cop_move(BPL2MOD, BPL_MOD, cl_index);
 
     // 3. COLORxx (32 colors => 32 * 4 = 128 bytes)
+    color00_idx = cl_index + 1;
     for (int i = 0; i < 32; i++) {
         cl_index = _cop_move(COLOR00 + i * 2, 0, cl_index);
     }
     // 4. BPLxPTH/BPLxPTL (NUM_BITLANES * 8 bytes => 12 bytes)
+    bpl1pth_idx = cl_index + 1;
+    UINT32 splash_screen_pl1 = (UINT32) &ENGINE_SPLASH_SCREEN;
+    UINT32 splash_screen_pl2 = (UINT32) splash_screen_pl1 + SCREEN_ROW_BYTES;
+    cl_index = _cop_move(BPL1PTH, (splash_screen_pl1 >> 16) & 0xffff, cl_index);
+    cl_index = _cop_move(BPL1PTL, splash_screen_pl1 & 0xffff, cl_index);
+    cl_index = _cop_move(BPL2PTH, (splash_screen_pl2 >> 16) & 0xffff, cl_index);
+    cl_index = _cop_move(BPL2PTL, splash_screen_pl2 & 0xffff, cl_index);
+    /*
     for (int i = 0; i < NUM_BITPLANES; i++) {
         cl_index = _cop_move(BPL1PTH + i * 2, 0, cl_index);
         cl_index = _cop_move(BPL1PTL + i * 2, 0, cl_index);
-    }
-    // TODO: save the indexes for quick access so we can change them in the game
+        }*/
 
     // End the copper list (4 bytes)
     cl_index = _cop_wait_end(cl_index);
 
+    // Set copperlist values please be aware that the values are
+    // at the odd indexes
+    copper_list[color00_idx] = 0x0fff;
+    copper_list[color00_idx + 2] = 0x0ccc;
+    copper_list[color00_idx + 4] = 0x0888;
+    copper_list[color00_idx + 6] = 0x0000;
+
+    /*
+    UINT32 plane2 = (UINT32) ENGINE_SPLASH_SCREEN + SCREEN_ROW_BYTES;
+    copper_list[bpl1pth_idx] = ((UINT32) ENGINE_SPLASH_SCREEN >> 16) & 0xffff;
+    copper_list[bpl1pth_idx + 2] = (UINT32) ENGINE_SPLASH_SCREEN & 0xffff;
+    copper_list[bpl1pth_idx + 4] = (plane2 >> 16) & 0x0fff;
+    copper_list[bpl1pth_idx + 6] = plane2 & 0x0fff;
+    */
     // Just for diagnostics
     copperlist_size = cl_index;
 }
@@ -163,6 +188,7 @@ void ratr0_amiga_display_shutdown(void)
     LoadView(((struct GfxBase *) GfxBase)->ActiView);
     WaitTOF();
     WaitTOF();
+    //custom.dmacon  = 0x0020;
     custom.cop1lc = (ULONG) ((struct GfxBase *) GfxBase)->copinit;
     RethinkDisplay();
 }

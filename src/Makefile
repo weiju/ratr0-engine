@@ -2,7 +2,7 @@
 ifdef AMIGA
 CC=vc +kick13
 ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
-SYS_OBJECTS=amiga/display.o amiga/input.o amiga/memory.o
+SYS_OBJECTS=amiga/display.o amiga/input.o amiga/memory.o amiga/splash_screen.o
 CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
 LDFLAGS=-lamiga -lauto
 TEST_CFLAGS=-Iinclude -I../chibi_test
@@ -12,7 +12,7 @@ SYS_OBJECTS=
 CFLAGS=-Iinclude -DDEBUG -DUSE_SDL2
 LDFLAGS=-lsdl2
 TEST_CFLAGS=-Iinclude -I../chibi_test
-endif  # ifdef AMIGA 
+endif  # ifdef AMIGA
 
 EXES=main
 TEST_PRGS=timer_test

@@ -13,12 +13,23 @@ void notify_timeout(void)
     printf("timer_timeout !!!\n");
 }
 
+#ifdef AMIGA
+volatile UBYTE *ciaa_pra = (volatile UBYTE *) 0xbfe001;
+#define  PRA_FIR0_BIT (1 << 6)
+void waitmouse(void)
+{
+  while ((*ciaa_pra & PRA_FIR0_BIT) != 0) ;
+}
+#endif
+
 int main(int argc, char **argv)
 {
     Ratr0Timer timer;
     Ratr0Engine *engine = ratr0_engine_startup();
 
-#ifndef AMIGA
+#ifdef AMIGA
+    waitmouse();
+#else
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
