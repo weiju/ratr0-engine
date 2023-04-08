@@ -17,18 +17,9 @@ typedef struct _Timer {
     void (*timeout_fun)(void);
 } Ratr0Timer;
 
-/**
- * Updates a timer instance.
- */
-extern void ratr0_update_timer(Ratr0Timer *timer);
-
-/**
- * Initializes a timer instance.
- */
-extern void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot,
-                             void (*timeout_fun)(void));
-
 struct Ratr0TimerSystem {
+    Ratr0Timer *(*create_timer)(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void));
+    void (*update)(void);  // update all timers with the next interval step
     void (*shutdown)(void);
 };
 

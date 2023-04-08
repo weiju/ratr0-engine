@@ -8,7 +8,15 @@ void ratr0_timers_shutdown(void);
 static struct Ratr0TimerSystem timer_system;
 static Ratr0Engine *engine;
 
-void ratr0_update_timer(Ratr0Timer *timer)
+/* Timer pool.
+ * For now, this is just a small fixed-size pool of timers. We can't update that many
+ * timers per frame anyway.
+ */
+#define MAX_TIMERS (20)
+static Ratr0Timer timers[MAX_TIMERS];
+static int next_free_timer = 0;
+
+void ratr0_timers_update(Ratr0Timer *timer)
 {
     if (timer && timer->running) {
         timer->current_value--;
@@ -23,23 +31,28 @@ void ratr0_update_timer(Ratr0Timer *timer)
     }
 }
 
-void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot, void (*timeout_fun)(void))
+Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void))
 {
-    if (timer) {
-        timer->start_value = start_value;
-        timer->current_value = start_value;
-        timer->oneshot = oneshot;
-        timer->running = 1;
-        timer->timeout_fun = timeout_fun;
-    }
+    Ratr0Timer *timer = &timers[next_free_timer++];
+    timer->start_value = start_value;
+    timer->current_value = start_value;
+    timer->oneshot = oneshot;
+    timer->running = 1;
+    timer->timeout_fun = timeout_fun;
+    return timer;
 }
+
+void ratr0_timers_tick(void)
+{
+}
+
 
 struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
 {
     engine = eng;
     timer_system.shutdown = &ratr0_timers_shutdown;
-
-    // TODO: Initialize a pool of timers
+    timer_system.create_timer = &ratr0_timers_create;
+    timer_system.update = &ratr0_timers_tick;
 
     PRINT_DEBUG("Startup finished.");
     return &timer_system;
@@ -47,6 +60,5 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
 
 void ratr0_timers_shutdown(void)
 {
-    // TODO: Free resources
     PRINT_DEBUG("Shutdown finished.");
 }

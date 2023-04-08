@@ -28,6 +28,7 @@ void ratr0_engine_game_loop(void);
 
 Ratr0Engine *ratr0_engine_startup(void)
 {
+    ratr0_amiga_engine_startup(&engine);
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
 #ifdef AMIGA
