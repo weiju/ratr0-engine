@@ -27,6 +27,6 @@ struct Ratr0TimerSystem {
 /**
  * Start up the timer subsystem.
  */
-extern struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *);
+extern struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *, UINT16 pool_size);
 
 #endif /* __RATR0_TIMERS_H__ */

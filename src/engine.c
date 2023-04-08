@@ -16,6 +16,7 @@
 #include <ratr0/resources.h>
 #include <ratr0/scripting.h>
 
+#define MAX_TIMERS (10)
 #ifdef AMIGA
 #include <ratr0/amiga/engine.h>
 #endif
@@ -57,7 +58,7 @@ Ratr0Engine *ratr0_engine_startup(void)
 
     engine.memory_system = ratr0_memory_startup(&engine, &mem_config);
     engine.event_system = ratr0_events_startup(&engine);
-    engine.timer_system = ratr0_timers_startup(&engine);
+    engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
     engine.input_system = ratr0_input_startup(&engine);
     engine.display_system = ratr0_display_startup(&engine, &display_init);
     engine.audio_system = ratr0_audio_startup(&engine);

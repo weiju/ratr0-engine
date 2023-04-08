@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
+#include <ratr0/memory.h>
 #include <ratr0/timers.h>
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[35mTIMERS\033[0m", __VA_ARGS__)
@@ -9,16 +10,22 @@ static struct Ratr0TimerSystem timer_system;
 static Ratr0Engine *engine;
 
 /* Timer pool.
- * For now, this is just a small fixed-size pool of timers. We can't update that many
- * timers per frame anyway.
- * We manage timers in a double linked list.
+ * We manage timers in a double linked list, so insertion and removal
+ * are constant time operations.
  */
-#define MAX_TIMERS (10)
-static Ratr0Timer timers[MAX_TIMERS];
+static Ratr0MemHandle h_timers;
+static Ratr0Timer *timers;
+
+/* Timer pool management variables */
+static UINT16 max_timers;
 static UINT16 num_used_timers = 0;
 static INT16 first_free_timer = 0;
+
+// We append timers at the end, but iterate from the first
+// timer
 static INT16 first_used_timer = -1;
 static INT16 last_used_timer = -1;
+
 
 void ratr0_timers_update(Ratr0Timer *timer)
 {
@@ -38,8 +45,8 @@ void ratr0_timers_update(Ratr0Timer *timer)
 Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void))
 {
     /* can't create more */
-    if (num_used_timers == MAX_TIMERS) {
-        PRINT_DEBUG("maximum number of timers (%d) exceeded !", MAX_TIMERS);
+    if (num_used_timers == max_timers) {
+        PRINT_DEBUG("maximum number of timers (%d) exceeded !", max_timers);
         return NULL;
     }
     int next_free_timer = timers[first_free_timer].next;  // next in chain
@@ -76,7 +83,7 @@ void ratr0_timers_tick(void)
     }
 }
 
-struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
+struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size)
 {
     engine = eng;
     timer_system.shutdown = &ratr0_timers_shutdown;
@@ -84,7 +91,11 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
     timer_system.update = &ratr0_timers_tick;
 
     // Initialize the timer pool
-    for (int i = 0; i < MAX_TIMERS; i++) {
+    max_timers = pool_size;
+    h_timers = engine->memory_system->allocate_block(RATR0_MEM_DEFAULT,
+                                                     sizeof(Ratr0Timer) * pool_size);
+    timers = engine->memory_system->block_address(h_timers);
+    for (int i = 0; i < pool_size; i++) {
         timers[i].running = FALSE;
         timers[i].next = timers[i].prev = -1;
     }
@@ -98,5 +109,6 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
 
 void ratr0_timers_shutdown(void)
 {
+    engine->memory_system->free_block(h_timers);
     PRINT_DEBUG("Shutdown finished.");
 }
