@@ -4,9 +4,14 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[31mEVENTS\033[0m", __VA_ARGS__)
 
-void ratr0_events_startup(void)
+static struct Ratr0EventSystem event_system;
+void ratr0_events_shutdown(void);
+
+struct Ratr0EventSystem *ratr0_events_startup(void)
 {
+    event_system.shutdown = &ratr0_events_shutdown;
     PRINT_DEBUG("Startup finished.");
+    return &event_system;
 }
 
 void ratr0_events_shutdown(void)

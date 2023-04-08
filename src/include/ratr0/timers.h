@@ -27,14 +27,13 @@ extern void ratr0_update_timer(Ratr0Timer *timer);
 extern void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot,
                              void (*timeout_fun)(void));
 
+struct Ratr0TimerSystem {
+    void (*shutdown)(void);
+};
+
 /**
  * Start up the timer subsystem.
  */
-extern void ratr0_timers_startup(void);
-
-/**
- * Shut down the timer subsystem.
- */
-extern void ratr0_timers_shutdown(void);
+extern struct Ratr0TimerSystem *ratr0_timers_startup(void);
 
 #endif /* __RATR0_TIMERS_H__ */

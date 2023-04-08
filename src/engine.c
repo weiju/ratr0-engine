@@ -45,13 +45,12 @@ Ratr0Engine *ratr0_engine_startup(void)
 #endif /* USE_SDL2 */
 
     engine.memory_system = ratr0_memory_startup(&mem_config);
-    ratr0_events_startup();
-    ratr0_timers_startup();
-    ratr0_audio_startup();
-
+    engine.event_system = ratr0_events_startup();
+    engine.timer_system = ratr0_timers_startup();
+    engine.input_system = ratr0_input_startup();
     engine.display_system = ratr0_display_startup(&engine, &display_init);
+    engine.audio_system = ratr0_audio_startup();
 
-    ratr0_input_startup();
     ratr0_physics_startup();
     ratr0_resources_startup();
     ratr0_scripting_startup();
@@ -65,11 +64,12 @@ void ratr0_engine_shutdown(void)
     ratr0_scripting_shutdown();
     ratr0_resources_shutdown();
     ratr0_physics_shutdown();
-    ratr0_input_shutdown();
+
+    engine.audio_system->shutdown();
     engine.display_system->shutdown();
-    ratr0_audio_shutdown();
-    ratr0_timers_shutdown();
-    ratr0_events_shutdown();
+    engine.input_system->shutdown();
+    engine.timer_system->shutdown();
+    engine.event_system->shutdown();
     engine.memory_system->shutdown();
 
 #ifdef USE_SDL2

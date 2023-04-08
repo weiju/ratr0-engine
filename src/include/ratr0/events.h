@@ -3,16 +3,13 @@
 #define __RATR0_EVENTS_H__
 
 /* Events subsystem */
+struct Ratr0EventSystem {
+    void (*shutdown)(void);
+};
 
 /**
  * Start up the events subsystem.
  */
-extern void ratr0_events_startup(void);
-
-/**
- * Shut down the events subsystem.
- */
-extern void ratr0_events_shutdown(void);
-
+extern struct Ratr0EventSystem *ratr0_events_startup(void);
 
 #endif /* __RATR0_EVENTS_H__ */

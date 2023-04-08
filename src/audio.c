@@ -8,9 +8,14 @@
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34mAUDIO\033[0m", __VA_ARGS__)
 #endif
 
-void ratr0_audio_startup(void)
+static struct Ratr0AudioSystem audio_system;
+void ratr0_audio_shutdown(void);
+
+struct Ratr0AudioSystem *ratr0_audio_startup(void)
 {
+    audio_system.shutdown = &ratr0_audio_shutdown;
     PRINT_DEBUG("Startup finished.");
+    return &audio_system;
 }
 
 void ratr0_audio_shutdown(void)

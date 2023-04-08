@@ -3,15 +3,13 @@
 #define __RATR0_AUDIO_H__
 
 /* Audio subsystem */
+struct Ratr0AudioSystem {
+    void (*shutdown)(void);
+};
 
 /**
  * Start up the audio subsystem.
  */
-void ratr0_audio_startup(void);
-
-/**
- * Shut down the memory subsystem.
- */
-void ratr0_audio_shutdown(void);
+extern struct Ratr0AudioSystem *ratr0_audio_startup(void);
 
 #endif /* __RATR0_AUDIO_H__ */

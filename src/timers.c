@@ -4,6 +4,9 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[35mTIMERS\033[0m", __VA_ARGS__)
 
+void ratr0_timers_shutdown(void);
+static struct Ratr0TimerSystem timer_system;
+
 void ratr0_update_timer(Ratr0Timer *timer)
 {
     if (timer && timer->running) {
@@ -30,10 +33,14 @@ void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot, void (
     }
 }
 
-void ratr0_timers_startup(void)
+struct Ratr0TimerSystem *ratr0_timers_startup(void)
 {
+    timer_system.shutdown = &ratr0_timers_shutdown;
+
     // TODO: Initialize a pool of timers
+
     PRINT_DEBUG("Startup finished.");
+    return &timer_system;
 }
 
 void ratr0_timers_shutdown(void)

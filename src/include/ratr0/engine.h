@@ -7,7 +7,11 @@
  */
 typedef struct {
     struct Ratr0MemorySystem *memory_system;
+    struct Ratr0EventSystem *event_system;
+    struct Ratr0TimerSystem *timer_system;
+    struct Ratr0InputSystem *input_system;
     struct Ratr0DisplaySystem *display_system;
+    struct Ratr0AudioSystem *audio_system;
     void (*shutdown)();
 } Ratr0Engine;
 

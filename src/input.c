@@ -7,12 +7,17 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[31;1mINPUT\033[0m", __VA_ARGS__)
 
-void ratr0_input_startup(void)
+void ratr0_input_shutdown(void);
+static struct Ratr0InputSystem input_system;
+
+struct Ratr0InputSystem *ratr0_input_startup(void)
 {
+    input_system.shutdown = &ratr0_input_shutdown;
 #ifdef AMIGA
     ratr0_amiga_input_startup();
 #endif
     PRINT_DEBUG("Startup finished.");
+    return &input_system;
 }
 
 void ratr0_input_shutdown(void)
