@@ -6,9 +6,11 @@
 
 static struct Ratr0EventSystem event_system;
 void ratr0_events_shutdown(void);
+static Ratr0Engine *engine;
 
-struct Ratr0EventSystem *ratr0_events_startup(void)
+struct Ratr0EventSystem *ratr0_events_startup(Ratr0Engine *eng)
 {
+    engine = eng;
     event_system.shutdown = &ratr0_events_shutdown;
     PRINT_DEBUG("Startup finished.");
     return &event_system;

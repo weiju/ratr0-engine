@@ -3,6 +3,7 @@
 #define __RATR0_MEMORY_H__
 
 #include <ratr0/data_types.h>
+#include <ratr0/engine.h>
 
 /*
  * RATR0 Engine Memory allocation subsystem. This is a simple abstraction
@@ -44,6 +45,6 @@ struct Ratr0MemorySystem {
 /**
  * Start up the memory subsystem.
  */
-extern struct Ratr0MemorySystem *ratr0_memory_startup(struct Ratr0MemoryConfig *);
+extern struct Ratr0MemorySystem *ratr0_memory_startup(Ratr0Engine *, struct Ratr0MemoryConfig *);
 
 #endif /* __RATR0_MEMORY_H__ */

@@ -11,9 +11,11 @@
 
 static struct Ratr0AudioSystem audio_system;
 void ratr0_audio_shutdown(void);
+static Ratr0Engine *engine;
 
-struct Ratr0AudioSystem *ratr0_audio_startup(void)
+struct Ratr0AudioSystem *ratr0_audio_startup(Ratr0Engine *eng)
 {
+    engine = eng;
     audio_system.shutdown = &ratr0_amiga_audio_shutdown;
     ratr0_amiga_audio_startup();
     PRINT_DEBUG("Startup finished.");

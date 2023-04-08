@@ -6,6 +6,7 @@
 
 void ratr0_timers_shutdown(void);
 static struct Ratr0TimerSystem timer_system;
+static Ratr0Engine *engine;
 
 void ratr0_update_timer(Ratr0Timer *timer)
 {
@@ -33,8 +34,9 @@ void ratr0_init_timer(Ratr0Timer *timer, INT32 start_value, BOOL oneshot, void (
     }
 }
 
-struct Ratr0TimerSystem *ratr0_timers_startup(void)
+struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
 {
+    engine = eng;
     timer_system.shutdown = &ratr0_timers_shutdown;
 
     // TODO: Initialize a pool of timers

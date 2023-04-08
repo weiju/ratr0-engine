@@ -46,7 +46,7 @@ extern struct Custom custom;
 static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
-static Ratr0Engine *ratr0_engine;
+static Ratr0Engine *engine;
 extern UINT16 *ENGINE_SPLASH_SCREEN;
 
 // Data fetch
@@ -158,9 +158,9 @@ void build_copper_list()
     // Just for diagnostics
     copperlist_size = cl_index;
 }
-void ratr0_amiga_display_startup(Ratr0Engine *engine, struct Ratr0AmigaDisplayInfo *init_data)
+void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
-    ratr0_engine = engine;
+    engine = eng;
     LoadView(NULL);  // clear display, reset hardware registers
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and
     WaitTOF();       // 2. short frame copper lists to finish (if interlaced)
@@ -183,7 +183,7 @@ void ratr0_amiga_display_startup(Ratr0Engine *engine, struct Ratr0AmigaDisplayIn
 void ratr0_amiga_display_shutdown(void)
 {
     PRINT_DEBUG("Copper list size: %d", copperlist_size);
-    ratr0_engine->memory_system->free_block(h_copper_list);
+    engine->memory_system->free_block(h_copper_list);
     // Restore the Workbench display by restoring the original copper list
     LoadView(((struct GfxBase *) GfxBase)->ActiView);
     WaitTOF();

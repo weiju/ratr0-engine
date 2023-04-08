@@ -54,15 +54,15 @@ Ratr0Engine *ratr0_engine_startup(void)
     PRINT_DEBUG("SDL initialized.");
 #endif /* USE_SDL2 */
 
-    engine.memory_system = ratr0_memory_startup(&mem_config);
-    engine.event_system = ratr0_events_startup();
-    engine.timer_system = ratr0_timers_startup();
-    engine.input_system = ratr0_input_startup();
+    engine.memory_system = ratr0_memory_startup(&engine, &mem_config);
+    engine.event_system = ratr0_events_startup(&engine);
+    engine.timer_system = ratr0_timers_startup(&engine);
+    engine.input_system = ratr0_input_startup(&engine);
     engine.display_system = ratr0_display_startup(&engine, &display_init);
-    engine.audio_system = ratr0_audio_startup();
-    engine.resource_system = ratr0_resources_startup();
-    engine.physics_system = ratr0_physics_startup();
-    engine.scripting_system = ratr0_scripting_startup();
+    engine.audio_system = ratr0_audio_startup(&engine);
+    engine.resource_system = ratr0_resources_startup(&engine);
+    engine.physics_system = ratr0_physics_startup(&engine);
+    engine.scripting_system = ratr0_scripting_startup(&engine);
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }

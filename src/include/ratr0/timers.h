@@ -1,6 +1,7 @@
 #pragma once
 #ifndef __RATR0_TIMERS_H__
 #define __RATR0_TIMERS_H__
+#include <ratr0/engine.h>
 
 /**
  * RATR0 Timer Subsystem. This system helps with the management of timers.
@@ -34,6 +35,6 @@ struct Ratr0TimerSystem {
 /**
  * Start up the timer subsystem.
  */
-extern struct Ratr0TimerSystem *ratr0_timers_startup(void);
+extern struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *);
 
 #endif /* __RATR0_TIMERS_H__ */

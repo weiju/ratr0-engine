@@ -12,7 +12,7 @@ static struct Ratr0AmigaDisplayInfo display_info;
 static struct Ratr0DisplaySystem display_system;
 void ratr0_display_shutdown(void);
 
-struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *engine, struct Ratr0DisplayInfo *init_data)
+struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *eng, struct Ratr0DisplayInfo *init_data)
 {
     display_system.shutdown = &ratr0_display_shutdown;
 
@@ -21,7 +21,7 @@ struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *engine, struct Rat
     display_info.height = init_data->height;
     display_info.depth = init_data->depth;
 
-    ratr0_amiga_display_startup(engine, &display_info);
+    ratr0_amiga_display_startup(eng, &display_info);
 #endif
     PRINT_DEBUG("Startup finished.");
     return &display_system;

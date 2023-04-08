@@ -9,9 +9,11 @@
 
 void ratr0_input_shutdown(void);
 static struct Ratr0InputSystem input_system;
+static Ratr0Engine *engine;
 
-struct Ratr0InputSystem *ratr0_input_startup(void)
+struct Ratr0InputSystem *ratr0_input_startup(Ratr0Engine *eng)
 {
+    engine = eng;
     input_system.shutdown = &ratr0_input_shutdown;
 #ifdef AMIGA
     ratr0_amiga_input_startup();

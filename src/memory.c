@@ -22,6 +22,7 @@ static INT32 first_free_table, first_free;
  * The global memory service instance.
  */
 static struct Ratr0MemorySystem memory_system;
+static Ratr0Engine *engine;
 
 // Forward declarations for the generic memory allocator
 Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size);
@@ -30,8 +31,9 @@ void *ratr0_memory_block_address(Ratr0MemHandle handle);
 void ratr0_memory_shutdown(void);
 
 
-struct Ratr0MemorySystem *ratr0_memory_startup(struct Ratr0MemoryConfig *config)
+struct Ratr0MemorySystem *ratr0_memory_startup(Ratr0Engine *eng, struct Ratr0MemoryConfig *config)
 {
+    engine = eng;
     memory_system.shutdown = &ratr0_memory_shutdown;
  #ifdef AMIGA
     ratr0_amiga_memory_startup(config);
