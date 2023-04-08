@@ -71,6 +71,7 @@ Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_
 
     // This was a fresh timer, so just increment the free index
     if (next_free_timer == -1) first_free_timer++;
+    num_used_timers++;
     return timer;
 }
 
