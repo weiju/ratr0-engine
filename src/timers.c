@@ -21,10 +21,9 @@ static UINT16 max_timers;
 static UINT16 num_used_timers = 0;
 static INT16 first_free_timer = 0;
 
-// We append timers at the end, but iterate from the first
-// timer
+// We insert timers at the front, and iterate from the first
+// timer, to keep things simple
 static INT16 first_used_timer = -1;
-static INT16 last_used_timer = -1;
 
 
 void ratr0_timers_update(Ratr0Timer *timer)
@@ -61,12 +60,13 @@ Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_
 
     // put it in the chain
     if (first_used_timer == -1) {
-        first_used_timer = last_used_timer = timer_idx;
+        first_used_timer = timer_idx;
+        timers[timer_idx].prev = timers[timer_idx].next = -1;
     } else {
-        timers[last_used_timer].next = timer_idx;
-        timers[timer_idx].prev = last_used_timer;
-        timers[timer_idx].next = -1; // make sure we can't proceed
-        last_used_timer = timer_idx;
+        timers[first_used_timer].prev = timer_idx;
+        timers[timer_idx].next = first_used_timer;
+        timers[timer_idx].prev = -1; // make sure it's initialized correctly
+        first_used_timer = timer_idx;
     }
 
     // This was a fresh timer, so just increment the free index
@@ -101,7 +101,7 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size
     }
     num_used_timers = 0;
     first_free_timer = 0;
-    first_used_timer = last_used_timer = -1;
+    first_used_timer = -1;
 
     PRINT_DEBUG("Startup finished.");
     return &timer_system;
