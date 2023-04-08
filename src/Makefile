@@ -17,6 +17,7 @@ endif  # ifdef AMIGA
 EXES=main
 TEST_PRGS=timer_test
 
+TEST_OBJECTS=test/timer_test.o timers.o ../chibi_test/chibi.o
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o display.o input.o physics.o resources.o scripting.o $(SYS_OBJECTS)
 
 .PHONY : clean check
@@ -27,7 +28,7 @@ all: main
 check: $(TEST_PRGS)
 
 clean:
-	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_PRGS)
+	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_OBJECTS) $(TEST_PRGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -42,11 +43,11 @@ main: $(ENGINE_OBJECTS)
 # TESTS
 #
 
-chibi.o: ../chibi_test/chibi.c
-	$(CC) $(TEST_CFLAGS) -c -o $@ $^
+#chibi.o: ../chibi_test/chibi.c
+#	$(CC) $(TEST_CFLAGS) -c -o $@ $^
 
-timer_test: timer_test.o timers.o chibi.o
+timer_test: $(TEST_OBJECTS)
 	$(CC) -o $@ $^
 
-timer_test.o: test/timer_test.c
-	$(CC) $(TEST_CFLAGS) -c -o $@ $^
+#timer_test.o: test/timer_test.c
+#	$(CC) $(TEST_CFLAGS) -c -o $@ $^

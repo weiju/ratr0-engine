@@ -14,6 +14,7 @@ typedef struct _Timer {
     INT32 current_value;
     BOOL oneshot;
     BOOL running;
+    INT16 next, prev; // private, for management
     void (*timeout_fun)(void);
 } Ratr0Timer;
 

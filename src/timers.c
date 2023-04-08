@@ -11,10 +11,14 @@ static Ratr0Engine *engine;
 /* Timer pool.
  * For now, this is just a small fixed-size pool of timers. We can't update that many
  * timers per frame anyway.
+ * We manage timers in a double linked list.
  */
-#define MAX_TIMERS (20)
+#define MAX_TIMERS (10)
 static Ratr0Timer timers[MAX_TIMERS];
-static int next_free_timer = 0;
+static UINT16 num_used_timers = 0;
+static INT16 first_free_timer = 0;
+static INT16 first_used_timer = -1;
+static INT16 last_used_timer = -1;
 
 void ratr0_timers_update(Ratr0Timer *timer)
 {
@@ -33,19 +37,44 @@ void ratr0_timers_update(Ratr0Timer *timer)
 
 Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void))
 {
-    Ratr0Timer *timer = &timers[next_free_timer++];
+    /* can't create more */
+    if (num_used_timers == MAX_TIMERS) {
+        PRINT_DEBUG("maximum number of timers (%d) exceeded !", MAX_TIMERS);
+        return NULL;
+    }
+    int next_free_timer = timers[first_free_timer].next;  // next in chain
+    int timer_idx = first_free_timer;
+
+    Ratr0Timer *timer = &timers[timer_idx];
     timer->start_value = start_value;
     timer->current_value = start_value;
     timer->oneshot = oneshot;
     timer->running = 1;
     timer->timeout_fun = timeout_fun;
+
+    // put it in the chain
+    if (first_used_timer == -1) {
+        first_used_timer = last_used_timer = timer_idx;
+    } else {
+        timers[last_used_timer].next = timer_idx;
+        timers[timer_idx].prev = last_used_timer;
+        timers[timer_idx].next = -1; // make sure we can't proceed
+        last_used_timer = timer_idx;
+    }
+
+    // This was a fresh timer, so just increment the free index
+    if (next_free_timer == -1) first_free_timer++;
     return timer;
 }
 
 void ratr0_timers_tick(void)
 {
+    INT16 cur = first_used_timer;
+    while (cur != -1) {
+        ratr0_timers_update(&timers[cur]);
+        cur = timers[cur].next;
+    }
 }
-
 
 struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
 {
@@ -53,6 +82,15 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng)
     timer_system.shutdown = &ratr0_timers_shutdown;
     timer_system.create_timer = &ratr0_timers_create;
     timer_system.update = &ratr0_timers_tick;
+
+    // Initialize the timer pool
+    for (int i = 0; i < MAX_TIMERS; i++) {
+        timers[i].running = FALSE;
+        timers[i].next = timers[i].prev = -1;
+    }
+    num_used_timers = 0;
+    first_free_timer = 0;
+    first_used_timer = last_used_timer = -1;
 
     PRINT_DEBUG("Startup finished.");
     return &timer_system;
