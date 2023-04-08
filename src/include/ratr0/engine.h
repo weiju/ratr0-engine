@@ -12,6 +12,9 @@ typedef struct {
     struct Ratr0InputSystem *input_system;
     struct Ratr0DisplaySystem *display_system;
     struct Ratr0AudioSystem *audio_system;
+    struct Ratr0ResourceSystem *resource_system;
+    struct Ratr0PhysicsSystem *physics_system;
+    struct Ratr0ScriptingSystem *scripting_system;
     void (*shutdown)();
 } Ratr0Engine;
 

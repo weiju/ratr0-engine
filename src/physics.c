@@ -4,9 +4,14 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[35;1mPHYSICS\033[0m", __VA_ARGS__)
 
-void ratr0_physics_startup(void)
+static struct Ratr0PhysicsSystem physics_system;
+void ratr0_physics_shutdown(void);
+
+struct Ratr0PhysicsSystem *ratr0_physics_startup(void)
 {
+    physics_system.shutdown = &ratr0_physics_shutdown;
     PRINT_DEBUG("Startup finished.");
+    return &physics_system;
 }
 
 void ratr0_physics_shutdown(void)

@@ -4,9 +4,15 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32;1mSCRIPTING\033[0m", __VA_ARGS__)
 
-void ratr0_scripting_startup(void)
+void ratr0_scripting_shutdown(void);
+static struct Ratr0ScriptingSystem scripting_system;
+
+struct Ratr0ScriptingSystem *ratr0_scripting_startup(void)
 {
+    scripting_system.shutdown = &ratr0_scripting_shutdown;
+
     PRINT_DEBUG("Startup finished.");
+    return &scripting_system;
 }
 
 void ratr0_scripting_shutdown(void)

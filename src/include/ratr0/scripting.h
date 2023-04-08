@@ -3,16 +3,14 @@
 #define __RATR0_SCRIPTING_H__
 
 /* Scripting subsystem */
+struct Ratr0ScriptingSystem {
+    void (*shutdown)(void);
+};
 
 /**
  * Start up the scripting subsystem.
  */
-extern void ratr0_scripting_startup(void);
-
-/**
- * Shut down the scripting subsystem.
- */
-extern void ratr0_scripting_shutdown(void);
+extern struct Ratr0ScriptingSystem *ratr0_scripting_startup(void);
 
 
 #endif /* __RATR0_SCRIPTING_H__ */

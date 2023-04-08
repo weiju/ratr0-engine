@@ -50,10 +50,9 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.input_system = ratr0_input_startup();
     engine.display_system = ratr0_display_startup(&engine, &display_init);
     engine.audio_system = ratr0_audio_startup();
-
-    ratr0_physics_startup();
-    ratr0_resources_startup();
-    ratr0_scripting_startup();
+    engine.resource_system = ratr0_resources_startup();
+    engine.physics_system = ratr0_physics_startup();
+    engine.scripting_system = ratr0_scripting_startup();
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }
@@ -61,10 +60,9 @@ Ratr0Engine *ratr0_engine_startup(void)
 void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
-    ratr0_scripting_shutdown();
-    ratr0_resources_shutdown();
-    ratr0_physics_shutdown();
-
+    engine.scripting_system->shutdown();
+    engine.physics_system->shutdown();
+    engine.resource_system->shutdown();
     engine.audio_system->shutdown();
     engine.display_system->shutdown();
     engine.input_system->shutdown();

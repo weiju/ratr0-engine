@@ -3,16 +3,13 @@
 #define __RATR0_RESOURCES_H__
 
 /* Resources subsystem */
+struct Ratr0ResourceSystem {
+    void (*shutdown)(void);
+};
 
 /**
  * Start up the resources subsystem.
  */
-extern void ratr0_resources_startup(void);
-
-/**
- * Shut down the resources subsystem.
- */
-extern void ratr0_resources_shutdown(void);
-
+extern struct Ratr0ResourceSystem *ratr0_resources_startup(void);
 
 #endif /* __RATR0_RESOURCES_H__ */
