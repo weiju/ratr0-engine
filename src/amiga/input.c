@@ -7,19 +7,53 @@
 #include <SDI/SDI_compiler.h>
 
 extern struct ExecBase *SysBase;
+#define RAW_KEY_LSHIFT       (0x60)
+#define RAW_KEY_ESCAPE       (0x45)
+#define RAW_KEY_SPACE        (0x40)
+#define RAW_KEY_CURSOR_UP    (0x4c)
+#define RAW_KEY_CURSOR_DOWN  (0x4d)
+#define RAW_KEY_CURSOR_RIGHT (0x4e)
+#define RAW_KEY_CURSOR_LEFT  (0x4f)
+#define RAW_KEY_W            (0x11)
+#define RAW_KEY_S            (0x21)
 
 #include <ratr0/debug_utils.h>
 #include <ratr0/amiga/input.h>
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mINPUT\033[0m", __VA_ARGS__)
 
-
+/*
+ * Amiga input system. Generally input should be polled rather than waiting for the
+ * Intuition messaging system to have the smallest amount of lag. On the other hand
+ * expecting correctly mapped keyboard input is also something that is desirable.
+ */
 // To handle input
 static BYTE error;
 static struct MsgPort *kb_mp;
 static struct IOStdReq *kb_io;
 static UBYTE *kb_matrix;
 #define MATRIX_SIZE (16L)
+
+// Joystick / mouse registers
+static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
+static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
+
+/*
+  Example for reading the mouse
+    UINT16 mousepos = *custom_joy0dat;
+    UINT8 currx = mousepos & 0xff;
+    UINT8 curry = (mousepos >> 8) & 0xff;
+    UINT8 dirx = currx - lastx;
+    UINT8 diry = curry - lasty;
+
+    if (dirx > PLAYER_MAX_SPEED) dirx = PLAYER_MAX_SPEED;
+    else if (dirx < -PLAYER_MAX_SPEED) dirx = -PLAYER_MAX_SPEED;
+    if (diry > PLAYER_MAX_SPEED) diry = PLAYER_MAX_SPEED;
+    else if (diry < -PLAYER_MAX_SPEED) diry = -PLAYER_MAX_SPEED;
+    lastx = currx;
+    lasty = curry;
+
+ */
 
 static int init_keyboard_device(void)
 {
@@ -50,6 +84,14 @@ static void read_keyboard(void)
 
 static int is_keydown(BYTE keycode) {
     return kb_matrix[keycode / 8] & (1 << (keycode % 8));
+}
+
+BOOL handle_input(void)
+{
+    // now check the keyboard status
+    read_keyboard();
+    if (is_keydown(RAW_KEY_ESCAPE)) return TRUE;
+    return FALSE;
 }
 
 void ratr0_amiga_input_startup(void)

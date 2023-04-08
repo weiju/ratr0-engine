@@ -14,6 +14,7 @@
 #include <ratr0/input.h>
 #include <ratr0/physics.h>
 #include <ratr0/resources.h>
+#include <ratr0/scenes.h>
 #include <ratr0/scripting.h>
 
 #define MAX_TIMERS (10)
@@ -64,6 +65,7 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
     engine.physics_system = ratr0_physics_startup(&engine);
+    engine.scene_system = ratr0_scenes_startup(&engine);
     engine.scripting_system = ratr0_scripting_startup(&engine);
     PRINT_DEBUG("Startup finished.");
     return &engine;
@@ -73,6 +75,7 @@ void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
     engine.scripting_system->shutdown();
+    engine.scene_system->shutdown();
     engine.physics_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();

@@ -45,7 +45,7 @@ Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_
 {
     /* can't create more */
     if (num_used_timers == max_timers) {
-        PRINT_DEBUG("maximum number of timers (%d) exceeded !", max_timers);
+        PRINT_DEBUG("maximum number of timers (%d) exceeded !", (int) max_timers);
         return NULL;
     }
     int next_free_timer = timers[first_free_timer].next;  // next in chain
