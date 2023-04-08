@@ -30,6 +30,11 @@ Ratr0Engine *ratr0_engine_startup(void)
 {
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
+#ifdef AMIGA
+    engine.game_loop = &ratr0_amiga_engine_game_loop;
+#else
+    engine.game_loop = &ratr0_engine_game_loop;
+#endif
 
     /* Just an example for a configuration, should come from a config file */
     struct Ratr0DisplayInfo display_init = { 320, 200, 3 };
@@ -84,11 +89,9 @@ void ratr0_engine_shutdown(void)
 }
 
 
+#ifndef AMIGA
 void ratr0_engine_game_loop(void)
 {
-#ifdef AMIGA
-    ratr0_amiga_engine_game_loop();
-#else
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
@@ -119,5 +122,5 @@ void ratr0_engine_game_loop(void)
             SDL_UpdateWindowSurface(window);
         }
     }
-#endif /* AMIGA */
 }
+#endif /* AMIGA */
