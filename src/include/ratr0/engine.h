@@ -15,7 +15,9 @@ typedef struct {
     struct Ratr0ResourceSystem *resource_system;
     struct Ratr0PhysicsSystem *physics_system;
     struct Ratr0ScriptingSystem *scripting_system;
+
     void (*shutdown)();
+    void (*game_loop)();
 } Ratr0Engine;
 
 /**

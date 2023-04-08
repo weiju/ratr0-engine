@@ -16,10 +16,15 @@
 #include <ratr0/resources.h>
 #include <ratr0/scripting.h>
 
+#ifdef AMIGA
+#include <ratr0/amiga/engine.h>
+#endif
+
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
 
 static Ratr0Engine engine;
 void ratr0_engine_shutdown(void);
+void ratr0_engine_game_loop(void);
 
 Ratr0Engine *ratr0_engine_startup(void)
 {
@@ -76,4 +81,43 @@ void ratr0_engine_shutdown(void)
 #endif /* USE_SDL2 */
 
     PRINT_DEBUG("Shutdown finished.");
+}
+
+
+void ratr0_engine_game_loop(void)
+{
+#ifdef AMIGA
+    ratr0_amiga_engine_game_loop();
+#else
+    SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
+                                          SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED,
+                                          680, 480,
+                                          0);
+
+    if(!window) {
+        printf("Failed to create window\n");
+        return -1;
+    }
+    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+
+    if (!window_surface) {
+        printf("Failed to get the surface from the window\n");
+        return -1;
+    }
+
+
+    SDL_Event e;
+    BOOL keep_window_open = TRUE;
+    while(keep_window_open) {
+        while(SDL_PollEvent(&e) > 0) {
+            switch(e.type) {
+            case SDL_QUIT:
+                keep_window_open = FALSE;
+                break;
+            }
+            SDL_UpdateWindowSurface(window);
+        }
+    }
+#endif /* AMIGA */
 }

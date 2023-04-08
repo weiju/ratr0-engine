@@ -2,7 +2,7 @@
 ifdef AMIGA
 CC=vc +kick13
 ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
-SYS_OBJECTS=amiga/display.o amiga/input.o amiga/memory.o amiga/splash_screen.o
+SYS_OBJECTS=amiga/display.o amiga/input.o amiga/memory.o amiga/splash_screen.o amiga/engine.o ../ptplayer/ptplayer.o
 CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
 LDFLAGS=-lamiga -lauto
 TEST_CFLAGS=-Iinclude -I../chibi_test
@@ -20,17 +20,20 @@ TEST_PRGS=timer_test
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o display.o input.o physics.o resources.o scripting.o $(SYS_OBJECTS)
 
 .PHONY : clean check
-.SUFFIXES : .o .c
+.SUFFIXES : .o .c .asm
 
 all: main
 
 check: $(TEST_PRGS)
 
 clean:
-	rm -f $(ENGINE_OBJECTS) $(EXES) $(TEST_PRGS)
+	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_PRGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
+
+.asm.o:
+	$(ASM) $^ -o $@
 
 main: $(ENGINE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
