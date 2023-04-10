@@ -6,37 +6,22 @@
 #include <clib/graphics_protos.h>
 
 #include <ratr0/debug_utils.h>
-#include <ratr0/amiga/hw_registers.h>
-#include <ratr0/amiga/display.h>
 #include <ratr0/engine.h>
 #include <ratr0/memory.h>
+#include <ratr0/amiga/hw_registers.h>
+#include <ratr0/amiga/display.h>
+#include <ratr0/amiga/sprites.h>
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
 
-/*
-  Copper instructions as reference
-
-#define COP_MOVE(addr, data) addr, data
-
-     FIRST WAIT INSTRUCTION WORD (IR1)
-     ---------------------------------
-     Bit 0           Always set to 1.
-     Bits 15 - 8      Vertical beam position  (called VP).
-     Bits 7 - 1       Horizontal beam position  (called HP).
-
-     SECOND WAIT INSTRUCTION WORD (IR2)
-     ----------------------------------
-     Bit 0           Always set to 0.
-     Bit 15          The  blitter-finished-disable bit .  Normally, this
-                     bit is a 1. (See the "Advanced Topics" section below.)
-     Bits 14 - 8     Vertical position compare enable bits (called VE).
-     Bits 7 - 1      Horizontal position compare enable bits (called HE).
-
-     SKIP is like WAIT, except Bit 0 of both words is 1
-     Special case to finish a copper list:
-       WAIT_END =>  0xffff, 0xfffe
+/**
+ * Encapsulate the Amiga hardware specifics of display aspects here.
+ * The RATR0 rendering engine is based on a pipeline of graphics objects.
+ * This is essentially a queue of drawing operations:
+ *  - sprites (set to copper list)
+ *  - blitter operations: a per-frame-queue, that is operated by Blitter interrupts
+ *  - scrolling if needed
  */
-
 /*
  * We assume these to exist.
  */
@@ -86,6 +71,7 @@ UINT16 _cop_wait_end(UINT16 index)
 static int copperlist_size = 0;
 static int bpl1pth_idx;
 static int color00_idx;
+static int spr0pth_idx;
 
 void build_copper_list()
 {
@@ -94,6 +80,7 @@ void build_copper_list()
 
     // Initialize the sprites with the NULL address (8x8 = 64 bytes)
     UINT16 spr_ptr = SPR0PTH;
+    spr0pth_idx = cl_index + 1;
     for (int i = 0; i < 8; i++) {
         cl_index = _cop_move(spr_ptr, (((ULONG) NULL_SPRITE_DATA) >> 16) & 0xffff, cl_index);
         cl_index = _cop_move(spr_ptr + 2, ((ULONG) NULL_SPRITE_DATA) & 0xffff, cl_index);
@@ -158,9 +145,15 @@ void build_copper_list()
     // Just for diagnostics
     copperlist_size = cl_index;
 }
+
+#define SPRITE_POOL_SIZE (4096)
+#define MAX_SPRITES (10)
+
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
     engine = eng;
+    ratr0_amiga_sprites_startup(eng, SPRITE_POOL_SIZE, MAX_SPRITES);
+
     LoadView(NULL);  // clear display, reset hardware registers
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and
     WaitTOF();       // 2. short frame copper lists to finish (if interlaced)
@@ -184,6 +177,8 @@ void ratr0_amiga_display_shutdown(void)
 {
     PRINT_DEBUG("Copper list size: %d", copperlist_size);
     engine->memory_system->free_block(h_copper_list);
+    ratr0_amiga_sprites_shutdown();
+
     // Restore the Workbench display by restoring the original copper list
     LoadView(((struct GfxBase *) GfxBase)->ActiView);
     WaitTOF();
@@ -191,4 +186,11 @@ void ratr0_amiga_display_shutdown(void)
     //custom.dmacon  = 0x0020;
     custom.cop1lc = (ULONG) ((struct GfxBase *) GfxBase)->copinit;
     RethinkDisplay();
+}
+
+// Just for experiments !!!!
+void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
+{
+    copper_list[spr0pth_idx] = ((UINT32) data >> 16) & 0xffff;
+    copper_list[spr0pth_idx + 1] = (UINT32) data & 0xffff;
 }

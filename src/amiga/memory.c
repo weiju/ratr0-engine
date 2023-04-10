@@ -31,7 +31,7 @@ void ratr0_amiga_memory_startup(struct Ratr0MemoryConfig *config)
     general_pool_size = config->general_pool_size;
 
     general_mem_pool = (void *) AllocMem(general_pool_size, MEMF_CLEAR);
-    chip_mem_pool = (void *) AllocMem(chip_pool_size, MEMF_CLEAR);
+    chip_mem_pool = (void *) AllocMem(chip_pool_size, MEMF_CHIP|MEMF_CLEAR);
     general_mem_table = (void **) AllocMem(sizeof(void *) * general_table_size, MEMF_CLEAR);
     chip_mem_table = (void **) AllocMem(sizeof(void *) * chip_table_size, MEMF_CLEAR);
 

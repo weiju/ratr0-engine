@@ -42,8 +42,8 @@ Ratr0Engine *ratr0_engine_startup(void)
     /* Just an example for a configuration, should come from a config file */
     struct Ratr0DisplayInfo display_init = { 320, 200, 3 };
     struct Ratr0MemoryConfig mem_config = {
-        4096, 10,
-        4096, 10
+        8192, 20,  // 8k chip memory with max 20 mem blocks
+        8192, 20   // 8k general purpose memory with max 20 mem blocks
     };
 
     PRINT_DEBUG("Start up...");
@@ -64,9 +64,9 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.display_system = ratr0_display_startup(&engine, &display_init);
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
-    engine.physics_system = ratr0_physics_startup(&engine);
+    //engine.physics_system = ratr0_physics_startup(&engine);
     engine.scene_system = ratr0_scenes_startup(&engine);
-    engine.scripting_system = ratr0_scripting_startup(&engine);
+    //engine.scripting_system = ratr0_scripting_startup(&engine);
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }
@@ -74,9 +74,9 @@ Ratr0Engine *ratr0_engine_startup(void)
 void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
-    engine.scripting_system->shutdown();
+    //engine.scripting_system->shutdown();
     engine.scene_system->shutdown();
-    engine.physics_system->shutdown();
+    //engine.physics_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();
     engine.display_system->shutdown();

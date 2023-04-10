@@ -57,7 +57,9 @@ struct Ratr0AnimatedSprite2D {
  * This interface serves as the creator of our scene objects.
  */
 struct Ratr0NodeFactory {
-    struct Ratr0AnimatedSprite2D (*create_animated_sprite)(void);
+    struct Ratr0AnimatedSprite2D *(*create_animated_sprite)(struct Ratr0TileSheet *tilesheet,
+                                                            UINT8 *frame_indexes,
+                                                            BOOL is_hw);
 };
 
 struct Ratr0SceneSystem {

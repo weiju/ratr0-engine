@@ -24,6 +24,10 @@ typedef enum { RATR0_MEM_DEFAULT, RATR0_MEM_CHIP } Ratr0MemoryType;
  */
 typedef INT32 Ratr0MemHandle;
 
+/**
+ * Pre-allocate memory at the start of the game. This ensures we never explicitly
+ * allocate or deallocate memory outside of the engine.
+ */
 struct Ratr0MemoryConfig {
     UINT32 general_pool_size;  // pool size in bytes
     UINT32 general_table_size; // num entries in table

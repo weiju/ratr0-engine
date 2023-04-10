@@ -34,5 +34,9 @@ extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0AmigaDisplayI
  */
 extern void ratr0_amiga_display_shutdown(void);
 
+/**
+ * Experimental only
+ */
+extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
 
 #endif /* __RATR0_AMIGA_DISPLAY_H__ */
