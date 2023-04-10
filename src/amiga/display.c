@@ -135,6 +135,12 @@ void build_copper_list()
     copper_list[color00_idx + 4] = 0x0888;
     copper_list[color00_idx + 6] = 0x0000;
 
+    // Sprite colors start at color17
+    // just for debugging
+    copper_list[color00_idx + 17 * 2] = 0x000f;
+    copper_list[color00_idx + 18 * 2] = 0x0ff0;
+    copper_list[color00_idx + 19 * 2] = 0x00f0;
+
     /*
     UINT32 plane2 = (UINT32) ENGINE_SPLASH_SCREEN + SCREEN_ROW_BYTES;
     copper_list[bpl1pth_idx] = ((UINT32) ENGINE_SPLASH_SCREEN >> 16) & 0xffff;
@@ -191,6 +197,8 @@ void ratr0_amiga_display_shutdown(void)
 // Just for experiments !!!!
 void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
 {
-    copper_list[spr0pth_idx] = ((UINT32) data >> 16) & 0xffff;
-    copper_list[spr0pth_idx + 1] = (UINT32) data & 0xffff;
+    int spr_idx = spr0pth_idx + 2 * sprite_num;
+    PRINT_DEBUG("set sprite CL index(0): %d, actual: %d", spr0pth_idx, spr_idx);
+    copper_list[spr_idx] = ((UINT32) data >> 16) & 0xffff;
+    copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
 }

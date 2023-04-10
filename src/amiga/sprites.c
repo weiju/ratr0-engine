@@ -88,8 +88,9 @@ static void set_sprite_pos(UWORD *sprite_data, UWORD hstart, UWORD vstart, UWORD
 }
     */
     // 1. initialize the sprite control words
-    UINT16 hstart = 300;
-    UINT16 vstart = 200;
+    // These are the 0 positions of sprites given our display settings
+    UINT16 hstart = 128;
+    UINT16 vstart = 45;
     UINT16 vstop = vstart + 16;  // TODO: height can be anything
 
     sprite_data[0] = ((vstart & 0xff) << 8) | ((hstart >> 1) & 0xff);
