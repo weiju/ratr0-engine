@@ -9,6 +9,13 @@ machines.
 On modern systems, RATR0 will build on top of SDL, while on retro systems
 it will be direct hardware abstraction.
 
+## Restrictions
+
+Since the plan is to target legacy architectures, at the core almost all
+math and numbers will be integer-based. That means, coordinates, dimensions,
+color values etc. are all integers. During physics calculations, some
+fixed point math will be possible to allow for smoother animations and movement
+
 ## Architecture
 
 The engine implements the standard architecture of having a collection
