@@ -11,6 +11,7 @@
 #include <ratr0/amiga/hw_registers.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/sprites.h>
+#include <ratr0/amiga/blitter.h>
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
 
@@ -113,17 +114,11 @@ void build_copper_list()
     }
     // 4. BPLxPTH/BPLxPTL (NUM_BITLANES * 8 bytes => 12 bytes)
     bpl1pth_idx = cl_index + 1;
-    UINT32 splash_screen_pl1 = (UINT32) &ENGINE_SPLASH_SCREEN;
-    UINT32 splash_screen_pl2 = (UINT32) splash_screen_pl1 + SCREEN_ROW_BYTES;
-    cl_index = _cop_move(BPL1PTH, (splash_screen_pl1 >> 16) & 0xffff, cl_index);
-    cl_index = _cop_move(BPL1PTL, splash_screen_pl1 & 0xffff, cl_index);
-    cl_index = _cop_move(BPL2PTH, (splash_screen_pl2 >> 16) & 0xffff, cl_index);
-    cl_index = _cop_move(BPL2PTL, splash_screen_pl2 & 0xffff, cl_index);
-    /*
+
     for (int i = 0; i < NUM_BITPLANES; i++) {
-        cl_index = _cop_move(BPL1PTH + i * 2, 0, cl_index);
-        cl_index = _cop_move(BPL1PTL + i * 2, 0, cl_index);
-        }*/
+        cl_index = _cop_move(BPL1PTH + i * 4, 0, cl_index);
+        cl_index = _cop_move(BPL1PTL + i * 4, 0, cl_index);
+    }
 
     // End the copper list (4 bytes)
     cl_index = _cop_wait_end(cl_index);
@@ -141,13 +136,14 @@ void build_copper_list()
     copper_list[color00_idx + 18 * 2] = 0x0ff0;
     copper_list[color00_idx + 19 * 2] = 0x00f0;
 
-    /*
-    UINT32 plane2 = (UINT32) ENGINE_SPLASH_SCREEN + SCREEN_ROW_BYTES;
-    copper_list[bpl1pth_idx] = ((UINT32) ENGINE_SPLASH_SCREEN >> 16) & 0xffff;
-    copper_list[bpl1pth_idx + 2] = (UINT32) ENGINE_SPLASH_SCREEN & 0xffff;
-    copper_list[bpl1pth_idx + 4] = (plane2 >> 16) & 0x0fff;
-    copper_list[bpl1pth_idx + 6] = plane2 & 0x0fff;
-    */
+    // Test with splash screen
+    UINT32 splash_screen_pl1 = (UINT32) &ENGINE_SPLASH_SCREEN;
+    UINT32 splash_screen_pl2 = splash_screen_pl1 + SCREEN_ROW_BYTES;
+    copper_list[bpl1pth_idx] = (splash_screen_pl1 >> 16) & 0xffff;
+    copper_list[bpl1pth_idx + 2] = splash_screen_pl1 & 0xffff;
+    copper_list[bpl1pth_idx + 4] = (splash_screen_pl2 >> 16) & 0xffff;
+    copper_list[bpl1pth_idx + 6] = splash_screen_pl2 & 0xffff;
+
     // Just for diagnostics
     copperlist_size = cl_index;
 }
