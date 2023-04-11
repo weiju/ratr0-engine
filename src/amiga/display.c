@@ -64,15 +64,33 @@ UINT16 _cop_wait_end(UINT16 index)
     return index;
 }
 
-#define NUM_BITPLANES (2)
-#define SCREEN_ROW_BYTES (320 / 8)
-#define PLANE_SIZE (SCREEN_ROW_BYTES * 256)
-#define BPL_MOD    (SCREEN_ROW_BYTES * (NUM_BITPLANES - 1))
-#define DISPLAY_BUFFER_SIZE (PLANE_SIZE * NUM_BITPLANES)
+#define MAX_BITPLANES (6)
+#define SPLASH_SCREEN_ROW_BYTES (320 / 8)
 static int copperlist_size = 0;
+
+// The principal copper list indexes to build the display elements
 static int bpl1pth_idx;
 static int color00_idx;
 static int spr0pth_idx;
+static int bplcon0_idx;
+static int bpl1mod_idx;
+
+/**
+ * We need to adjust the BPLCONx and BPLxMOD values after changing the
+ * display mode.
+ * Note: bplmod is currently the same for BPL1MOD and BPL2MOD, so no
+ * dual playfield as for now
+ */
+void set_display_mode(UINT16 width, UINT8 num_bitplanes)
+{
+    //cl_index = _cop_move(BPLCON0, 0x2200, cl_index); // 2 bitplanes for splash screen
+    // width *needs* to be a multiple of 8
+    UINT16 screenrow_bytes = width / 8;
+    UINT16 bplmod = screenrow_bytes * (num_bitplanes - 1);
+    copper_list[bplcon0_idx] = (num_bitplanes << 12) | 0x200;
+    copper_list[bpl1mod_idx] = bplmod;
+    copper_list[bpl1mod_idx + 2] = bplmod;
+}
 
 void build_copper_list()
 {
@@ -100,12 +118,14 @@ void build_copper_list()
 
     // TODO: set up the bitmap for the display
     // 1. BPLCONx (8 bytes)
-    cl_index = _cop_move(BPLCON0, 0x2200, cl_index); // 2 bitplanes for splash screen
+    bplcon0_idx = cl_index + 1;
+    cl_index = _cop_move(BPLCON0, 0, cl_index); // 2 bitplanes for splash screen
     cl_index = _cop_move(BPLCON2, 0x0060, cl_index); // playfield 2 priority+sprite priority
 
     // 2. BPLxMOD (8 bytes)
-    cl_index = _cop_move(BPL1MOD, BPL_MOD, cl_index);
-    cl_index = _cop_move(BPL2MOD, BPL_MOD, cl_index);
+    bpl1mod_idx = cl_index + 1;
+    cl_index = _cop_move(BPL1MOD, 0, cl_index);
+    cl_index = _cop_move(BPL2MOD, 0, cl_index);
 
     // 3. COLORxx (32 colors => 32 * 4 = 128 bytes)
     color00_idx = cl_index + 1;
@@ -114,8 +134,7 @@ void build_copper_list()
     }
     // 4. BPLxPTH/BPLxPTL (NUM_BITLANES * 8 bytes => 12 bytes)
     bpl1pth_idx = cl_index + 1;
-
-    for (int i = 0; i < NUM_BITPLANES; i++) {
+    for (int i = 0; i < MAX_BITPLANES; i++) {
         cl_index = _cop_move(BPL1PTH + i * 4, 0, cl_index);
         cl_index = _cop_move(BPL1PTL + i * 4, 0, cl_index);
     }
@@ -137,8 +156,9 @@ void build_copper_list()
     copper_list[color00_idx + 19 * 2] = 0x00f0;
 
     // Test with splash screen
+    set_display_mode(320, 2);  // update copper list to splash screen values
     UINT32 splash_screen_pl1 = (UINT32) &ENGINE_SPLASH_SCREEN;
-    UINT32 splash_screen_pl2 = splash_screen_pl1 + SCREEN_ROW_BYTES;
+    UINT32 splash_screen_pl2 = splash_screen_pl1 + SPLASH_SCREEN_ROW_BYTES;
     copper_list[bpl1pth_idx] = (splash_screen_pl1 >> 16) & 0xffff;
     copper_list[bpl1pth_idx + 2] = splash_screen_pl1 & 0xffff;
     copper_list[bpl1pth_idx + 4] = (splash_screen_pl2 >> 16) & 0xffff;
