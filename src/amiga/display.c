@@ -152,13 +152,10 @@ void build_copper_list()
     copperlist_size = cl_index;
 }
 
-#define SPRITE_POOL_SIZE (4096)
-#define MAX_SPRITES (10)
-
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
     engine = eng;
-    ratr0_amiga_sprites_startup(eng, SPRITE_POOL_SIZE, MAX_SPRITES);
+    ratr0_amiga_sprites_startup(eng);
 
     LoadView(NULL);  // clear display, reset hardware registers
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and

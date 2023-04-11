@@ -15,47 +15,16 @@
 
 // The chunk of engine memory that we allocate for our sprites
 // We also maintain a table of sprite data structure entries
-static Ratr0MemHandle h_sprite_data, h_sprite_table;
-static UINT16 *sprite_data;
-static UINT16 **sprite_data_table;
-
-static UINT16 first_free_mem; // First available memory block offset (a *byte* offset !!!)
-static UINT16 first_free_idx;
-static UINT16 pool_size, max_sprites;
 static Ratr0Engine *engine;
 
-typedef UINT16 Ratr0SpriteHandle;
-
-void  ratr0_amiga_sprites_startup(Ratr0Engine *eng, UINT16 _pool_size, UINT16 _max_sprites)
+void  ratr0_amiga_sprites_startup(Ratr0Engine *eng)
 {
     engine = eng;
-    pool_size = _pool_size;
-    max_sprites = _max_sprites;
-
-    h_sprite_data = engine->memory_system->allocate_block(RATR0_MEM_CHIP, pool_size);
-    h_sprite_table = engine->memory_system->allocate_block(RATR0_MEM_DEFAULT, max_sprites * sizeof(UINT16 *));
-    sprite_data = engine->memory_system->block_address(h_sprite_data);
-    sprite_data_table = engine->memory_system->block_address(h_sprite_table);
-    first_free_mem = 0;
-    first_free_idx = 0;
 }
 
 void  ratr0_amiga_sprites_shutdown(void)
 {
-    engine->memory_system->free_block(h_sprite_data);
-    engine->memory_system->free_block(h_sprite_table);
 }
-
-Ratr0SpriteHandle allocate_sprite_data(UINT16 num_words)
-{
-    // TODO: This is not complete, we can't support deallocation yet !!!
-    Ratr0SpriteHandle result = first_free_idx;
-    UINT16 *memaddr = (UINT16 *) ((UINT32) sprite_data + first_free_mem);
-    first_free_mem += num_words / 2;
-    sprite_data_table[first_free_idx++] = memaddr;
-    return result;
-}
-
 
 /**
  * This function extracts the specified frames from a Ratr0TileSheet and arranges it
@@ -71,9 +40,9 @@ UINT16 *ratr0_amiga_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 *fr
     PRINT_DEBUG("WORDS TO RESERVE: %d", words_to_reserve);
     UINT16 *imgdata = (UINT16 *) engine->memory_system->block_address(tilesheet->h_imgdata);
 
-    Ratr0SpriteHandle sprite_handle = allocate_sprite_data(words_to_reserve);
-    UINT16 *sprite_data = sprite_data_table[sprite_handle];
-    PRINT_DEBUG("SPRITE DATA AT: %08x", (int) sprite_data);
+    Ratr0MemHandle sprite_handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
+                                                                         words_to_reserve * sizeof(UINT16));
+    UINT16 *sprite_data = engine->memory_system->block_address(sprite_handle);
 
     /*
 static void set_sprite_pos(UWORD *sprite_data, UWORD hstart, UWORD vstart, UWORD vstop)
