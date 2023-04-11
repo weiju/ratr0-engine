@@ -11,8 +11,8 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 else
 CC=gcc
 SYS_OBJECTS=
-CFLAGS=-Iinclude -DDEBUG -DUSE_SDL2
-LDFLAGS=-lsdl2
+CFLAGS=-I/opt/homebrew/include -Iinclude -DDEBUG -DUSE_SDL2
+LDFLAGS=-L/opt/homebrew/lib -lsdl2 -lsdl2_image
 TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 

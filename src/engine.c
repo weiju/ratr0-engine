@@ -2,6 +2,7 @@
 
 #ifdef USE_SDL2
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #endif /* USE_SDL2 */
 
 #include <ratr0/debug_utils.h>
@@ -20,6 +21,8 @@
 #define MAX_TIMERS (10)
 #ifdef AMIGA
 #include <ratr0/amiga/engine.h>
+#endif
+#ifdef SDL2
 #endif
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
@@ -54,6 +57,7 @@ Ratr0Engine *ratr0_engine_startup(void)
         PRINT_DEBUG("ERROR: Could not initialize SDL: %s.", SDL_GetError());
         exit(-1);
     }
+    IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
     PRINT_DEBUG("SDL initialized.");
 #endif /* USE_SDL2 */
     engine.memory_system = ratr0_memory_startup(&engine, &mem_config);
@@ -85,6 +89,7 @@ void ratr0_engine_shutdown(void)
     engine.memory_system->shutdown();
 #ifdef USE_SDL2
     // SDL shutdown
+    IMG_Quit();
     SDL_Quit();
     PRINT_DEBUG("SDL Quit");
 #endif /* USE_SDL2 */
@@ -99,7 +104,7 @@ void ratr0_engine_game_loop(void)
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
-                                          680, 480,
+                                          320, 256,
                                           0);
 
     if(!window) {
@@ -112,7 +117,8 @@ void ratr0_engine_game_loop(void)
         printf("Failed to get the surface from the window\n");
         return;
     }
-
+    SDL_Surface *splash_screen = IMG_Load("ratr0_background_2planes.png");
+    SDL_BlitSurface(splash_screen, NULL, window_surface, NULL);
 
     SDL_Event e;
     BOOL keep_window_open = TRUE;
@@ -126,5 +132,6 @@ void ratr0_engine_game_loop(void)
             SDL_UpdateWindowSurface(window);
         }
     }
+    SDL_FreeSurface(splash_screen);
 }
 #endif /* AMIGA */
