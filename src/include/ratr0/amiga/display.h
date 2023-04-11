@@ -35,6 +35,13 @@ extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0AmigaDisplayI
 extern void ratr0_amiga_display_shutdown(void);
 
 /**
+ * Adjust the copper list to point to the specified display buffer with the
+ * given specification.
+ * The data in the display buffer is assumed to be interleaved.
+ */
+extern void ratr0_amiga_set_display_buffer(UINT16 width, UINT8 num_bitplanes, void *display_buffer);
+
+/**
  * Experimental only
  */
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);

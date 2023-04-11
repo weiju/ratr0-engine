@@ -83,13 +83,32 @@ static int bpl1mod_idx;
  */
 void set_display_mode(UINT16 width, UINT8 num_bitplanes)
 {
-    //cl_index = _cop_move(BPLCON0, 0x2200, cl_index); // 2 bitplanes for splash screen
-    // width *needs* to be a multiple of 8
+    // width *needs* to be a multiple of 16 because Amiga playfield hardware operates
+    // on word boundaries
     UINT16 screenrow_bytes = width / 8;
     UINT16 bplmod = screenrow_bytes * (num_bitplanes - 1);
     copper_list[bplcon0_idx] = (num_bitplanes << 12) | 0x200;
     copper_list[bpl1mod_idx] = bplmod;
     copper_list[bpl1mod_idx + 2] = bplmod;
+}
+
+/**
+ * Set the bitplane pointers in the copper list to the specified display buffer
+ * It also adjusts BPLCONx and BPLxMOD.
+ */
+void ratr0_amiga_set_display_buffer(UINT16 width, UINT8 num_bitplanes, void *display_buffer)
+{
+    UINT16 screenrow_bytes = width / 8;
+    set_display_mode(width, num_bitplanes);
+    UINT32 plane = (UINT32) display_buffer;
+    UINT32 clidx = bpl1pth_idx;
+
+    for (int i = 0; i < num_bitplanes; i++) {
+        copper_list[clidx] = (plane >> 16) & 0xffff;
+        copper_list[clidx + 2] = plane & 0xffff;
+        plane += screenrow_bytes;
+        clidx += 4;
+    }
 }
 
 void build_copper_list()
@@ -156,13 +175,7 @@ void build_copper_list()
     copper_list[color00_idx + 19 * 2] = 0x00f0;
 
     // Test with splash screen
-    set_display_mode(320, 2);  // update copper list to splash screen values
-    UINT32 splash_screen_pl1 = (UINT32) &ENGINE_SPLASH_SCREEN;
-    UINT32 splash_screen_pl2 = splash_screen_pl1 + SPLASH_SCREEN_ROW_BYTES;
-    copper_list[bpl1pth_idx] = (splash_screen_pl1 >> 16) & 0xffff;
-    copper_list[bpl1pth_idx + 2] = splash_screen_pl1 & 0xffff;
-    copper_list[bpl1pth_idx + 4] = (splash_screen_pl2 >> 16) & 0xffff;
-    copper_list[bpl1pth_idx + 6] = splash_screen_pl2 & 0xffff;
+    ratr0_amiga_set_display_buffer(320, 2, &ENGINE_SPLASH_SCREEN);
 
     // Just for diagnostics
     copperlist_size = cl_index;
