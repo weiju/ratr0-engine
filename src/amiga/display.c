@@ -156,6 +156,7 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
 {
     engine = eng;
     ratr0_amiga_sprites_startup(eng);
+    ratr0_amiga_blitter_startup(eng);
 
     LoadView(NULL);  // clear display, reset hardware registers
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and
@@ -180,6 +181,7 @@ void ratr0_amiga_display_shutdown(void)
 {
     PRINT_DEBUG("Copper list size: %d", copperlist_size);
     engine->memory_system->free_block(h_copper_list);
+    ratr0_amiga_blitter_shutdown();
     ratr0_amiga_sprites_shutdown();
 
     // Restore the Workbench display by restoring the original copper list

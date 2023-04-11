@@ -30,10 +30,10 @@ void ratr0_engine_game_loop(void);
 
 Ratr0Engine *ratr0_engine_startup(void)
 {
-    ratr0_amiga_engine_startup(&engine);
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
 #ifdef AMIGA
+    ratr0_amiga_engine_startup(&engine);
     engine.game_loop = &ratr0_amiga_engine_game_loop;
 #else
     engine.game_loop = &ratr0_engine_game_loop;
@@ -56,7 +56,6 @@ Ratr0Engine *ratr0_engine_startup(void)
     }
     PRINT_DEBUG("SDL initialized.");
 #endif /* USE_SDL2 */
-
     engine.memory_system = ratr0_memory_startup(&engine, &mem_config);
     engine.event_system = ratr0_events_startup(&engine);
     engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
@@ -64,9 +63,9 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.display_system = ratr0_display_startup(&engine, &display_init);
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
-    //engine.physics_system = ratr0_physics_startup(&engine);
+    engine.physics_system = ratr0_physics_startup(&engine);
     engine.scene_system = ratr0_scenes_startup(&engine);
-    //engine.scripting_system = ratr0_scripting_startup(&engine);
+    engine.scripting_system = ratr0_scripting_startup(&engine);
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }
@@ -74,9 +73,9 @@ Ratr0Engine *ratr0_engine_startup(void)
 void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
-    //engine.scripting_system->shutdown();
+    engine.scripting_system->shutdown();
     engine.scene_system->shutdown();
-    //engine.physics_system->shutdown();
+    engine.physics_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();
     engine.display_system->shutdown();
@@ -84,10 +83,10 @@ void ratr0_engine_shutdown(void)
     engine.timer_system->shutdown();
     engine.event_system->shutdown();
     engine.memory_system->shutdown();
-
 #ifdef USE_SDL2
     // SDL shutdown
     SDL_Quit();
+    PRINT_DEBUG("SDL Quit");
 #endif /* USE_SDL2 */
 
     PRINT_DEBUG("Shutdown finished.");
@@ -105,13 +104,13 @@ void ratr0_engine_game_loop(void)
 
     if(!window) {
         printf("Failed to create window\n");
-        return -1;
+        return;
     }
     SDL_Surface *window_surface = SDL_GetWindowSurface(window);
 
     if (!window_surface) {
         printf("Failed to get the surface from the window\n");
-        return -1;
+        return;
     }
 
 

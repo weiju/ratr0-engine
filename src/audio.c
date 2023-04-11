@@ -16,8 +16,12 @@ static Ratr0Engine *engine;
 struct Ratr0AudioSystem *ratr0_audio_startup(Ratr0Engine *eng)
 {
     engine = eng;
+#ifdef AMIGA
     audio_system.shutdown = &ratr0_amiga_audio_shutdown;
     ratr0_amiga_audio_startup();
+#else
+    audio_system.shutdown = &ratr0_audio_shutdown;
+#endif
     PRINT_DEBUG("Startup finished.");
     return &audio_system;
 }

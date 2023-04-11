@@ -26,6 +26,17 @@ void  ratr0_amiga_sprites_shutdown(void)
 {
 }
 
+void set_sprite_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UINT16 vstop)
+{
+    sprite_data[0] = ((vstart & 0xff) << 8) | ((hstart >> 1) & 0xff);
+    // vstop + high bit of vstart + low bit of hstart
+    sprite_data[1] = ((vstop & 0xff) << 8) |  // vstop 8 low bits
+        ((vstart >> 8) & 1) << 2 |  // vstart high bit
+        ((vstop >> 8) & 1) << 1 |   // vstop high bit
+        (hstart & 1) |              // hstart low bit
+        sprite_data[1] & 0x80;      // preserve attach bit
+}
+
 /**
  * This function extracts the specified frames from a Ratr0TileSheet and arranges it
  * into a sprite data structure.
@@ -45,16 +56,6 @@ UINT16 *ratr0_amiga_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 *fr
     UINT16 *sprite_data = engine->memory_system->block_address(sprite_handle);
 
     /*
-static void set_sprite_pos(UWORD *sprite_data, UWORD hstart, UWORD vstart, UWORD vstop)
-{
-    sprite_data[0] = ((vstart & 0xff) << 8) | ((hstart >> 1) & 0xff);
-    // vstop + high bit of vstart + low bit of hstart
-    sprite_data[1] = ((vstop & 0xff) << 8) |  // vstop 8 low bits
-        ((vstart >> 8) & 1) << 2 |  // vstart high bit
-        ((vstop >> 8) & 1) << 1 |   // vstop high bit
-        (hstart & 1) |              // hstart low bit
-        sprite_data[1] & 0x80;      // preserve attach bit
-}
     */
     // 1. initialize the sprite control words
     // These are the 0 positions of sprites given our display settings

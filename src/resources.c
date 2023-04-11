@@ -41,7 +41,7 @@ UINT32 ratr0_read_tilesheet(const char *filename, struct Ratr0TileSheet *sheet)
     if (fp) {
         int num_img_bytes;
         elems_read = fread(&sheet->header, sizeof(struct Ratr0TileSheetHeader), 1, fp);
-        elems_read = fread(&sheet->palette, sizeof(UWORD), sheet->header.palette_size, fp);
+        elems_read = fread(&sheet->palette, sizeof(UINT16), sheet->header.palette_size, fp);
         Ratr0MemHandle handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP, sheet->header.imgdata_size);
         sheet->h_imgdata = handle;
         UINT8 *imgdata = engine->memory_system->block_address(handle);

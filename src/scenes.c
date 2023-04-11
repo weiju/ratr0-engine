@@ -27,8 +27,9 @@ static struct Ratr0AnimatedSprite2D *ratr0_nf_create_animated_sprite(struct Ratr
 struct Ratr0SceneSystem *ratr0_scenes_startup(Ratr0Engine *eng)
 {
     engine = eng;
+#ifdef AMIGA
     ratr0_amiga_scenes_startup(eng);
-
+#endif
     scene_system.shutdown = &ratr0_scenes_shutdown;
     scene_system.update = &ratr0_scenes_update;
     scene_system.set_current_scene = &ratr0_scenes_set_current_scene;
@@ -49,12 +50,17 @@ static void ratr0_scenes_update(void)
 {
 }
 
-static void ratr0_scenes_set_current_scene(struct Ratr0Node *)
+static void ratr0_scenes_set_current_scene(struct Ratr0Node *node)
 {
 }
 
 static struct Ratr0AnimatedSprite2D *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *tilesheet,
                                                                      UINT8 *frame_indexes, BOOL is_hw)
 {
+#ifdef AMIGA
     return (struct Ratr0AnimatedSprite2D *) ratr0_create_amiga_sprite(tilesheet, frame_indexes);
+#else
+    // TODO
+    return NULL;
+#endif
 }
