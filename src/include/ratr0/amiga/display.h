@@ -25,6 +25,17 @@ struct Ratr0AmigaDisplayInfo {
 };
 
 /**
+ * Information about the current display in this object.
+ * We can use this for both playfield hardware setup and blitter setup.
+ * In the future we can use this for backbuffer and/or dual playfield
+ * information.
+ */
+struct Ratr0AmigaRenderContext {
+    UINT16 width, height, depth;
+    void *display_buffer;
+};
+
+/**
  * Start up the display subsystem.
  */
 extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0AmigaDisplayInfo *);
@@ -39,7 +50,7 @@ extern void ratr0_amiga_display_shutdown(void);
  * given specification.
  * The data in the display buffer is assumed to be interleaved.
  */
-extern void ratr0_amiga_set_display_buffer(UINT16 width, UINT8 num_bitplanes, void *display_buffer);
+extern struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0AmigaRenderContext *);
 
 /**
  * Experimental only

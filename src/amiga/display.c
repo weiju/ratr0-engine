@@ -96,20 +96,29 @@ void set_display_mode(UINT16 width, UINT8 num_bitplanes)
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-void ratr0_amiga_set_display_buffer(UINT16 width, UINT8 num_bitplanes, void *display_buffer)
+static struct Ratr0AmigaRenderContext *current_context = NULL;
+
+struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0AmigaRenderContext *ctx)
 {
-    UINT16 screenrow_bytes = width / 8;
-    set_display_mode(width, num_bitplanes);
-    UINT32 plane = (UINT32) display_buffer;
+    struct Ratr0AmigaRenderContext *previous_ctx = current_context;
+    UINT16 screenrow_bytes = ctx->width / 8;
+    set_display_mode(ctx->width, ctx->depth);
+    UINT32 plane = (UINT32) ctx->display_buffer;
     UINT32 clidx = bpl1pth_idx;
 
-    for (int i = 0; i < num_bitplanes; i++) {
+    for (int i = 0; i < ctx->depth; i++) {
         copper_list[clidx] = (plane >> 16) & 0xffff;
         copper_list[clidx + 2] = plane & 0xffff;
         plane += screenrow_bytes;
         clidx += 4;
     }
+    current_context = ctx;
+    return previous_ctx;
 }
+
+struct Ratr0AmigaRenderContext splash_screen = {
+    320, 256, 2, &ENGINE_SPLASH_SCREEN
+};
 
 void build_copper_list()
 {
@@ -175,7 +184,7 @@ void build_copper_list()
     copper_list[color00_idx + 19 * 2] = 0x00f0;
 
     // Test with splash screen
-    ratr0_amiga_set_display_buffer(320, 2, &ENGINE_SPLASH_SCREEN);
+    ratr0_amiga_set_render_context(&splash_screen);
 
     // Just for diagnostics
     copperlist_size = cl_index;
