@@ -32,6 +32,7 @@ struct Ratr0AmigaDisplayInfo {
  */
 struct Ratr0AmigaRenderContext {
     UINT16 width, height, depth;
+    BOOL is_interleaved;
     void *display_buffer;
 };
 

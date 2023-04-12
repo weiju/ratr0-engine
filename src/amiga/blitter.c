@@ -1,17 +1,17 @@
 #include <ratr0/amiga/blitter.h>
+#include <ratr0/amiga/display.h>
+#include <hardware/custom.h>
 
+extern struct Custom custom;
 static Ratr0Engine *engine;
-
-void ratr0_amiga_blitter_startup(Ratr0Engine *eng)
-{
-    engine = eng;
-}
-
-void ratr0_amiga_blitter_shutdown(void) { }
 
 
 /**
- * Blit 8x8 tiles.
+ * Blit 8x8 tiles. Mostly used for fonts or small blocks. This should not be
+ * the main blit function since widths multiples of 16 are way more efficient
+ * on the Amiga.
+ * This is a masked blit where 8 pixels are masked out, depending on
+ * where the tile is
  */
 void ratr0_amiga_blit_8x8(struct Ratr0AmigaRenderContext *dest,
                           struct Ratr0AmigaRenderContext *src,
@@ -48,10 +48,46 @@ void ratr0_amiga_blit_8x8(struct Ratr0AmigaRenderContext *dest,
     */
 }
 
-void ratr0_amiga_blit_16x16(struct Ratr0AmigaRenderContext *dest,
-                            struct Ratr0AmigaRenderContext *src,
-                            UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy)
+/**
+ * Default fast 16x16 tile blit, D = A. This is the fastest graphical blit
+ * and should be preferred when possible.
+ *
+ * There are some assumptions to keep this simple:
+ *   - src is aligned on a 16 bit boundary and both width and height are
+ *     multiples of 16
+ *   - dst is aligned on a 16 bit boundary and is larger than the blit width
+ *   - both src and dst have the same depth
+ */
+void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
+                           struct Ratr0AmigaRenderContext *src,
+                           UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                           UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
+    INT8 dst_shift = 0;
+    UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
+    custom.bltafwm = 0xffff;
+    //custom.bltalwm = alwm;
+
+    // D = A => LF = 0xf0, channels A and D turned on => 0x09
+    custom.bltcon0 = 0x09f0 | (dst_shift << 12);
+    // not used
+    custom.bltcon1 = 0;
+
+    // modulos are in *bytes*
+    UINT16 srcmod = src->width / 8 - 2;
+    UINT16 dstmod = dst->width / 8 - (blit_width_words * 2);
+    custom.bltamod = srcmod;
+    custom.bltbmod = 0;
+    custom.bltcmod = 0;
+    custom.bltdmod = dstmod;
+
+    /*
+    custom.bltapt = src_addr;
+    custom.bltbpt = 0;
+    custom.bltcpt = 0;
+    custom.bltdpt = dst_addr;
+    custom.bltsize = bltsize;
+    */
 }
 
 /*

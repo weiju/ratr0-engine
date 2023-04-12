@@ -28,14 +28,16 @@ void ratr0_amiga_engine_startup(Ratr0Engine *eng)
 void ratr0_amiga_engine_game_loop(void)
 {
     while (game_state != GAMESTATE_QUIT) {
-        *custom_color00 = 0x000;
+        // comment in for visual timing the loop iteration
+        //*custom_color00 = 0x000;
         // update all subsystems where it makes sense. Obviously it doesn't for
         // memory or resources
         engine->timer_system->update();
 
         // For now, end when the mouse was clicked
         game_state = ((*ciaa_pra & PRA_FIR0_BIT) != 0) ? GAMESTATE_RUNNING : GAMESTATE_QUIT;
-        *custom_color00 = 0xf00;
+        // comment in for visual timing the loop iteration
+        //*custom_color00 = 0xf00;
         WaitTOF();
     }
 }

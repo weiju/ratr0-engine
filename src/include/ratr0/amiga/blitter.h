@@ -16,11 +16,13 @@ extern void ratr0_amiga_blitter_shutdown(void);
  * Blitter routines.
  */
 /*
- * Common case 1: Blasting an 16x16 block from the source to the destination without masking.
+ * Common case 1: Blasting a rectangular block from the source to the destination without masking,
+ * where the block width is a multiple of 16 and the source is arranged in multiples of 16 pixels.
  */
-extern void ratr0_amiga_blit_16x16(struct Ratr0AmigaRenderContext *dest,
-                                   struct Ratr0AmigaRenderContext *src,
-                                   UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy);
+extern void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dest,
+                                  struct Ratr0AmigaRenderContext *src,
+                                  UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                                  UINT16 blit_width_pixels, UINT16 blit_width_height);
 
 
 /*

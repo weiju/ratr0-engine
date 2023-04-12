@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include <clib/exec_protos.h>
-
+#include <ratr0/debug_utils.h>
 #include <ratr0/amiga/memory.h>
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33mMEMORY\033[0m", __VA_ARGS__)
@@ -16,12 +17,12 @@
  * the general purpose pool.
  */
 static void *general_mem_pool, *chip_mem_pool;
-static INT32 chip_pool_size, general_pool_size;
+static UINT32 chip_pool_size, general_pool_size;
 
 static void **general_mem_table, **chip_mem_table;
-static INT32 chip_table_size, general_table_size;
-static INT32 first_free_chip, first_free_general;
-static INT32 first_free_chip_table, first_free_general_table;
+static UINT32 chip_table_size, general_table_size;
+static UINT32 first_free_chip, first_free_general;
+static UINT32 first_free_chip_table, first_free_general_table;
 
 void ratr0_amiga_memory_startup(struct Ratr0MemoryConfig *config)
 {
@@ -50,12 +51,24 @@ void ratr0_amiga_memory_shutdown(void)
 Ratr0MemHandle ratr0_amiga_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size)
 {
     if (mem_type == RATR0_MEM_CHIP) {
+        if (first_free_chip + size > chip_pool_size) {
+            // This is a fatal error -> Exit the engine !!
+            PRINT_DEBUG("Chip memory exhausted, can't reserve more.");
+            ratr0_amiga_memory_shutdown();
+            exit(-1);
+        }
         Ratr0MemHandle result = first_free_chip_table;
         void *mem_block = (void *) ((UINT32) chip_mem_pool + first_free_chip);
         chip_mem_table[first_free_chip_table++] = mem_block;
         first_free_chip += size;
         return result | 0x80000000;  // add a chip mem tag
     } else {
+        if (first_free_general + size > general_pool_size) {
+            // This is a fatal error -> Exit the engine !!
+            PRINT_DEBUG("General memory exhausted, can't reserve more.");
+            ratr0_amiga_memory_shutdown();
+            exit(-1);
+        }
         Ratr0MemHandle result = first_free_general_table;
         void *mem_block = (void *) ((UINT32)general_mem_pool + first_free_general);
         general_mem_table[first_free_general_table++] = mem_block;

@@ -60,7 +60,7 @@ UINT16 *ratr0_amiga_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 *fr
     // 1. initialize the sprite control words
     // These are the 0 positions of sprites given our display settings
     UINT16 hstart = 128;
-    UINT16 vstart = 45;
+    UINT16 vstart = 44;
     UINT16 vstop = vstart + 16;  // TODO: height can be anything
 
     sprite_data[0] = ((vstart & 0xff) << 8) | ((hstart >> 1) & 0xff);
