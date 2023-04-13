@@ -12,6 +12,11 @@ extern struct Custom custom;
 static Ratr0Engine *engine;
 
 
+void ratr0_amiga_blitter_startup(Ratr0Engine *eng)
+{
+    engine = eng;
+}
+
 /**
  * Blit 8x8 tiles. Mostly used for fonts or small blocks. This should not be
  * the main blit function since widths multiples of 16 are way more efficient
@@ -90,6 +95,7 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
 
     UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
     UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+
     custom.bltapt = (UINT8 *) src_addr;
     custom.bltbpt = 0;
     custom.bltcpt = 0;
@@ -98,131 +104,107 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
     custom.bltsize = bltsize;
 }
 
-#define SHIFT_PADDING (16)
+/**
+ * This should be rare, but serves as an illustration for when the
+ * source is non-interleaved and the destination is interleaved.
+ * The modulo for the destination needs to be (row bytes * number of planes) - blit width in bytes
+ */
+void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
+                         struct Ratr0AmigaRenderContext *src,
+                         UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                         UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+{
+    INT8 dst_shift = 0;
+    UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
+    UINT32 src_plane_size = src->width / 8 * src->height;
+    UINT32 dst_row_bytes = dst->width / 8;
+    WaitBlit();
+    custom.bltafwm = 0xffff;
+    custom.bltalwm = 0xffff;
+
+    // D = A => LF = 0xf0, channels A and D turned on => 0x09
+    custom.bltcon0 = 0x09f0 | (dst_shift << 12);
+    // not used
+    custom.bltcon1 = 0;
+
+    // modulos are in *bytes*
+    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
+    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
+    custom.bltamod = srcmod;
+    custom.bltbmod = 0;
+    custom.bltcmod = 0;
+    custom.bltdmod = dstmod;
+
+    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
+
+    custom.bltapt = (UINT8 *) src_addr;
+    custom.bltbpt = 0;
+    custom.bltcpt = 0;
+    custom.bltdpt = (UINT8 *) dst_addr;
+    custom.bltsize = bltsize;
+    WaitBlit();
+
+    for (int i = 0; i < src->depth; i++) {
+        custom.bltapt = (UINT8 *) src_addr;
+        custom.bltbpt = 0;
+        custom.bltcpt = 0;
+        custom.bltdpt = (UINT8 *) dst_addr;
+        UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
+        custom.bltsize = bltsize;
+        WaitBlit();
+        src_addr += src_plane_size;
+        dst_addr += dst_row_bytes;
+    }
+}
+
+
 void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
                              struct Ratr0TileSheet *bobs,
                              int tilex, int tiley,
                              int dstx, int dsty)
 {
-    // actual object width (without the padding)
-    int tile_width_pixels = bobs->header.tile_width - SHIFT_PADDING;
-    //UINT8 *bobdata = engine->memory_system->block_address(bobs->h_imgdata);
-    //PRINT_DEBUG("tile width pixels: %d", tile_width_pixels);
-    //PRINT_DEBUG("BOBDATA: %08x", (int) bobdata);
+    INT8 dst_shift = 0;
+    UINT16 blit_width_words = 1;  // HARD blit width in words
+    UINT16 srcx = 0, srcy = 0, blit_height_pixels = 16;
 
-    // this tile's x-position relative to the word containing it
-    int tile_x0 = bobs->header.tile_width * tilex & 0x0f;
-
-    // 1. determine how wide the blit actually is
-    int blit_width = tile_width_pixels / 16;
-
-    // width not a multiple of 16 ? -> add 1 to the width
-    if (tile_width_pixels & 0x0f) blit_width++;
-
-    int blit_width0_pixels = blit_width * 16;  // blit width in pixels
-
-    // Final source blit width: does the tile extend into an additional word ?
-    int src_blit_width = blit_width;
-    if (tile_x0 > blit_width0_pixels - tile_width_pixels) src_blit_width++;
-
-    PRINT_DEBUG("blit width in pixels: %d blit_width: %d, tile_x0: %d src blit width: %d",
-                blit_width0_pixels, blit_width, tile_x0, src_blit_width);
-    // 2. Determine the amount of shift and the first word in the
-    // destination
-    int dst_x0 = dstx & 0x0f;  // destination x relative to the containing word
-    int dst_shift = dst_x0 - tile_x0;  // shift amount
-    int dst_blit_width = blit_width;
-    int dst_offset = 0;
-
-    // negative shift => shift is to the left, so we extend the shift to the
-    // left and right-shift in the previous word so we always right-shift
-    if (dst_shift < 0) {
-        dst_shift = 16 + dst_shift;
-        dst_blit_width++;
-        dst_offset = -2;
-    }
-
-    // make the blit wider if it needs more space
-    if (dst_x0 > blit_width0_pixels - tile_width_pixels) {
-        dst_blit_width++;
-    }
-
-    UINT16 alwm = 0xffff;
-    int final_blit_width = src_blit_width;
-
-    PRINT_DEBUG("dst_x0: %d, dst_shift: %d dst_blit_width: %d dst_offset: %d",
-                dst_x0, dst_shift, dst_blit_width, dst_offset);
-
-    // due to relative positioning and shifts, the destination blit width
-    // can be larger than the source blit, so we use the larger of the 2
-    // and mask out last word of the source
-    if (dst_blit_width > src_blit_width) {
-        final_blit_width = dst_blit_width;
-        alwm = 0;
-    }
-    UINT16 bltcon0 = 0x0fca | (dst_shift << 12);  // mask shift
-    UINT16 bltcon1 = dst_shift << 12;  // shift in B
-    UINT16 srcmod = bobs->header.width / 8 - (final_blit_width * 2);
-    UINT16 dstmod = dst->width / 8 - (final_blit_width * 2);
-
-    PRINT_DEBUG("final blit width: %d, alwm: 0x%04x bltcon0: 0x%04x, bltcon1: 0x%04x",
-                final_blit_width, alwm, bltcon0, bltcon1);
-
-    // The blit size is the size of a plane of the tile size (1 word * 16)
-    UINT16 bltsize = ((bobs->header.tile_height) << 6) |
-        (final_blit_width & 0x3f);
-
-    // map the tile position to physical coordinates in the tile sheet
-    int srcx = tilex * bobs->header.tile_width;
-    int srcy = tiley * bobs->header.tile_height;
-
-    int bobs_plane_size = bobs->header.width / 8 * bobs->header.height;
-    int bg_plane_size = dst->width / 8 * dst->height;
-
-    PRINT_DEBUG("bltsize: 0x%04x, bobdata_handle: %d",
-                bltsize, bobs->h_imgdata & 0x7fffffff);
-
-    /*
-    UINT8 *src_addr = bobdata + srcy * bobs->header.width / 8 + srcx / 8;
-    // The mask data is the plane after the source image planes
-    UINT8 *mask_addr = bobdata + bobs_plane_size * bobs->header.bmdepth +
-        srcy * bobs->header.width / 8 + srcx / 8;
-    UINT8 *dst_addr = (UINT8 *) ((UINT32) dst->display_buffer + dsty * dst->width / 8 +
-                       dstx / 8 + dst_offset);
-    */
-    /*
+    UINT32 src_plane_size = bobs->header.width / 8 * bobs->header.height;
+    UINT32 dst_row_bytes = dst->width / 8;
     WaitBlit();
-
     custom.bltafwm = 0xffff;
-    custom.bltalwm = alwm;
+    custom.bltalwm = 0xffff;
 
-    // cookie cut enable channels B, C and D, LF => D = AB + ~AC => 0xca
-    // A = Mask sheet
-    // B = Tile sheet
-    // C = Background
-    // D = Background
-    custom.bltcon0 = bltcon0;
-    custom.bltcon1 = bltcon1;
+    // channels A-D turned on => 0x09 LF => D = AB + ~AC => 0xca
+    custom.bltcon0 = 0x0fca | (dst_shift << 12);
+    // used
+    custom.bltcon1 = dst_shift << 12;
 
-    // modulos are in bytes
+    // modulos are in *bytes*
+    UINT16 srcmod = bobs->header.width / 8 - (blit_width_words * 2);
+    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
     custom.bltamod = srcmod;
     custom.bltbmod = srcmod;
     custom.bltcmod = dstmod;
     custom.bltdmod = dstmod;
 
+    int bobs_plane_size = bobs->header.width / 8 * bobs->header.height;
+    UINT8 *bobs_addr = engine->memory_system->block_address(bobs->h_imgdata);
+    UINT8 *mask_addr = bobs_addr + bobs_plane_size * bobs->header.bmdepth +
+        srcy * bobs->header.width / 8 + srcx / 8;
+    UINT32 src_addr = ((UINT32) bobs_addr) + (bobs->header.width / 8 * srcy * bobs->header.bmdepth) + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
+
     for (int i = 0; i < bobs->header.bmdepth; i++) {
-
-        custom.bltapt = mask_addr;
-        custom.bltbpt = src_addr;
-        custom.bltcpt = dst_addr;
-        custom.bltdpt = dst_addr;
+        custom.bltapt = (UINT8 *) mask_addr;
+        custom.bltbpt = (UINT8 *) src_addr;
+        custom.bltcpt = (UINT8 *) dst_addr;
+        custom.bltdpt = (UINT8 *) dst_addr;
+        UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
         custom.bltsize = bltsize;
-
-        // Increase the pointers to the next plane
-        src_addr += bobs_plane_size;
-        dst_addr += bg_plane_size;
-
         WaitBlit();
+        src_addr += src_plane_size;
+        dst_addr += dst_row_bytes;
     }
-    */
 }

@@ -194,6 +194,7 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
 {
     engine = eng;
     ratr0_amiga_sprites_startup(eng);
+    ratr0_amiga_blitter_startup(eng);
 
     LoadView(NULL);  // clear display, reset hardware registers
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and

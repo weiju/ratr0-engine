@@ -10,7 +10,6 @@ struct Ratr0AmigaRenderContext;  // from display
 struct Ratr0TileSheet;
 
 extern void ratr0_amiga_blitter_startup(Ratr0Engine *eng);
-extern void ratr0_amiga_blitter_shutdown(void);
 
 
 /**
@@ -24,6 +23,15 @@ extern void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dest,
                                   struct Ratr0AmigaRenderContext *src,
                                   UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                   UINT16 blit_width_pixels, UINT16 blit_width_height);
+
+/*
+ * just for tweaking and figuring out how to blit non-interleaved data
+ */
+
+extern void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dest,
+                                struct Ratr0AmigaRenderContext *src,
+                                UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                                UINT16 blit_width_pixels, UINT16 blit_width_height);
 
 
 
