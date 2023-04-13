@@ -32,9 +32,32 @@ void ratr0_amiga_memory_startup(struct Ratr0MemoryConfig *config)
     general_pool_size = config->general_pool_size;
 
     general_mem_pool = (void *) AllocMem(general_pool_size, MEMF_CLEAR);
+    if (!general_mem_pool) {
+        PRINT_DEBUG("Can't allocate enough memory for general memory pool");
+        exit(-1);
+    }
     chip_mem_pool = (void *) AllocMem(chip_pool_size, MEMF_CHIP|MEMF_CLEAR);
+    if (!chip_mem_pool) {
+        PRINT_DEBUG("Can't allocate enough memory for chip memory pool");
+        FreeMem(general_mem_pool, general_pool_size);
+        exit(-1);
+    }
+
     general_mem_table = (void **) AllocMem(sizeof(void *) * general_table_size, MEMF_CLEAR);
+    if (!general_mem_table) {
+        PRINT_DEBUG("Can't allocate enough memory for general memory table");
+        FreeMem(general_mem_pool, general_pool_size);
+        FreeMem(chip_mem_pool, chip_pool_size);
+        exit(-1);
+    }
     chip_mem_table = (void **) AllocMem(sizeof(void *) * chip_table_size, MEMF_CLEAR);
+    if (!chip_mem_table) {
+        PRINT_DEBUG("Can't allocate enough memory for chip memory table");
+        FreeMem(general_mem_table, sizeof(void *) * general_table_size);
+        FreeMem(general_mem_pool, general_pool_size);
+        FreeMem(chip_mem_pool, chip_pool_size);
+        exit(-1);
+    }
 
     first_free_chip = first_free_general = 0;
     first_free_chip_table = first_free_general_table = 0;

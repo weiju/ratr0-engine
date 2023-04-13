@@ -1,6 +1,8 @@
+#include <hardware/custom.h>
+#include <clib/graphics_protos.h>
+
 #include <ratr0/amiga/blitter.h>
 #include <ratr0/amiga/display.h>
-#include <hardware/custom.h>
 
 extern struct Custom custom;
 static Ratr0Engine *engine;
@@ -65,8 +67,9 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
 {
     INT8 dst_shift = 0;
     UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
+    WaitBlit();
     custom.bltafwm = 0xffff;
-    //custom.bltalwm = alwm;
+    custom.bltalwm = 0xffff;
 
     // D = A => LF = 0xf0, channels A and D turned on => 0x09
     custom.bltcon0 = 0x09f0 | (dst_shift << 12);
@@ -74,20 +77,21 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
     custom.bltcon1 = 0;
 
     // modulos are in *bytes*
-    UINT16 srcmod = src->width / 8 - 2;
+    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
     UINT16 dstmod = dst->width / 8 - (blit_width_words * 2);
     custom.bltamod = srcmod;
     custom.bltbmod = 0;
     custom.bltcmod = 0;
     custom.bltdmod = dstmod;
 
-    /*
-    custom.bltapt = src_addr;
+    UINT32 src_addr = ((UINT32) src->display_buffer) + src->width / 8 * srcy + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->display_buffer) + dst->width / 8 * dsty + dstx / 8;
+    custom.bltapt = (UINT8 *) src_addr;
     custom.bltbpt = 0;
     custom.bltcpt = 0;
-    custom.bltdpt = dst_addr;
+    custom.bltdpt = (UINT8 *) dst_addr;
+    UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
     custom.bltsize = bltsize;
-    */
 }
 
 /*
