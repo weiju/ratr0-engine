@@ -52,6 +52,7 @@ extern void ratr0_amiga_display_shutdown(void);
  * The data in the display buffer is assumed to be interleaved.
  */
 extern struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0AmigaRenderContext *);
+extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 
 /**
  * Experimental only

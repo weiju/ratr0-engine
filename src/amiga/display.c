@@ -229,6 +229,14 @@ void ratr0_amiga_display_shutdown(void)
     RethinkDisplay();
 }
 
+void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors)
+{
+    for (int i = 0; i < num_colors; i++) {
+        copper_list[color00_idx + i * 2] = colors[i];
+    }
+}
+
+
 // Just for experiments !!!!
 void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
 {

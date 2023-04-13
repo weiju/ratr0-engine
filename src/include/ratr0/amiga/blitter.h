@@ -7,6 +7,7 @@
 /* Amiga Blitter functionality module */
 
 struct Ratr0AmigaRenderContext;  // from display
+struct Ratr0TileSheet;
 
 extern void ratr0_amiga_blitter_startup(Ratr0Engine *eng);
 extern void ratr0_amiga_blitter_shutdown(void);
@@ -25,8 +26,17 @@ extern void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dest,
                                   UINT16 blit_width_pixels, UINT16 blit_width_height);
 
 
+
 /*
- * Common case 2: Blasting an 8x8 block from the source to the destination without masking.
+ * Common case 2: Blit a masked object to the screen. This is a general blit.
+ */
+extern void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
+                                    struct Ratr0TileSheet *bobs,
+                                    int tilex, int tiley,
+                                    int dstx, int dsty);
+
+/*
+ * Common case 3: Blasting an 8x8 block from the source to the destination without masking.
  */
 extern void ratr0_amiga_blit_8x8(struct Ratr0AmigaRenderContext *dest,
                                  struct Ratr0AmigaRenderContext *src,
