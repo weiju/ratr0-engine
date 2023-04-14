@@ -22,12 +22,10 @@ int main(int argc, char **argv)
     //struct Ratr0TileSheet tiles_ni;
     struct Ratr0TileSheet bobs;
 
-    engine->resource_system->read_tilesheet("simple_sprite-001.ts", &sprite);
-    engine->resource_system->read_tilesheet("basegrid_320x256x3.ts", &grid);
-    engine->resource_system->read_tilesheet("tiles_48x48x3.ts", &tiles);
-    //engine->resource_system->read_tilesheet("tiles_48x48x3_ni.ts", &tiles_ni);
-
-    engine->resource_system->read_tilesheet("bobs_masked.ts", &bobs);
+    engine->resource_system->read_tilesheet("test_assets/simple_sprite-001.ts", &sprite);
+    engine->resource_system->read_tilesheet("test_assets/basegrid_320x256x3.ts", &grid);
+    engine->resource_system->read_tilesheet("test_assets/tiles_48x48x3.ts", &tiles);
+    engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
 
     UINT8 frames[] = {0};
     //UINT16 *sprdata = ratr0_amiga_make_sprite_data(&sprite, frames, 1);
@@ -53,16 +51,11 @@ int main(int argc, char **argv)
     ratr0_amiga_blit_fast(&grid_ctx, &tiles_ctx, 32, 32, 0, 0, 16, 16);
     DisownBlitter();*/
 
-    /*
-    struct Ratr0AmigaRenderContext tiles_ni_ctx = {
-        tiles_ni.header.width, tiles_ni.header.height, tiles_ni.header.bmdepth, FALSE,
-        engine->memory_system->block_address(tiles_ni.h_imgdata)
-    };
-    ratr0_amiga_blit_ni(&grid_ctx, &tiles_ni_ctx, 0, 0, 0, 0, 16, 16);
-    */
 
     /* Blit BOB */
-    ratr0_amiga_blit_object(&grid_ctx, &bobs, 0, 0, 8, 0);
+    for (int i = 0; i < 12; i++) {
+        ratr0_amiga_blit_object(&grid_ctx, &bobs, 0, 0, 16 + i * 2, 16 * i);
+    }
 #endif
 
     // Then run the game loop

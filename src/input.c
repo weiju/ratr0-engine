@@ -14,18 +14,20 @@ static Ratr0Engine *engine;
 struct Ratr0InputSystem *ratr0_input_startup(Ratr0Engine *eng)
 {
     engine = eng;
+#ifndef AMIGA
     input_system.shutdown = &ratr0_input_shutdown;
-#ifdef AMIGA
+#else
+    input_system.shutdown = &ratr0_amiga_input_shutdown;
+    input_system.get_joystick_state = &ratr0_amiga_get_joystick_state;
     ratr0_amiga_input_startup();
 #endif
     PRINT_DEBUG("Startup finished.");
     return &input_system;
 }
 
+#ifndef AMIGA
 void ratr0_input_shutdown(void)
 {
-#ifdef AMIGA
-    ratr0_amiga_input_shutdown();
-#endif
     PRINT_DEBUG("Shutdown finished.");
 }
+#endif

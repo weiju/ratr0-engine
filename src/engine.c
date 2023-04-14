@@ -21,6 +21,7 @@
 #define MAX_TIMERS (10)
 #ifdef AMIGA
 #include <ratr0/amiga/engine.h>
+static volatile UWORD *custom_color00 = (volatile UWORD *) 0xdff180;
 #endif
 #ifdef SDL2
 #endif
@@ -28,6 +29,7 @@
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
 
 static Ratr0Engine engine;
+static int game_state = GAMESTATE_RUNNING;
 void ratr0_engine_shutdown(void);
 void ratr0_engine_game_loop(void);
 
@@ -37,10 +39,8 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.shutdown = &ratr0_engine_shutdown;
 #ifdef AMIGA
     ratr0_amiga_engine_startup(&engine);
-    engine.game_loop = &ratr0_amiga_engine_game_loop;
-#else
-    engine.game_loop = &ratr0_engine_game_loop;
 #endif
+    engine.game_loop = &ratr0_engine_game_loop;
 
     /* Just an example for a configuration, should come from a config file */
     struct Ratr0DisplayInfo display_init = { 320, 200, 3 };
@@ -98,9 +98,27 @@ void ratr0_engine_shutdown(void)
 }
 
 
-#ifndef AMIGA
 void ratr0_engine_game_loop(void)
 {
+#ifdef AMIGA
+    while (game_state != GAMESTATE_QUIT) {
+        // comment in for visual timing the loop iteration
+        //*custom_color00 = 0x000;
+        // update all subsystems where it makes sense. Obviously it doesn't for
+        // memory or resources
+        engine.timer_system->update();
+
+        // For now, end when the mouse was clicked
+        UINT32 joystate = engine.input_system->get_joystick_state(0);
+        if (joystate != 0) {
+            //PRINT_DEBUG("joystate is: %d", joystate);
+            game_state = joystate & JOY_FIRE0 == JOY_FIRE0 ? GAMESTATE_QUIT : GAMESTATE_RUNNING;
+        }
+        // comment in for visual timing the loop iteration
+        //*custom_color00 = 0xf00;
+        engine.display_system->wait_vblank();
+    }
+#else
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
@@ -133,5 +151,5 @@ void ratr0_engine_game_loop(void)
         }
     }
     SDL_FreeSurface(splash_screen);
-}
 #endif /* AMIGA */
+}

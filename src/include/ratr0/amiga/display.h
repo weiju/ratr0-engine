@@ -47,6 +47,11 @@ extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0AmigaDisplayI
 extern void ratr0_amiga_display_shutdown(void);
 
 /**
+ * Wait for vertical blank
+ */
+extern void ratr0_amiga_wait_vblank(void);
+
+/**
  * Adjust the copper list to point to the specified display buffer with the
  * given specification.
  * The data in the display buffer is assumed to be interleaved.

@@ -1,6 +1,9 @@
 #pragma once
 #ifndef __RATR0_ENGINE_H__
 #define __RATR0_ENGINE_H__
+
+enum { GAMESTATE_QUIT, GAMESTATE_RUNNING };
+
 /**
  * Top level module. This is the main interface to the user and the
  * management system for the subsystems.

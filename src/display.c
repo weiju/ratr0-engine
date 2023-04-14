@@ -17,11 +17,15 @@ struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *eng, struct Ratr0D
     display_system.shutdown = &ratr0_display_shutdown;
 
 #ifdef AMIGA
+    display_system.wait_vblank = &ratr0_amiga_wait_vblank;
+
     display_info.width = init_data->width;
     display_info.height = init_data->height;
     display_info.depth = init_data->depth;
 
     ratr0_amiga_display_startup(eng, &display_info);
+#else
+    display_system.wait_vblank = NULL;  // TODO
 #endif
     PRINT_DEBUG("Startup finished.");
     return &display_system;

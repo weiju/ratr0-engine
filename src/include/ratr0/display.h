@@ -11,7 +11,8 @@ struct Ratr0DisplayInfo {
 };
 
 struct Ratr0DisplaySystem {
-    void (*shutdown)();
+    void (*shutdown)(void);
+    void (*wait_vblank)(void);
 };
 
 /**

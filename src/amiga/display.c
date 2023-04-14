@@ -75,6 +75,11 @@ static int spr0pth_idx;
 static int bplcon0_idx;
 static int bpl1mod_idx;
 
+void ratr0_amiga_wait_vblank(void)
+{
+    WaitTOF();
+}
+
 /**
  * We need to adjust the BPLCONx and BPLxMOD values after changing the
  * display mode.

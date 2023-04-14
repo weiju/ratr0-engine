@@ -6,6 +6,9 @@
 #include <exec/execbase.h>
 #include <SDI/SDI_compiler.h>
 
+#include <ratr0/data_types.h>
+#include <ratr0/input.h>
+
 extern struct ExecBase *SysBase;
 #define RAW_KEY_LSHIFT       (0x60)
 #define RAW_KEY_ESCAPE       (0x45)
@@ -105,4 +108,17 @@ void ratr0_amiga_input_startup(void)
 void ratr0_amiga_input_shutdown(void)
 {
     cleanup_keyboard_device();
+    PRINT_DEBUG("Shutdown finished.");
+}
+
+static volatile UINT8 *ciaa_pra = (volatile UINT8 *) 0xbfe001;
+#define  PRA_FIR0_BIT (1 << 6)
+static BOOL was_joy0fir0_pressed(void) { return (*ciaa_pra & PRA_FIR0_BIT) == 0; }
+
+UINT32 ratr0_amiga_get_joystick_state(UINT16 device_num)
+{
+    // currently only the mouse port is supported
+    UINT32 result = 0;
+    if (was_joy0fir0_pressed()) result |= JOY_FIRE0;
+    return result;
 }
