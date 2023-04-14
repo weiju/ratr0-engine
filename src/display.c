@@ -26,6 +26,7 @@ struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *eng, struct Ratr0D
     display_info.width = init_data->width;
     display_info.height = init_data->height;
     display_info.depth = init_data->depth;
+    display_info.use_doublebuffer = init_data->use_doublebuffer;
 
     ratr0_amiga_display_startup(eng, &display_info);
 #else

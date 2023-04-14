@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     struct Ratr0NodeFactory *factory = engine->world_system->get_node_factory();
     struct Ratr0Node *main_scene = factory->create_node();
     engine->world_system->set_current_scene(main_scene);
-#ifdef AMIGA
+
     struct Ratr0TileSheet sprite;
     struct Ratr0TileSheet grid;
     struct Ratr0TileSheet tiles;
@@ -30,6 +30,8 @@ int main(int argc, char **argv)
     engine->resource_system->read_tilesheet("test_assets/basegrid_320x256x3.ts", &grid);
     engine->resource_system->read_tilesheet("test_assets/tiles_48x48x3.ts", &tiles);
     engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
+
+#ifdef AMIGA
 
     UINT8 frames[] = {0};
     struct Ratr0AnimatedAmigaSprite *anim_sprite = ratr0_create_amiga_sprite(&sprite, frames, 1);
@@ -66,13 +68,11 @@ int main(int argc, char **argv)
     // Then run the game loop
     engine->game_loop();
 
-#ifdef AMIGA
     // Game cleanup optional
     engine->resource_system->free_tilesheet_data(&bobs);
     engine->resource_system->free_tilesheet_data(&tiles);
     engine->resource_system->free_tilesheet_data(&grid);
     engine->resource_system->free_tilesheet_data(&sprite);
-#endif
 
     engine->shutdown();
 

@@ -17,6 +17,9 @@ struct Ratr0AmigaDisplayInfo {
     /* This can be a value between 1 and 5 */
     UINT8 depth;
 
+    /* Display buffer */
+    BOOL use_doublebuffer;
+
     /* Readonly section */
     /* This is the Amiga relevant part. We can't explicitly set
        PAL or NTSC since it is dependent on the machine, so it is query

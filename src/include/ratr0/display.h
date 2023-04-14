@@ -8,6 +8,7 @@
 struct Ratr0DisplayInfo {
     UINT16 width, height;
     UINT8 depth;
+    BOOL use_doublebuffer;
 };
 
 struct Ratr0DisplaySystem {
