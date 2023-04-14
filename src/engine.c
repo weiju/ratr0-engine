@@ -107,6 +107,7 @@ void ratr0_engine_game_loop(void)
         // update all subsystems where it makes sense. Obviously it doesn't for
         // memory or resources
         engine.timer_system->update();
+        engine.scene_system->update();
 
         // For now, end when the mouse was clicked
         UINT32 joystate = engine.input_system->get_joystick_state(0);

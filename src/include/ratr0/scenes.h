@@ -19,7 +19,7 @@ struct Ratr0Node {
     struct Ratr0Node *next, *prev, *children;
 
     // a method that is called every frame
-    void (*update)(void);
+    void (*update)(struct Ratr0Node *);
 };
 
 /*
@@ -55,8 +55,9 @@ struct Ratr0AnimatedSprite2D {
  * This interface serves as the creator of our scene objects.
  */
 struct Ratr0NodeFactory {
+    struct Ratr0Node *(*create_node)(void);
     struct Ratr0AnimatedSprite2D *(*create_animated_sprite)(struct Ratr0TileSheet *tilesheet,
-                                                            UINT8 *frame_indexes,
+                                                            UINT8 *frame_indexes, UINT8 num_indexes,
                                                             BOOL is_hw);
 };
 
