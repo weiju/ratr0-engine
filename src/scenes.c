@@ -58,7 +58,9 @@ static struct Ratr0AnimatedSprite2D *ratr0_nf_create_animated_sprite(struct Ratr
                                                                      UINT8 *frame_indexes, BOOL is_hw)
 {
 #ifdef AMIGA
-    return (struct Ratr0AnimatedSprite2D *) ratr0_create_amiga_sprite(tilesheet, frame_indexes);
+    if (is_hw) {
+        return (struct Ratr0AnimatedSprite2D *) ratr0_create_amiga_sprite(tilesheet, frame_indexes);
+    }
 #else
     // TODO
     return NULL;

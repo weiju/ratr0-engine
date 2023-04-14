@@ -11,7 +11,6 @@ struct Ratr0TileSheet;
 
 extern void ratr0_amiga_blitter_startup(Ratr0Engine *eng);
 
-
 /**
  * Blitter routines.
  */

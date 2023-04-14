@@ -8,6 +8,7 @@
 #include <ratr0/amiga/sprites.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/blitter.h>
+#include <ratr0/amiga/scenes.h>
 #endif
 
 int main(int argc, char **argv)
@@ -28,8 +29,9 @@ int main(int argc, char **argv)
     engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
 
     UINT8 frames[] = {0};
+    struct Ratr0AnimatedAmigaSprite *anim_sprite = ratr0_create_amiga_sprite(&sprite, frames, 1);
     //UINT16 *sprdata = ratr0_amiga_make_sprite_data(&sprite, frames, 1);
-    //ratr0_amiga_display_set_sprite(0, sprdata);
+    ratr0_amiga_display_set_sprite(0, anim_sprite->sprite_data);
 
     // Set grid as background
     struct Ratr0AmigaRenderContext grid_ctx = {

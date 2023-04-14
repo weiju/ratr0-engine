@@ -47,8 +47,6 @@ struct Ratr0AnimatedSprite2D {
     UINT8 current_tick;  // current tick, will reset to speed after reaching 0
     BOOL  is_looping;  // indicates whether this is a looping animation
 
-    void (*display)(void);  // called to display this object on the screen
-
     // collision boundaries
     struct Ratr0CollisionBox collision_box;
 };
