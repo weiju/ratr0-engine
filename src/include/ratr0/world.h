@@ -7,7 +7,7 @@
 
 /* World subsystem */
 enum {
-    NODE = 1, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
+    RATR0_NODE = 1, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
 };
 
 /*
@@ -19,11 +19,12 @@ enum {
  */
 struct Ratr0Node {
     /* Identifying information. We don't support subclassing. It's rather a way to find the
-     * appropriate handlers. The object id is for finding nodes in the tree  */
+     * appropriate handlers */
     UINT16 class_id;
-    UINT16 object_id;
 
-    struct Ratr0Node *next, *prev, *children;
+    struct Ratr0Node *next, *children;
+
+    void (*add_child)(struct Ratr0Node *this, struct Ratr0Node *child);
 
     // a method that is called every frame
     void (*update)(struct Ratr0Node *);
@@ -88,5 +89,10 @@ struct Ratr0WorldSystem {
  * Start up the scene subsystem.
  */
 extern struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *);
+
+/**
+ * Base node initialization.
+ */
+extern void ratr0_world_init_base_node(struct Ratr0Node *node, UINT16 clsid);
 
 #endif /* __RATR0_WORLD_H__ */

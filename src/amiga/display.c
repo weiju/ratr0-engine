@@ -242,12 +242,9 @@ void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors)
     }
 }
 
-
-// Just for experiments !!!!
 void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
 {
     int spr_idx = spr0pth_idx + 2 * sprite_num;
-    PRINT_DEBUG("set sprite CL index(0): %d, actual: %d", spr0pth_idx, spr_idx);
     copper_list[spr_idx] = ((UINT32) data >> 16) & 0xffff;
     copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
 }

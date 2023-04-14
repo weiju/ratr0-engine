@@ -23,23 +23,59 @@ static void ratr0_world_shutdown(void);
 static void ratr0_world_update(void);
 static void ratr0_world_set_current_scene(struct Ratr0Node *);
 
+static void ratr0_world_node_update(struct Ratr0Node *this)
+{
+    // call update on all children
+    struct Ratr0Node *cur_child = this->children;
+    while (cur_child) {
+        cur_child->update(cur_child);
+        cur_child = cur_child->next;
+    }
+}
+
+static void ratr0_world_node_add_child(struct Ratr0Node *this, struct Ratr0Node *child)
+{
+    if (!this->children) this->children = child;
+    else {
+        struct Ratr0Node *cur = this->children;
+        while (cur->next) cur = cur->next;
+        cur->next = child;
+    }
+}
+
 /**
  * Node factory
  */
 static struct Ratr0Node nodes[10];
 static UINT16 next_node = 0;
+
 static struct Ratr0NodeFactory *ratr0_world_get_node_factory(void) { return &node_factory; }
+
+/**
+ * Base node initialization
+ */
+void ratr0_world_init_base_node(struct Ratr0Node *node, UINT16 clsid)
+{
+    node->class_id = clsid;
+    node->children = node->next = NULL;
+    node->update = &ratr0_world_node_update;
+}
+
 static struct Ratr0Node *ratr0_world_create_node(void)
 {
     struct Ratr0Node *result = &nodes[next_node++];
+    ratr0_world_init_base_node(result, RATR0_NODE);
     return result;
 }
+
 static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *,
                                                                    UINT8 *, UINT8, BOOL);
 
 struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
 {
     engine = eng;
+    current_scene = NULL;
+
 #ifdef AMIGA
     ratr0_amiga_world_startup(eng);
 #endif
@@ -84,5 +120,10 @@ static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0T
 
 static void ratr0_world_update(void)
 {
-    // TODO: Push the objects in the scene to the rendering 
+    if (current_scene) {
+        current_scene->update(current_scene);
+    } else {
+        PRINT_DEBUG("ERROR: *no main scene set !*");
+        engine->exit();
+    }
 }

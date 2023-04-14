@@ -1,4 +1,5 @@
 #include <ratr0/engine.h>
+#include <ratr0/world.h>
 #include <ratr0/resources.h>
 
 // remove me later
@@ -15,7 +16,10 @@ int main(int argc, char **argv)
 {
     Ratr0Engine *engine = ratr0_engine_startup();
 
-    // TODO: Use the scene system to setup the objects of the game
+    // Use the scene system to setup the objects of the game
+    struct Ratr0NodeFactory *factory = engine->world_system->get_node_factory();
+    struct Ratr0Node *main_scene = factory->create_node();
+    engine->world_system->set_current_scene(main_scene);
 #ifdef AMIGA
     struct Ratr0TileSheet sprite;
     struct Ratr0TileSheet grid;

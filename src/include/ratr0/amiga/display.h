@@ -51,19 +51,22 @@ extern void ratr0_amiga_display_shutdown(void);
  */
 extern void ratr0_amiga_wait_vblank(void);
 
+/**
+ * Process all queued up render commands.
+ */
 extern void ratr0_amiga_display_update(void);
 
+/**
+ * Quick access functions to the copper list.
+ */
 /**
  * Adjust the copper list to point to the specified display buffer with the
  * given specification.
  * The data in the display buffer is assumed to be interleaved.
  */
 extern struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0AmigaRenderContext *);
-extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 
-/**
- * Experimental only
- */
+extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
 
 #endif /* __RATR0_AMIGA_DISPLAY_H__ */
