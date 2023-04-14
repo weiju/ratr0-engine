@@ -24,6 +24,7 @@ enum PhysicalKeys {
  */
 struct Ratr0InputSystem {
     void (*shutdown)(void);
+    void (*update)(void);
     UINT32 (*get_joystick_state)(UINT16 device_num);
 };
 

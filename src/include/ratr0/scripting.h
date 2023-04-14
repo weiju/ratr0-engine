@@ -6,6 +6,7 @@
 /* Scripting subsystem */
 struct Ratr0ScriptingSystem {
     void (*shutdown)(void);
+    void (*update)(void);
 };
 
 /**

@@ -2,8 +2,6 @@
 #ifndef __RATR0_ENGINE_H__
 #define __RATR0_ENGINE_H__
 
-enum { GAMESTATE_QUIT, GAMESTATE_RUNNING };
-
 /**
  * Top level module. This is the main interface to the user and the
  * management system for the subsystems.
@@ -20,8 +18,14 @@ typedef struct {
     struct Ratr0SceneSystem *scene_system;
     struct Ratr0ScriptingSystem *scripting_system;
 
-    void (*shutdown)();
-    void (*game_loop)();
+    void (*shutdown)(void);
+    void (*game_loop)(void);
+
+    /**
+     * This method closes the entire system down, so we can shut down
+     * our game here.
+     */
+    void (*exit)(void);
 } Ratr0Engine;
 
 /**

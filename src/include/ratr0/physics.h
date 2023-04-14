@@ -6,6 +6,7 @@
 /* Physics and collisions subsystem */
 struct Ratr0PhysicsSystem {
     void (*shutdown)(void);
+    void (*update)(void);
 };
 
 /**

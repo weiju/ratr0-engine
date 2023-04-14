@@ -51,6 +51,8 @@ extern void ratr0_amiga_display_shutdown(void);
  */
 extern void ratr0_amiga_wait_vblank(void);
 
+extern void ratr0_amiga_display_update(void);
+
 /**
  * Adjust the copper list to point to the specified display buffer with the
  * given specification.

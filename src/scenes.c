@@ -60,16 +60,6 @@ static void ratr0_scenes_shutdown(void)
     PRINT_DEBUG("Shutdown finished.");
 }
 
-static int update_counter = 0;
-static void ratr0_scenes_update(void)
-{
-    update_counter++;
-    if (update_counter == 100) {
-        PRINT_DEBUG("SCENES UPDATE to 100 !!!");
-        update_counter = 0;
-    }
-}
-
 static void ratr0_scenes_set_current_scene(struct Ratr0Node *node)
 {
     current_scene = node;
@@ -87,4 +77,9 @@ static struct Ratr0AnimatedSprite2D *ratr0_nf_create_animated_sprite(struct Ratr
     // TODO
     return NULL;
 #endif
+}
+
+static void ratr0_scenes_update(void)
+{
+    // TODO: Push the objects in the scene to the rendering 
 }

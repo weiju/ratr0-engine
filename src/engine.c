@@ -28,15 +28,22 @@ static volatile UWORD *custom_color00 = (volatile UWORD *) 0xdff180;
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
 
+enum { GAMESTATE_QUIT, GAMESTATE_RUNNING };
+
 static Ratr0Engine engine;
 static int game_state = GAMESTATE_RUNNING;
 void ratr0_engine_shutdown(void);
 void ratr0_engine_game_loop(void);
+void ratr0_engine_exit(void)
+{
+    game_state = GAMESTATE_QUIT;
+}
 
 Ratr0Engine *ratr0_engine_startup(void)
 {
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
+    engine.exit = &ratr0_engine_exit;
 #ifdef AMIGA
     ratr0_amiga_engine_startup(&engine);
 #endif
@@ -107,13 +114,16 @@ void ratr0_engine_game_loop(void)
         // update all subsystems where it makes sense. Obviously it doesn't for
         // memory or resources
         engine.timer_system->update();
+        engine.input_system->update();
+        engine.physics_system->update();
+        engine.scripting_system->update();
         engine.scene_system->update();
+        engine.display_system->update();
 
-        // For now, end when the mouse was clicked
+        // For now, end when the mouse was clicked. This is just for testing
         UINT32 joystate = engine.input_system->get_joystick_state(0);
         if (joystate != 0) {
-            //PRINT_DEBUG("joystate is: %d", joystate);
-            game_state = joystate & JOY_FIRE0 == JOY_FIRE0 ? GAMESTATE_QUIT : GAMESTATE_RUNNING;
+            if (joystate & JOY_FIRE0 == JOY_FIRE0) ratr0_engine_exit();
         }
         // comment in for visual timing the loop iteration
         //*custom_color00 = 0xf00;

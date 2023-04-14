@@ -5,6 +5,9 @@
 #ifdef AMIGA
 #include <ratr0/amiga/display.h>
 static struct Ratr0AmigaDisplayInfo display_info;
+#else
+void ratr0_display_update(void);
+void ratr0_display_wait_vblank(void);
 #endif /* AMIGA */
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
@@ -18,6 +21,7 @@ struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *eng, struct Ratr0D
 
 #ifdef AMIGA
     display_system.wait_vblank = &ratr0_amiga_wait_vblank;
+    display_system.update = &ratr0_amiga_display_update;
 
     display_info.width = init_data->width;
     display_info.height = init_data->height;
@@ -25,11 +29,17 @@ struct Ratr0DisplaySystem *ratr0_display_startup(Ratr0Engine *eng, struct Ratr0D
 
     ratr0_amiga_display_startup(eng, &display_info);
 #else
-    display_system.wait_vblank = NULL;  // TODO
+    display_system.wait_vblank = ratr0_display_wait_vblank;
+    display_system.update = ratr0_display_update;
 #endif
     PRINT_DEBUG("Startup finished.");
     return &display_system;
 }
+
+#ifndef AMIGA
+void ratr0_display_update(void) { }
+void ratr0_display_wait_vblank(void) { }
+#endif
 
 void ratr0_display_shutdown(void)
 {

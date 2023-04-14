@@ -115,10 +115,18 @@ static volatile UINT8 *ciaa_pra = (volatile UINT8 *) 0xbfe001;
 #define  PRA_FIR0_BIT (1 << 6)
 static BOOL was_joy0fir0_pressed(void) { return (*ciaa_pra & PRA_FIR0_BIT) == 0; }
 
-UINT32 ratr0_amiga_get_joystick_state(UINT16 device_num)
+UINT32 _ratr0_amiga_get_joystick_state(UINT16 device_num)
 {
     // currently only the mouse port is supported
     UINT32 result = 0;
     if (was_joy0fir0_pressed()) result |= JOY_FIRE0;
     return result;
 }
+
+static UINT32 last_joy0_state;
+void ratr0_amiga_input_update(void)
+{
+    last_joy0_state = _ratr0_amiga_get_joystick_state(0);
+}
+
+UINT32 ratr0_amiga_get_joystick_state(UINT16 device_num) { return last_joy0_state; }

@@ -7,11 +7,13 @@
 static struct Ratr0PhysicsSystem physics_system;
 static Ratr0Engine *engine;
 void ratr0_physics_shutdown(void);
+void ratr0_physics_update(void);
 
 struct Ratr0PhysicsSystem *ratr0_physics_startup(Ratr0Engine *eng)
 {
     engine = eng;
     physics_system.shutdown = &ratr0_physics_shutdown;
+    physics_system.update = &ratr0_physics_update;
     PRINT_DEBUG("Startup finished.");
     return &physics_system;
 }
@@ -19,4 +21,10 @@ struct Ratr0PhysicsSystem *ratr0_physics_startup(Ratr0Engine *eng)
 void ratr0_physics_shutdown(void)
 {
     PRINT_DEBUG("Shutdown finished.");
+}
+
+void ratr0_physics_update(void)
+{
+    // TODO: Look at all the child object transformers, collisions etc.
+    // and and update the world accordingly
 }

@@ -251,3 +251,7 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
     copper_list[spr_idx] = ((UINT32) data >> 16) & 0xffff;
     copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
 }
+
+void ratr0_amiga_display_update()
+{
+}
