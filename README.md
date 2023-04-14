@@ -41,14 +41,7 @@ The following subsystems are planned
   * Input
   * Physics/Collisions
   * Resources and files
-  * Scripting
-  * Networking
-
-The conceptual model is strongly inspired by the Godot Engine in that
-we use scene graphs and everything is a node, so building a games is
-essentially building a number of scene graphs. Like in Godot, we communicate
-down the hierarchy by passing arguments to function calls and we use signals
-to communicate up or across the hierarchy
+  * World simulation
 
 ## The subsystems
 
@@ -76,14 +69,11 @@ access its functionality.
 
 ### Networking subsystem
 
-### Scripting subsystem
-
-
-
-## The game model
+## The World subsystem
 
 ### Scenes and Nodes
 
-
-### Scripts
-
+The world subsystem is based around scene trees. At each moment, there is a current
+scene with a root node.
+Nodes are communicating down the hierarchy by passing arguments to function calls and we use signals
+to communicate up or across the hierarchy.

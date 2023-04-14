@@ -15,8 +15,7 @@
 #include <ratr0/input.h>
 #include <ratr0/physics.h>
 #include <ratr0/resources.h>
-#include <ratr0/scenes.h>
-#include <ratr0/scripting.h>
+#include <ratr0/world.h>
 
 #define MAX_TIMERS (10)
 #ifdef AMIGA
@@ -75,8 +74,7 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
     engine.physics_system = ratr0_physics_startup(&engine);
-    engine.scene_system = ratr0_scenes_startup(&engine);
-    engine.scripting_system = ratr0_scripting_startup(&engine);
+    engine.world_system = ratr0_world_startup(&engine);
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }
@@ -84,8 +82,7 @@ Ratr0Engine *ratr0_engine_startup(void)
 void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
-    engine.scripting_system->shutdown();
-    engine.scene_system->shutdown();
+    engine.world_system->shutdown();
     engine.physics_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();
@@ -116,8 +113,7 @@ void ratr0_engine_game_loop(void)
         engine.timer_system->update();
         engine.input_system->update();
         engine.physics_system->update();
-        engine.scripting_system->update();
-        engine.scene_system->update();
+        engine.world_system->update();
         engine.display_system->update();
 
         // For now, end when the mouse was clicked. This is just for testing

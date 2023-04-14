@@ -1,11 +1,11 @@
 #pragma once
-#ifndef __RATR0_SCENES_H__
-#define __RATR0_SCENES_H__
+#ifndef __RATR0_WORLD_H__
+#define __RATR0_WORLD_H__
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
 
-/* Scenes subsystem */
+/* World subsystem */
 enum {
     NODE = 1, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
 };
@@ -76,7 +76,7 @@ struct Ratr0NodeFactory {
     struct Ratr0Backdrop *(*create_backdrop)(struct Ratr0TileSheet *tilesheet);
 };
 
-struct Ratr0SceneSystem {
+struct Ratr0WorldSystem {
     void (*set_current_scene)(struct Ratr0Node *);
     void (*update)(void);
     void (*shutdown)(void);
@@ -87,6 +87,6 @@ struct Ratr0SceneSystem {
 /**
  * Start up the scene subsystem.
  */
-extern struct Ratr0SceneSystem *ratr0_scenes_startup(Ratr0Engine *);
+extern struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *);
 
-#endif /* __RATR0_SCENES_H__ */
+#endif /* __RATR0_WORLD_H__ */

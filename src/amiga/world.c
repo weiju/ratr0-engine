@@ -1,4 +1,4 @@
-#include <ratr0/amiga/scenes.h>
+#include <ratr0/amiga/world.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/sprites.h>
 
@@ -10,7 +10,7 @@ UINT16 next_hw_sprite = 0;
 struct Ratr0AnimatedAmigaBob bob_table[20];
 UINT16 next_bob = 0;
 
-void ratr0_amiga_scenes_startup(Ratr0Engine *eng)
+void ratr0_amiga_world_startup(Ratr0Engine *eng)
 {
     engine = eng;
     next_hw_sprite = next_bob = 0;

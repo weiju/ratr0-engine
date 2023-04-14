@@ -1,11 +1,11 @@
 #pragma once
-#ifndef __RATR0_AMIGA_SCENES_H__
-#define __RATR0_AMIGA_SCENES_H__
-#include <ratr0/scenes.h>
+#ifndef __RATR0_AMIGA_WORLD_H__
+#define __RATR0_AMIGA_WORLD_H__
+#include <ratr0/world.h>
 
 /*
- * Amiga Scenes module.
- * This module creates scene objects that are specific to the Amiga
+ * Amiga World module.
+ * This module creates world objects that are specific to the Amiga
  * hardware. E.g. we use hardware sprites, blitter objects, dual playfields,
  * copper lists etc.
  */
@@ -25,7 +25,7 @@ struct Ratr0AnimatedAmigaBob {
     struct Ratr0TileSheet *tilesheet;
 };
 
-extern void ratr0_amiga_scenes_startup(Ratr0Engine *eng);
+extern void ratr0_amiga_world_startup(Ratr0Engine *eng);
 
 extern struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
                                                                   UINT8 *frame_indexes, UINT8 num_frames);
@@ -37,4 +37,4 @@ extern struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileShee
                                                           UINT8 *frames, UINT8 num_frames);
 
 
-#endif /* __RATR0_AMIGA_SCENES_H__ */
+#endif /* __RATR0_AMIGA_WORLD_H__ */

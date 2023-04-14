@@ -8,7 +8,7 @@
 #include <ratr0/amiga/sprites.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/blitter.h>
-#include <ratr0/amiga/scenes.h>
+#include <ratr0/amiga/world.h>
 #endif
 
 int main(int argc, char **argv)

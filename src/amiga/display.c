@@ -258,4 +258,8 @@ void ratr0_amiga_display_update()
     // are multiple ways to do that. We can have a restore buffer which is the easiest, but
     // if the game is double buffered, we need to have 3 buffers
     // An alternative is using tile map based restoration.
+
+    // We might be able to use priority queues for sorting our BOBs, so we can draw them from
+    // top to bottom
+    // Same for sprites, but we need to interact with the copper list for multiplexing
 }
