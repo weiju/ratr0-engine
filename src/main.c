@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     */
 
     /* Blit BOB */
-    ratr0_amiga_blit_object(&grid_ctx, &bobs, 0, 0, 0, 0);
+    ratr0_amiga_blit_object(&grid_ctx, &bobs, 0, 0, 8, 0);
 #endif
 
     // Then run the game loop

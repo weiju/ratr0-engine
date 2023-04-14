@@ -159,21 +159,56 @@ void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
     }
 }
 
-
+/**
+ * This is a general purpose blit, cookie cut of arbitrary width,
+ * with shifts.
+ * We assume some simplifications for the cookie cutter blit:
+ * - each BOB starts on a 16 pixel boundary
+ * - There is at least a 16 pixel border at the right of each BOB,
+ *   when there are multiple BOBs per row, they must be separated by
+ *   at least 16 pixels
+ * - Each tile has the width of a multiple of 16 pixels
+ */
 void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
                              struct Ratr0TileSheet *bobs,
                              int tilex, int tiley,
                              int dstx, int dsty)
 {
-    INT8 dst_shift = 0;
-    UINT16 blit_width_words = 1;  // HARD blit width in words
-    UINT16 srcx = 0, srcy = 0, blit_height_pixels = 16;
+    // Source variables
+    UINT16 src_blit_width_pixels = bobs->header.tile_width;
+    UINT16 src_blit_width = src_blit_width_pixels / 16;
+    UINT16 blit_height_pixels = bobs->header.tile_height;
+    UINT16 srcx = tilex * bobs->header.tile_width;
+    UINT16 srcy = tiley * bobs->header.tile_height;
+
+    // Destination variables
+    // destination x relative to the containing word, this is also the
+    // the shift amount
+    UINT8 dst_x0 = dstx & 0x0f;
+    INT8 dst_shift = dst_x0;
+    UINT16 dst_blit_width = src_blit_width;
+    INT8 dst_offset = 0;
+
+    // negative shift => shift is to the left, so we extend the shift to the
+    // left and right-shift in the previous word so we always right-shift
+    if (dst_shift < 0) {
+        dst_shift = 16 + dst_shift;
+        dst_blit_width++;
+        dst_offset = -2;
+    }
+
+    UINT16 alwm = 0xffff;
+    UINT16 final_blit_width = src_blit_width;
+    if (dst_blit_width > src_blit_width) {
+        final_blit_width = dst_blit_width;
+        alwm = 0;
+    }
 
     UINT32 src_plane_size = bobs->header.width / 8 * bobs->header.height;
     UINT32 dst_row_bytes = dst->width / 8;
     WaitBlit();
     custom.bltafwm = 0xffff;
-    custom.bltalwm = 0xffff;
+    custom.bltalwm = alwm;
 
     // channels A-D turned on => 0x09 LF => D = AB + ~AC => 0xca
     custom.bltcon0 = 0x0fca | (dst_shift << 12);
@@ -181,8 +216,8 @@ void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
     custom.bltcon1 = dst_shift << 12;
 
     // modulos are in *bytes*
-    UINT16 srcmod = bobs->header.width / 8 - (blit_width_words * 2);
-    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
+    UINT16 srcmod = bobs->header.width / 8 - (final_blit_width * 2);
+    UINT16 dstmod = dst_row_bytes * dst->depth - (final_blit_width * 2);
     custom.bltamod = srcmod;
     custom.bltbmod = srcmod;
     custom.bltcmod = dstmod;
@@ -194,14 +229,14 @@ void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
         srcy * bobs->header.width / 8 + srcx / 8;
     UINT32 src_addr = ((UINT32) bobs_addr) + (bobs->header.width / 8 * srcy * bobs->header.bmdepth) + srcx / 8;
     UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
-    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
+    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
 
     for (int i = 0; i < bobs->header.bmdepth; i++) {
         custom.bltapt = (UINT8 *) mask_addr;
         custom.bltbpt = (UINT8 *) src_addr;
         custom.bltcpt = (UINT8 *) dst_addr;
         custom.bltdpt = (UINT8 *) dst_addr;
-        UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
+        UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
         custom.bltsize = bltsize;
         WaitBlit();
         src_addr += src_plane_size;
