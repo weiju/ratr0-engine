@@ -6,6 +6,9 @@
 #include <ratr0/resources.h>
 
 /* Scenes subsystem */
+enum {
+    NODE = 1, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
+};
 
 /*
  * Top level node that is the base of a node. The node system is inspired by
@@ -15,7 +18,11 @@
  * while signal are used to communicate up and across the hierarchy.
  */
 struct Ratr0Node {
-    UINT32 id;  // a unique identifier
+    /* Identifying information. We don't support subclassing. It's rather a way to find the
+     * appropriate handlers. The object id is for finding nodes in the tree  */
+    UINT16 class_id;
+    UINT16 object_id;
+
     struct Ratr0Node *next, *prev, *children;
 
     // a method that is called every frame
@@ -37,8 +44,10 @@ struct Ratr0CollisionBox {
  *     want more, group them, e.g. into a state pattern.
  *   - has an animation speed
  */
-struct Ratr0AnimatedSprite2D {
+struct Ratr0AnimatedSprite {
     struct Ratr0Node node;  // include node properties
+    // next in render queue
+    struct Ratr0AnimatedSprite *next;
 
     UINT16 x,y;
     UINT8 speed;  // speed in frames
@@ -51,14 +60,20 @@ struct Ratr0AnimatedSprite2D {
     struct Ratr0CollisionBox collision_box;
 };
 
+struct Ratr0Backdrop {
+    struct Ratr0Node node;  // include node properties
+    struct Ratr0TileSheet *tilesheet;
+};
+
 /**
  * This interface serves as the creator of our scene objects.
  */
 struct Ratr0NodeFactory {
     struct Ratr0Node *(*create_node)(void);
-    struct Ratr0AnimatedSprite2D *(*create_animated_sprite)(struct Ratr0TileSheet *tilesheet,
-                                                            UINT8 *frame_indexes, UINT8 num_indexes,
-                                                            BOOL is_hw);
+    struct Ratr0AnimatedSprite *(*create_animated_sprite)(struct Ratr0TileSheet *tilesheet,
+                                                          UINT8 *frame_indexes, UINT8 num_indexes,
+                                                          BOOL is_hw);
+    struct Ratr0Backdrop *(*create_backdrop)(struct Ratr0TileSheet *tilesheet);
 };
 
 struct Ratr0SceneSystem {

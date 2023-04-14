@@ -254,4 +254,8 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
 
 void ratr0_amiga_display_update()
 {
+    // We need to find and restore dirty rectangles. This is rather hard, because on Amiga, there
+    // are multiple ways to do that. We can have a restore buffer which is the easiest, but
+    // if the game is double buffered, we need to have 3 buffers
+    // An alternative is using tile map based restoration.
 }

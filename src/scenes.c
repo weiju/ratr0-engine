@@ -34,8 +34,8 @@ static struct Ratr0Node *ratr0_scenes_create_node(void)
     struct Ratr0Node *result = &nodes[next_node++];
     return result;
 }
-static struct Ratr0AnimatedSprite2D *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *,
-                                                                     UINT8 *, UINT8, BOOL);
+static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *,
+                                                                   UINT8 *, UINT8, BOOL);
 
 struct Ratr0SceneSystem *ratr0_scenes_startup(Ratr0Engine *eng)
 {
@@ -65,14 +65,17 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Node *node)
     current_scene = node;
 }
 
-static struct Ratr0AnimatedSprite2D *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *tilesheet,
-                                                                     UINT8 *frame_indexes, UINT8 num_indexes,
-                                                                     BOOL is_hw)
+static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *tilesheet,
+                                                                   UINT8 *frame_indexes, UINT8 num_indexes,
+                                                                   BOOL is_hw)
 {
 #ifdef AMIGA
     if (is_hw) {
-        return (struct Ratr0AnimatedSprite2D *) ratr0_create_amiga_sprite(tilesheet, frame_indexes, num_indexes);
+        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_sprite(tilesheet, frame_indexes, num_indexes);
+    } else {
+        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_bob(tilesheet, frame_indexes, num_indexes);
     }
+    return NULL;
 #else
     // TODO
     return NULL;

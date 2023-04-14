@@ -16,13 +16,13 @@
  * to have a representation that accomodates for that.
  */
 struct Ratr0AnimatedAmigaSprite {
-    struct Ratr0AnimatedSprite2D base_obj;  // inherited base members
+    struct Ratr0AnimatedSprite base_obj;  // inherited base members
     UINT16 *sprite_data;
 };
 
 struct Ratr0AnimatedAmigaBob {
-    struct Ratr0AnimatedSprite2D base_obj;  // inherited base members
-    struct Ratr0TileSheet *tile_sheet;
+    struct Ratr0AnimatedSprite base_obj;  // inherited base members
+    struct Ratr0TileSheet *tilesheet;
 };
 
 extern void ratr0_amiga_scenes_startup(Ratr0Engine *eng);
@@ -33,7 +33,7 @@ extern struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0Ti
 /**
  * Create a blitter object from a tile sheet.
  */
-extern struct Ratr0AnimatedAmigaBob *ratr0_amiga_make_bob(struct Ratr0TileSheet *tilesheet,
+extern struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tilesheet,
                                                           UINT8 *frames, UINT8 num_frames);
 
 
