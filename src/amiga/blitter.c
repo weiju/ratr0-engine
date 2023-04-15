@@ -93,6 +93,30 @@ void _blit_fast(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
     custom.bltsize = bltsize;
 }
 
+void ratr0_amiga_do_blit_command(struct Ratr0AmigaBlitCommand *cmd)
+{
+    if (cmd->blit_type == BLIT_BLOCK) {
+        _blit_fast(cmd->dst_addr, cmd->src_addr, cmd->dstmod, cmd->srcmod,
+                   cmd->bltsize);
+    }
+}
+
+void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
+                                struct Ratr0AmigaRenderContext *dst,
+                                struct Ratr0AmigaRenderContext *src,
+                                UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                                UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+{
+    UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
+    cmd->blit_type = BLIT_BLOCK;
+    // modulos are in *bytes*
+    cmd->srcmod = src->width / 8 - (blit_width_words * 2);
+    cmd->dstmod = dst->width / 8 - (blit_width_words * 2);
+    cmd->src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    cmd->dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    cmd->bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
+}
+
 
 void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
                            struct Ratr0AmigaRenderContext *src,

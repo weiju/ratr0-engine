@@ -33,9 +33,13 @@
 extern struct GfxBase *GfxBase;
 extern struct Custom custom;
 
+static struct Ratr0AmigaBlitCommand blit_queue[20];
+static int current_blit = 0;
+static int last_blit = -1;
+
 // For our interrupt handlers
 static struct Interrupt vbint, bltint, *old_bltint;
-static BOOL has_blitint;
+static BOOL has_blitint, process_blitter_queue = FALSE;
 static UINT32 counter = 0, blitcounter = 0;
 
 void VertBServer(void)
@@ -48,6 +52,18 @@ void BlitHandler(void)
     // TODO: Handle blitter finished interrupts here, e.g.
     // Queue processing
     //blitcounter++;
+    if (process_blitter_queue) {
+        if (last_blit > current_blit) {
+            // This handler processes the next blitter request in the queue
+            // If there are none, just exit
+            current_blit++;
+        } else {
+            // empty the queue
+            current_blit = 0;
+            last_blit = -1;
+            process_blitter_queue = FALSE;
+        }
+    }
     custom.intreq = INTF_BLIT;
 }
 
@@ -344,4 +360,7 @@ void ratr0_amiga_display_update()
     // We might be able to use priority queues for sorting our BOBs, so we can draw them from
     // top to bottom
     // Same for sprites, but we need to interact with the copper list for multiplexing
+    OwnBlitter();
+    // Start putting in the first blitter request here
+    DisownBlitter();
 }
