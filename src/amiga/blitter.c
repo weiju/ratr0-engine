@@ -124,6 +124,13 @@ void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
     UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
     UINT32 src_plane_size = src->width / 8 * src->height;
     UINT32 dst_row_bytes = dst->width / 8;
+    // modulos are in *bytes*
+    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
+    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
+    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
+
     WaitBlit();
     custom.bltafwm = 0xffff;
     custom.bltalwm = 0xffff;
@@ -133,17 +140,10 @@ void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
     // not used
     custom.bltcon1 = 0;
 
-    // modulos are in *bytes*
-    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
-    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
     custom.bltamod = srcmod;
     custom.bltbmod = 0;
     custom.bltcmod = 0;
     custom.bltdmod = dstmod;
-
-    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
-    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
-    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
 
     custom.bltapt = (UINT8 *) src_addr;
     custom.bltbpt = 0;
@@ -157,7 +157,6 @@ void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
         custom.bltbpt = 0;
         custom.bltcpt = 0;
         custom.bltdpt = (UINT8 *) dst_addr;
-        UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
         custom.bltsize = bltsize;
         WaitBlit();
         src_addr += src_plane_size;
@@ -175,6 +174,38 @@ void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
  *   at least 16 pixels
  * - Each tile has the width of a multiple of 16 pixels
  */
+void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
+                  UINT16 dstmod, UINT16 srcmod,
+                  UINT8 num_planes,
+                  UINT16 dst_row_bytes, UINT16 src_plane_size,
+                  INT8 dst_shift, UINT16 alwm, UINT16 bltsize)
+{
+    WaitBlit();
+    custom.bltafwm = 0xffff;
+    custom.bltalwm = alwm;
+
+    // channels A-D turned on => 0x09 LF => D = AB + ~AC => 0xca
+    custom.bltcon0 = 0x0fca | (dst_shift << 12);
+    // used
+    custom.bltcon1 = dst_shift << 12;
+
+    custom.bltamod = srcmod;
+    custom.bltbmod = srcmod;
+    custom.bltcmod = dstmod;
+    custom.bltdmod = dstmod;
+
+    for (int i = 0; i < num_planes; i++) {
+        custom.bltapt = (UINT8 *) mask_addr;
+        custom.bltbpt = (UINT8 *) src_addr;
+        custom.bltcpt = (UINT8 *) dst_addr;
+        custom.bltdpt = (UINT8 *) dst_addr;
+        custom.bltsize = bltsize;
+        WaitBlit();
+        src_addr += src_plane_size;
+        dst_addr += dst_row_bytes;
+    }
+}
+
 void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
                              struct Ratr0TileSheet *bobs,
                              int tilex, int tiley,
@@ -209,43 +240,18 @@ void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
         final_blit_width = dst_blit_width;
         alwm = 0;
     }
-
     UINT32 src_plane_size = bobs->header.width / 8 * bobs->header.height;
     UINT32 dst_row_bytes = dst->width / 8;
-    WaitBlit();
-    custom.bltafwm = 0xffff;
-    custom.bltalwm = alwm;
-
-    // channels A-D turned on => 0x09 LF => D = AB + ~AC => 0xca
-    custom.bltcon0 = 0x0fca | (dst_shift << 12);
-    // used
-    custom.bltcon1 = dst_shift << 12;
-
     // modulos are in *bytes*
     UINT16 srcmod = bobs->header.width / 8 - (final_blit_width * 2);
     UINT16 dstmod = dst_row_bytes * dst->depth - (final_blit_width * 2);
-    custom.bltamod = srcmod;
-    custom.bltbmod = srcmod;
-    custom.bltcmod = dstmod;
-    custom.bltdmod = dstmod;
-
     int bobs_plane_size = bobs->header.width / 8 * bobs->header.height;
     UINT8 *bobs_addr = engine->memory_system->block_address(bobs->h_imgdata);
-    UINT8 *mask_addr = bobs_addr + bobs_plane_size * bobs->header.bmdepth +
+    UINT32 mask_addr = (UINT32) bobs_addr + bobs_plane_size * bobs->header.bmdepth +
         srcy * bobs->header.width / 8 + srcx / 8;
     UINT32 src_addr = ((UINT32) bobs_addr) + (bobs->header.width / 8 * srcy * bobs->header.bmdepth) + srcx / 8;
     UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
     UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
-
-    for (int i = 0; i < bobs->header.bmdepth; i++) {
-        custom.bltapt = (UINT8 *) mask_addr;
-        custom.bltbpt = (UINT8 *) src_addr;
-        custom.bltcpt = (UINT8 *) dst_addr;
-        custom.bltdpt = (UINT8 *) dst_addr;
-        UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
-        custom.bltsize = bltsize;
-        WaitBlit();
-        src_addr += src_plane_size;
-        dst_addr += dst_row_bytes;
-    }
+    _blit_object(dst_addr, src_addr, mask_addr, dstmod, srcmod, bobs->header.bmdepth,
+                 dst_row_bytes, src_plane_size, dst_shift, alwm, bltsize);
 }
