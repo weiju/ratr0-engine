@@ -1,7 +1,11 @@
 #include <stdio.h>
 
+#include <exec/interrupts.h>
+#include <hardware/intbits.h>
+
 #include <hardware/custom.h>
 #include <graphics/gfxbase.h>
+#include <clib/exec_protos.h>
 #include <clib/intuition_protos.h>
 #include <clib/graphics_protos.h>
 
@@ -28,6 +32,24 @@
  */
 extern struct GfxBase *GfxBase;
 extern struct Custom custom;
+
+// For our interrupt handlers
+static struct Interrupt vbint, bltint, *old_bltint;
+static BOOL has_blitint;
+static UINT32 counter = 0, blitcounter = 0;
+
+void VertBServer(void)
+{
+    // TODO: Handle vertical blank interrupts here
+    //counter++;
+}
+void BlitHandler(void)
+{
+    // TODO: Handle blitter finished interrupts here, e.g.
+    // Queue processing
+    //blitcounter++;
+    custom.intreq = INTF_BLIT;
+}
 
 static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
@@ -213,6 +235,44 @@ static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
 // Blitter and sprite queues here
 //struct Ratr0
 
+void _install_interrupts(void)
+{
+    // Interrupt server for Vertical Blank, only PORTS, COPER, VERTB, EXTER and NMI
+    // can be serviced throught an interrupt server because they are chained
+    vbint.is_Node.ln_Type = NT_INTERRUPT;
+    vbint.is_Node.ln_Pri = -60;
+    vbint.is_Node.ln_Name = "vbinter";
+    vbint.is_Data = (APTR) &counter;
+    vbint.is_Code = VertBServer;
+    AddIntServer(INTB_VERTB, &vbint);
+
+    // Interrupt handler for BLIT, blit finished has to be serviced through
+    // handler
+    bltint.is_Node.ln_Type = NT_INTERRUPT;
+    bltint.is_Node.ln_Pri = -60;
+    bltint.is_Node.ln_Name = "vbinter";
+    bltint.is_Data = (APTR) &blitcounter;
+    bltint.is_Code = BlitHandler;
+
+    // Replace blit handler, and remember old state
+    has_blitint = custom.intenar & INTF_BLIT ? TRUE : FALSE;
+    custom.intena = INTF_BLIT;
+    old_bltint = SetIntVector(INTB_BLIT, &bltint);
+    custom.intena = INTF_SETCLR | INTF_BLIT;
+}
+
+void _uninstall_interrupts(void)
+{
+    // remove blitter handler
+    custom.intena = INTF_BLIT;
+    SetIntVector(INTB_BLIT, old_bltint);
+    if (has_blitint) {
+        custom.intena = INTF_SETCLR | INTF_BLIT;
+    }
+
+    // Remove vertical blank handler
+    RemIntServer(INTB_VERTB, &vbint);
+}
 
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
@@ -240,10 +300,14 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
     build_display_buffer(init_data);
     build_copper_list();
     custom.cop1lc = (ULONG) copper_list;
+
+    _install_interrupts();
 }
 
 void ratr0_amiga_display_shutdown(void)
 {
+    _uninstall_interrupts();
+
     PRINT_DEBUG("Copper list size: %d", copperlist_size);
     engine->memory_system->free_block(h_copper_list);
     ratr0_amiga_sprites_shutdown();
