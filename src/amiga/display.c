@@ -110,7 +110,7 @@ struct Ratr0AmigaRenderContext *ratr0_amiga_get_render_context(void)
 /**
  * Private function to apply the render context to the copper list
  */
-void set_render_context(struct Ratr0AmigaRenderContext *ctx)
+static void set_render_context(struct Ratr0AmigaRenderContext *ctx)
 {
     UINT16 screenrow_bytes = ctx->width / 8;
     set_display_mode(ctx->width, ctx->depth);
@@ -125,7 +125,10 @@ void set_render_context(struct Ratr0AmigaRenderContext *ctx)
     }
 }
 
-void build_copper_list()
+/**
+ * Private function to build the main copper list.
+ */
+static void build_copper_list()
 {
     int cl_index = 0;
     cl_index = _cop_move(FMODE, 0, cl_index);  // 4 bytes
@@ -190,6 +193,7 @@ void build_copper_list()
 
     // Just for diagnostics
     copperlist_size = cl_index;
+    set_render_context(&render_context);
 }
 
 static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
@@ -204,7 +208,6 @@ static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
                                                              init_data->height *
                                                              init_data->depth);
     render_context.display_buffer = engine->memory_system->block_address(h_display_buffer);
-    set_render_context(&render_context);
 }
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
