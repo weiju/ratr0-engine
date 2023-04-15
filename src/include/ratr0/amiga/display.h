@@ -39,6 +39,14 @@ struct Ratr0AmigaRenderContext {
     void *display_buffer;
 };
 
+enum BlitType {
+    BLIT_BLOCK, BLIT_BOB
+};
+struct Ratr0AmigaBlitCommand {
+    struct Ratr0AmigaRenderContext *dst;
+    struct Ratr0AmigaRenderContext *src;
+};
+
 /**
  * Start up the display subsystem.
  */

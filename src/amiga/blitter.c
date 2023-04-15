@@ -69,39 +69,45 @@ void ratr0_amiga_blit_8x8(struct Ratr0AmigaRenderContext *dest,
  *   - dst is aligned on a 16 bit boundary and is larger than the blit width
  *   - both src and dst have the same depth
  */
-void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
-                           struct Ratr0AmigaRenderContext *src,
-                           UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                           UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+void _blit_fast(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
+                UINT16 bltsize)
 {
-    INT8 dst_shift = 0;
-    UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
     WaitBlit();
     custom.bltafwm = 0xffff;
     custom.bltalwm = 0xffff;
 
     // D = A => LF = 0xf0, channels A and D turned on => 0x09
-    custom.bltcon0 = 0x09f0 | (dst_shift << 12);
+    custom.bltcon0 = 0x09f0;
     // not used
     custom.bltcon1 = 0;
 
-    // modulos are in *bytes*
-    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
-    UINT16 dstmod = dst->width / 8 - (blit_width_words * 2);
     custom.bltamod = srcmod;
     custom.bltbmod = 0;
     custom.bltcmod = 0;
     custom.bltdmod = dstmod;
 
-    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
-    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
-
     custom.bltapt = (UINT8 *) src_addr;
     custom.bltbpt = 0;
     custom.bltcpt = 0;
     custom.bltdpt = (UINT8 *) dst_addr;
-    UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
     custom.bltsize = bltsize;
+}
+
+
+void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
+                           struct Ratr0AmigaRenderContext *src,
+                           UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                           UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+{
+    UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
+    // modulos are in *bytes*
+    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
+    UINT16 dstmod = dst->width / 8 - (blit_width_words * 2);
+    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
+
+    _blit_fast(dst_addr, src_addr, dstmod, srcmod, bltsize);
 }
 
 /**

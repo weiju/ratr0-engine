@@ -209,6 +209,11 @@ static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
                                                              init_data->depth);
     render_context.display_buffer = engine->memory_system->block_address(h_display_buffer);
 }
+
+// Blitter and sprite queues here
+//struct Ratr0
+
+
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
     engine = eng;
@@ -247,7 +252,6 @@ void ratr0_amiga_display_shutdown(void)
     LoadView(((struct GfxBase *) GfxBase)->ActiView);
     WaitTOF();
     WaitTOF();
-    //custom.dmacon  = 0x0020;
     custom.cop1lc = (ULONG) ((struct GfxBase *) GfxBase)->copinit;
     RethinkDisplay();
 }
