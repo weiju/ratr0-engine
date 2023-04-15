@@ -67,9 +67,11 @@ access its functionality.
 
 ### Physics / Collision subsystem
 
-### Networking subsystem
-
 ## The World subsystem
+
+### Entity Component System
+
+The world model is implemented using an entity component system.
 
 ### Scenes and Nodes
 

@@ -33,7 +33,6 @@ static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
 static Ratr0Engine *engine;
-extern UINT16 *ENGINE_SPLASH_SCREEN;
 
 // Data fetch
 #define DDFSTRT_VALUE      0x0038
@@ -65,7 +64,6 @@ UINT16 _cop_wait_end(UINT16 index)
 }
 
 #define MAX_BITPLANES (6)
-#define SPLASH_SCREEN_ROW_BYTES (320 / 8)
 static int copperlist_size = 0;
 
 // The principal copper list indexes to build the display elements
@@ -101,11 +99,19 @@ void set_display_mode(UINT16 width, UINT8 num_bitplanes)
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-static struct Ratr0AmigaRenderContext *current_context = NULL;
+static struct Ratr0AmigaRenderContext render_context;
+Ratr0MemHandle h_display_buffer;
 
-struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0AmigaRenderContext *ctx)
+struct Ratr0AmigaRenderContext *ratr0_amiga_get_render_context(void)
 {
-    struct Ratr0AmigaRenderContext *previous_ctx = current_context;
+    return &render_context;
+}
+
+/**
+ * Private function to apply the render context to the copper list
+ */
+void set_render_context(struct Ratr0AmigaRenderContext *ctx)
+{
     UINT16 screenrow_bytes = ctx->width / 8;
     set_display_mode(ctx->width, ctx->depth);
     UINT32 plane = (UINT32) ctx->display_buffer;
@@ -117,13 +123,7 @@ struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0Amiga
         plane += screenrow_bytes;
         clidx += 4;
     }
-    current_context = ctx;
-    return previous_ctx;
 }
-
-struct Ratr0AmigaRenderContext splash_screen = {
-    320, 256, 2, TRUE, &ENGINE_SPLASH_SCREEN
-};
 
 void build_copper_list()
 {
@@ -188,13 +188,24 @@ void build_copper_list()
     copper_list[color00_idx + 18 * 2] = 0x0ff0;
     copper_list[color00_idx + 19 * 2] = 0x00f0;
 
-    // Test with splash screen
-    ratr0_amiga_set_render_context(&splash_screen);
-
     // Just for diagnostics
     copperlist_size = cl_index;
 }
 
+static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
+{
+    render_context.width = init_data->width;
+    render_context.height = init_data->height;
+    render_context.depth = init_data->depth;
+    render_context.is_interleaved = TRUE;
+    // TODO: double buffer
+    h_display_buffer = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
+                                                             init_data->width / 8 *
+                                                             init_data->height *
+                                                             init_data->depth);
+    render_context.display_buffer = engine->memory_system->block_address(h_display_buffer);
+    set_render_context(&render_context);
+}
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo *init_data)
 {
     engine = eng;
@@ -216,6 +227,9 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
     int cl_num_bytes = 260;
     h_copper_list = engine->memory_system->allocate_block(RATR0_MEM_CHIP, cl_num_bytes);
     copper_list = engine->memory_system->block_address(h_copper_list);
+
+    // Build the display buffer
+    build_display_buffer(init_data);
     build_copper_list();
     custom.cop1lc = (ULONG) copper_list;
 }

@@ -67,7 +67,7 @@ extern void ratr0_amiga_display_update(void);
  * given specification.
  * The data in the display buffer is assumed to be interleaved.
  */
-extern struct Ratr0AmigaRenderContext *ratr0_amiga_set_render_context(struct Ratr0AmigaRenderContext *);
+extern struct Ratr0AmigaRenderContext *ratr0_amiga_get_render_context(void);
 
 extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
