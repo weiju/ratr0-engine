@@ -34,17 +34,20 @@ extern struct GfxBase *GfxBase;
 extern struct Custom custom;
 
 static struct Ratr0AmigaBlitCommand blit_queue[20];
-static int current_blit = 0;
-static int last_blit = -1;
+static int current_blit = 0; // this is the iteration index
+static int last_blit = -1;  // end of the queue
 
 // For our interrupt handlers
 static struct Interrupt vbint, bltint, *old_bltint;
-static BOOL has_blitint, process_blitter_queue = FALSE;
+static BOOL has_blitint, process_blit_queue = FALSE;
 static UINT32 counter = 0, blitcounter = 0;
 
 void VertBServer(void)
 {
     // TODO: Handle vertical blank interrupts here
+    // Do the things that have an immediate effect on the screen, so
+    // they will be changed before the DMA is in the visible part of
+    // the display. This could be e.g. Sprite updates, scrolling, e.g.
     //counter++;
 }
 void BlitHandler(void)
@@ -52,16 +55,16 @@ void BlitHandler(void)
     // TODO: Handle blitter finished interrupts here, e.g.
     // Queue processing
     //blitcounter++;
-    if (process_blitter_queue) {
-        if (last_blit > current_blit) {
+    if (process_blit_queue) {
+        if (last_blit >= current_blit) {
             // This handler processes the next blitter request in the queue
             // If there are none, just exit
-            current_blit++;
+            ratr0_amiga_do_blit_command(&blit_queue[current_blit++]);
         } else {
             // empty the queue
             current_blit = 0;
             last_blit = -1;
-            process_blitter_queue = FALSE;
+            process_blit_queue = FALSE;
         }
     }
     custom.intreq = INTF_BLIT;
@@ -316,12 +319,12 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
     build_copper_list();
     custom.cop1lc = (ULONG) copper_list;
 
-    _install_interrupts();
+    //_install_interrupts();
 }
 
 void ratr0_amiga_display_shutdown(void)
 {
-    _uninstall_interrupts();
+    //_uninstall_interrupts();
 
     PRINT_DEBUG("Copper list size: %d", copperlist_size);
     engine->memory_system->free_block(h_copper_list);
@@ -349,6 +352,30 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
     copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
 }
 
+/**
+ * Blitter Queue functions.
+ */
+void ratr0_amiga_enqueue_blit_fast(struct Ratr0AmigaSurface *dst,
+                                   struct Ratr0AmigaSurface *src,
+                                   UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                                   UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+{
+    ratr0_amiga_make_blit_fast(&blit_queue[++last_blit],
+                               dst, src, dstx, dsty, srcx, srcy,
+                               blit_width_pixels, blit_height_pixels);
+}
+
+void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
+                                            struct Ratr0TileSheet *bobs,
+                                            UINT16 tilex, UINT16 tiley,
+                                            UINT16 dstx, UINT16 dsty)
+{
+    ratr0_amiga_make_blit_object(&blit_queue[++last_blit],
+                                 dst, bobs, tilex, tiley, dstx,dsty);
+}
+
+
+
 void ratr0_amiga_display_update()
 {
     // We need to find and restore dirty rectangles. This is rather hard, because on Amiga, there
@@ -360,6 +387,17 @@ void ratr0_amiga_display_update()
     // top to bottom
     // Same for sprites, but we need to interact with the copper list for multiplexing
     OwnBlitter();
+    // TODO: for now, we just process the blitter queue without interrupts
+    // until we figured out the best way to do it. That gets rid of the concurrency
+    // issues until we understand it better
     // Start putting in the first blitter request here
-    DisownBlitter();
+    if (last_blit >= 0) { // for now that's the condition
+        process_blit_queue = TRUE;  // enable the blit queue
+        current_blit = 0; // start at the front
+        while (current_blit <= last_blit)
+            ratr0_amiga_do_blit_command(&blit_queue[current_blit++]);
+        process_blit_queue = FALSE;
+        last_blit = -1;
+    }
+    DisownBlitter();  // and free the blitter
 }

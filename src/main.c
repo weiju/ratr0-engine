@@ -51,20 +51,22 @@ int main(int argc, char **argv)
         engine->memory_system->block_address(tiles.h_imgdata)
     };
     ratr0_amiga_set_palette(tiles.palette, 8);
-    OwnBlitter();
+
     struct Ratr0AmigaSurface *disp_surf = ratr0_amiga_get_display_surface();
+
+    // Blit the background
     ratr0_amiga_blit_fast(disp_surf, &grid_surf, 0, 0, 0, 0, 320, 256);
 
+    /* Test for the blit queue */
     /* Blit command */
-    struct Ratr0AmigaBlitCommand cmd;
-    ratr0_amiga_make_blit_fast(&cmd, disp_surf, &tiles_surf, 16, 16, 0, 0, 16, 16);
-    ratr0_amiga_do_blit_command(&cmd);
+    ratr0_amiga_enqueue_blit_fast(disp_surf, &tiles_surf, 16, 16, 0, 0, 16, 16);
+    ratr0_amiga_enqueue_blit_fast(disp_surf, &tiles_surf, 32, 32, 16, 0, 16, 16);
+    ratr0_amiga_enqueue_blit_fast(disp_surf, &tiles_surf, 48, 48, 32, 0, 16, 16);
 
     // Blit BOB
     for (int i = 0; i < 12; i++) {
-        ratr0_amiga_blit_object(disp_surf, &bobs, 0, 0, 16 + i * 2, 16 * i);
+        ratr0_amiga_enqueue_blit_object(disp_surf, &bobs, 0, 0, 16 + i * 2, 16 * i);
     }
-    DisownBlitter();
 #endif
 
     // Then run the game loop

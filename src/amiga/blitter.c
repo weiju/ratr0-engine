@@ -12,6 +12,12 @@ extern struct Custom custom;
 static Ratr0Engine *engine;
 
 
+void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
+                  UINT16 dstmod, UINT16 srcmod,
+                  UINT8 num_planes,
+                  UINT16 dst_row_bytes, UINT16 src_plane_size,
+                  INT8 dst_shift, UINT16 alwm, UINT16 bltsize);
+
 void ratr0_amiga_blitter_startup(Ratr0Engine *eng)
 {
     engine = eng;
@@ -98,6 +104,11 @@ void ratr0_amiga_do_blit_command(struct Ratr0AmigaBlitCommand *cmd)
     if (cmd->blit_type == BLIT_BLOCK) {
         _blit_fast(cmd->dst_addr, cmd->src_addr, cmd->dstmod, cmd->srcmod,
                    cmd->bltsize);
+    } else if (cmd->blit_type == BLIT_BOB) {
+        _blit_object(cmd->dst_addr, cmd->src_addr, cmd->mask_addr,
+                     cmd->dstmod, cmd->srcmod, cmd->num_planes,
+                     cmd->dst_row_bytes, cmd->src_plane_size,
+                     cmd->dst_shift, cmd->alwm, cmd->bltsize);
     }
 }
 
@@ -132,60 +143,6 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaSurface *dst,
     UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
 
     _blit_fast(dst_addr, src_addr, dstmod, srcmod, bltsize);
-}
-
-/**
- * This should be rare, but serves as an illustration for when the
- * source is non-interleaved and the destination is interleaved.
- * The modulo for the destination needs to be (row bytes * number of planes) - blit width in bytes
- */
-void ratr0_amiga_blit_ni(struct Ratr0AmigaSurface *dst,
-                         struct Ratr0AmigaSurface *src,
-                         UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                         UINT16 blit_width_pixels, UINT16 blit_height_pixels)
-{
-    INT8 dst_shift = 0;
-    UINT16 blit_width_words = blit_width_pixels / 16;  // blit width in words
-    UINT32 src_plane_size = src->width / 8 * src->height;
-    UINT32 dst_row_bytes = dst->width / 8;
-    // modulos are in *bytes*
-    UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
-    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
-    UINT32 src_addr = ((UINT32) src->buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
-    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
-    UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
-
-    WaitBlit();
-    custom.bltafwm = 0xffff;
-    custom.bltalwm = 0xffff;
-
-    // D = A => LF = 0xf0, channels A and D turned on => 0x09
-    custom.bltcon0 = 0x09f0 | (dst_shift << 12);
-    // not used
-    custom.bltcon1 = 0;
-
-    custom.bltamod = srcmod;
-    custom.bltbmod = 0;
-    custom.bltcmod = 0;
-    custom.bltdmod = dstmod;
-
-    custom.bltapt = (UINT8 *) src_addr;
-    custom.bltbpt = 0;
-    custom.bltcpt = 0;
-    custom.bltdpt = (UINT8 *) dst_addr;
-    custom.bltsize = bltsize;
-    WaitBlit();
-
-    for (int i = 0; i < src->depth; i++) {
-        custom.bltapt = (UINT8 *) src_addr;
-        custom.bltbpt = 0;
-        custom.bltcpt = 0;
-        custom.bltdpt = (UINT8 *) dst_addr;
-        custom.bltsize = bltsize;
-        WaitBlit();
-        src_addr += src_plane_size;
-        dst_addr += dst_row_bytes;
-    }
 }
 
 /**
@@ -230,6 +187,62 @@ void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
     }
 }
 
+void ratr0_amiga_make_blit_object(struct Ratr0AmigaBlitCommand *cmd,
+                                  struct Ratr0AmigaSurface *dst,
+                                  struct Ratr0TileSheet *bobs,
+                                  int tilex, int tiley,
+                                  int dstx, int dsty)
+{
+    // Source variables
+    UINT16 src_blit_width_pixels = bobs->header.tile_width;
+    UINT16 src_blit_width = src_blit_width_pixels / 16;
+    UINT16 blit_height_pixels = bobs->header.tile_height;
+    UINT16 srcx = tilex * bobs->header.tile_width;
+    UINT16 srcy = tiley * bobs->header.tile_height;
+
+    // Destination variables
+    // destination x relative to the containing word, this is also the
+    // the shift amount
+    UINT8 dst_x0 = dstx & 0x0f;
+    INT8 dst_shift = dst_x0;
+    UINT16 dst_blit_width = src_blit_width;
+    INT8 dst_offset = 0;
+
+    // negative shift => shift is to the left, so we extend the shift to the
+    // left and right-shift in the previous word so we always right-shift
+    if (dst_shift < 0) {
+        dst_shift = 16 + dst_shift;
+        dst_blit_width++;
+        dst_offset = -2;
+    }
+
+    int bobs_plane_size = bobs->header.width / 8 * bobs->header.height;
+    UINT8 *bobs_addr = engine->memory_system->block_address(bobs->h_imgdata);
+    UINT16 alwm = 0xffff;
+    UINT16 final_blit_width = src_blit_width;
+    if (dst_blit_width > src_blit_width) {
+        final_blit_width = dst_blit_width;
+        alwm = 0;
+    }
+    UINT16 dst_row_bytes = dst->width / 8;
+
+    cmd->blit_type = BLIT_BOB;
+
+    cmd->dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    cmd->src_addr = ((UINT32) bobs_addr) + (bobs->header.width / 8 * srcy * bobs->header.bmdepth) + srcx / 8;
+    cmd->mask_addr = (UINT32) bobs_addr + bobs_plane_size * bobs->header.bmdepth +
+        srcy * bobs->header.width / 8 + srcx / 8;
+    cmd->dstmod = dst_row_bytes * dst->depth - (final_blit_width * 2);
+    cmd->srcmod = bobs->header.width / 8 - (final_blit_width * 2);
+    cmd->num_planes = bobs->header.bmdepth;
+    cmd->dst_row_bytes = dst_row_bytes;
+    cmd->src_plane_size = bobs->header.width / 8 * bobs->header.height;
+    cmd->alwm = alwm;
+    cmd->dst_shift = dst_shift;
+    cmd->bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
+
+}
+/*
 void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
                              struct Ratr0TileSheet *bobs,
                              int tilex, int tiley,
@@ -279,3 +292,4 @@ void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
     _blit_object(dst_addr, src_addr, mask_addr, dstmod, srcmod, bobs->header.bmdepth,
                  dst_row_bytes, src_plane_size, dst_shift, alwm, bltsize);
 }
+*/
