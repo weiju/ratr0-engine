@@ -5,7 +5,7 @@
 #include <ratr0/engine.h>
 
 /* Amiga Blitter functionality module */
-struct Ratr0AmigaRenderContext;  // from display
+struct Ratr0AmigaSurface;  // from display
 struct Ratr0TileSheet;
 
 /**
@@ -32,8 +32,8 @@ extern void ratr0_amiga_do_blit_command(struct Ratr0AmigaBlitCommand *cmd);
  * Common case 1: Blasting a rectangular block from the source to the destination without masking,
  * where the block width is a multiple of 16 and the source is arranged in multiples of 16 pixels.
  */
-extern void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
-                                  struct Ratr0AmigaRenderContext *src,
+extern void ratr0_amiga_blit_fast(struct Ratr0AmigaSurface *dst,
+                                  struct Ratr0AmigaSurface *src,
                                   UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                   UINT16 blit_width_pixels, UINT16 blit_height_pixels);
 
@@ -41,8 +41,8 @@ extern void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
  * Fast blit: Initialize a blitter command that is part of the queue.
  */
 extern void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
-                                       struct Ratr0AmigaRenderContext *dst,
-                                       struct Ratr0AmigaRenderContext *src,
+                                       struct Ratr0AmigaSurface *dst,
+                                       struct Ratr0AmigaSurface *src,
                                        UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                        UINT16 blit_width_pixels, UINT16 blit_height_pixels);
 
@@ -50,8 +50,8 @@ extern void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
  * just for tweaking and figuring out how to blit non-interleaved data
  */
 
-extern void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dest,
-                                struct Ratr0AmigaRenderContext *src,
+extern void ratr0_amiga_blit_ni(struct Ratr0AmigaSurface *dest,
+                                struct Ratr0AmigaSurface *src,
                                 UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                 UINT16 blit_width_pixels, UINT16 blit_width_height);
 
@@ -60,7 +60,7 @@ extern void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dest,
 /*
  * Common case 2: Blit a masked object to the screen. This is a general blit.
  */
-extern void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
+extern void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
                                     struct Ratr0TileSheet *bobs,
                                     int tilex, int tiley,
                                     int dstx, int dsty);
@@ -68,8 +68,8 @@ extern void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
 /*
  * Common case 3: Blasting an 8x8 block from the source to the destination without masking.
  */
-extern void ratr0_amiga_blit_8x8(struct Ratr0AmigaRenderContext *dest,
-                                 struct Ratr0AmigaRenderContext *src,
+extern void ratr0_amiga_blit_8x8(struct Ratr0AmigaSurface *dst,
+                                 struct Ratr0AmigaSurface *src,
                                  UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy);
 
 

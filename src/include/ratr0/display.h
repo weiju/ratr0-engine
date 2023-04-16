@@ -11,10 +11,16 @@ struct Ratr0DisplayInfo {
     BOOL use_doublebuffer;
 };
 
+/**
+ * Surface is a rendering target, it is an abstract thing.
+ */
+struct Ratr0Surface;
+
 struct Ratr0DisplaySystem {
     void (*shutdown)(void);
     void (*update)(void);
     void (*wait_vblank)(void);
+    void (*enqueue_blit)(struct Ratr0Surface *ctx, UINT16 dstx, UINT16 dsty);
 };
 
 /**

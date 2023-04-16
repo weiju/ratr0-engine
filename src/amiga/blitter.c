@@ -24,8 +24,8 @@ void ratr0_amiga_blitter_startup(Ratr0Engine *eng)
  * This is a masked blit where 8 pixels are masked out, depending on
  * where the tile is
  */
-void ratr0_amiga_blit_8x8(struct Ratr0AmigaRenderContext *dest,
-                          struct Ratr0AmigaRenderContext *src,
+void ratr0_amiga_blit_8x8(struct Ratr0AmigaSurface *dest,
+                          struct Ratr0AmigaSurface *src,
                           UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy)
 {
     /*
@@ -102,8 +102,8 @@ void ratr0_amiga_do_blit_command(struct Ratr0AmigaBlitCommand *cmd)
 }
 
 void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
-                                struct Ratr0AmigaRenderContext *dst,
-                                struct Ratr0AmigaRenderContext *src,
+                                struct Ratr0AmigaSurface *dst,
+                                struct Ratr0AmigaSurface *src,
                                 UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                 UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
@@ -118,8 +118,8 @@ void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
 }
 
 
-void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
-                           struct Ratr0AmigaRenderContext *src,
+void ratr0_amiga_blit_fast(struct Ratr0AmigaSurface *dst,
+                           struct Ratr0AmigaSurface *src,
                            UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                            UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
@@ -139,8 +139,8 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaRenderContext *dst,
  * source is non-interleaved and the destination is interleaved.
  * The modulo for the destination needs to be (row bytes * number of planes) - blit width in bytes
  */
-void ratr0_amiga_blit_ni(struct Ratr0AmigaRenderContext *dst,
-                         struct Ratr0AmigaRenderContext *src,
+void ratr0_amiga_blit_ni(struct Ratr0AmigaSurface *dst,
+                         struct Ratr0AmigaSurface *src,
                          UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                          UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
@@ -230,7 +230,7 @@ void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
     }
 }
 
-void ratr0_amiga_blit_object(struct Ratr0AmigaRenderContext *dst,
+void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
                              struct Ratr0TileSheet *bobs,
                              int tilex, int tiley,
                              int dstx, int dsty)

@@ -33,7 +33,7 @@ struct Ratr0AmigaDisplayInfo {
  * In the future we can use this for backbuffer and/or dual playfield
  * information.
  */
-struct Ratr0AmigaRenderContext {
+struct Ratr0AmigaSurface {
     UINT16 width, height, depth;
     BOOL is_interleaved;
     void *display_buffer;
@@ -67,7 +67,7 @@ extern void ratr0_amiga_display_update(void);
  * given specification.
  * The data in the display buffer is assumed to be interleaved.
  */
-extern struct Ratr0AmigaRenderContext *ratr0_amiga_get_render_context(void);
+extern struct Ratr0AmigaSurface *ratr0_amiga_get_display_surface(void);
 
 extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);

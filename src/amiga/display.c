@@ -137,25 +137,25 @@ void set_display_mode(UINT16 width, UINT8 num_bitplanes)
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-static struct Ratr0AmigaRenderContext render_context;
+static struct Ratr0AmigaSurface display_surface;
 Ratr0MemHandle h_display_buffer;
 
-struct Ratr0AmigaRenderContext *ratr0_amiga_get_render_context(void)
+struct Ratr0AmigaSurface *ratr0_amiga_get_display_surface(void)
 {
-    return &render_context;
+    return &display_surface;
 }
 
 /**
  * Private function to apply the render context to the copper list
  */
-static void set_render_context(struct Ratr0AmigaRenderContext *ctx)
+static void set_display_surface(struct Ratr0AmigaSurface *s)
 {
-    UINT16 screenrow_bytes = ctx->width / 8;
-    set_display_mode(ctx->width, ctx->depth);
-    UINT32 plane = (UINT32) ctx->display_buffer;
+    UINT16 screenrow_bytes = s->width / 8;
+    set_display_mode(s->width, s->depth);
+    UINT32 plane = (UINT32) s->display_buffer;
     UINT32 clidx = bpl1pth_idx;
 
-    for (int i = 0; i < ctx->depth; i++) {
+    for (int i = 0; i < s->depth; i++) {
         copper_list[clidx] = (plane >> 16) & 0xffff;
         copper_list[clidx + 2] = plane & 0xffff;
         plane += screenrow_bytes;
@@ -231,25 +231,24 @@ static void build_copper_list()
 
     // Just for diagnostics
     copperlist_size = cl_index;
-    set_render_context(&render_context);
+    set_display_surface(&display_surface);
 }
 
 static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
 {
-    render_context.width = init_data->width;
-    render_context.height = init_data->height;
-    render_context.depth = init_data->depth;
-    render_context.is_interleaved = TRUE;
+    display_surface.width = init_data->width;
+    display_surface.height = init_data->height;
+    display_surface.depth = init_data->depth;
+    display_surface.is_interleaved = TRUE;
     // TODO: double buffer
     h_display_buffer = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
                                                              init_data->width / 8 *
                                                              init_data->height *
                                                              init_data->depth);
-    render_context.display_buffer = engine->memory_system->block_address(h_display_buffer);
+    display_surface.display_buffer = engine->memory_system->block_address(h_display_buffer);
 }
 
 // Blitter and sprite queues here
-//struct Ratr0
 
 void _install_interrupts(void)
 {

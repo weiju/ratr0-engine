@@ -24,12 +24,12 @@ int main(int argc, char **argv)
     //struct Ratr0TileSheet sprite;
     struct Ratr0TileSheet grid;
     struct Ratr0TileSheet tiles;
-    //struct Ratr0TileSheet bobs;
+    struct Ratr0TileSheet bobs;
 
     //engine->resource_system->read_tilesheet("test_assets/simple_sprite-001.ts", &sprite);
     engine->resource_system->read_tilesheet("test_assets/basegrid_320x256x3.ts", &grid);
     engine->resource_system->read_tilesheet("test_assets/tiles_48x48x3.ts", &tiles);
-    //engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
+    engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
 
 #ifdef AMIGA
 
@@ -39,32 +39,31 @@ int main(int argc, char **argv)
     ratr0_amiga_display_set_sprite(0, anim_sprite->sprite_data);*/
 
     // Set grid as background
-    struct Ratr0AmigaRenderContext grid_ctx = {
+    struct Ratr0AmigaSurface grid_surf = {
         grid.header.width, grid.header.height, grid.header.bmdepth, TRUE,
         engine->memory_system->block_address(grid.h_imgdata)
     };
 
     // Blitter test
     // Blit tile
-    struct Ratr0AmigaRenderContext tiles_ctx = {
+    struct Ratr0AmigaSurface tiles_surf = {
         tiles.header.width, tiles.header.height, tiles.header.bmdepth, TRUE,
         engine->memory_system->block_address(tiles.h_imgdata)
     };
     ratr0_amiga_set_palette(tiles.palette, 8);
     OwnBlitter();
-    struct Ratr0AmigaRenderContext *ctx = ratr0_amiga_get_render_context();
-    ratr0_amiga_blit_fast(ctx, &grid_ctx, 0, 0, 0, 0, 320, 256);
+    struct Ratr0AmigaSurface *disp_surf = ratr0_amiga_get_display_surface();
+    ratr0_amiga_blit_fast(disp_surf, &grid_surf, 0, 0, 0, 0, 320, 256);
 
     /* Blit command */
     struct Ratr0AmigaBlitCommand cmd;
-    ratr0_amiga_make_blit_fast(&cmd, ctx, &tiles_ctx, 16, 16, 0, 0, 16, 16);
+    ratr0_amiga_make_blit_fast(&cmd, disp_surf, &tiles_surf, 16, 16, 0, 0, 16, 16);
     ratr0_amiga_do_blit_command(&cmd);
 
     // Blit BOB
-    /*
     for (int i = 0; i < 12; i++) {
-        ratr0_amiga_blit_object(ctx, &bobs, 0, 0, 16 + i * 2, 16 * i);
-        }*/
+        ratr0_amiga_blit_object(disp_surf, &bobs, 0, 0, 16 + i * 2, 16 * i);
+    }
     DisownBlitter();
 #endif
 
@@ -72,7 +71,7 @@ int main(int argc, char **argv)
     engine->game_loop();
 
     // Game cleanup optional
-    //engine->resource_system->free_tilesheet_data(&bobs);
+    engine->resource_system->free_tilesheet_data(&bobs);
     engine->resource_system->free_tilesheet_data(&tiles);
     engine->resource_system->free_tilesheet_data(&grid);
     //engine->resource_system->free_tilesheet_data(&sprite);
