@@ -11,7 +11,7 @@
 #include <ratr0/memory.h>
 #include <ratr0/events.h>
 #include <ratr0/audio.h>
-#include <ratr0/display.h>
+#include <ratr0/rendering.h>
 #include <ratr0/input.h>
 #include <ratr0/physics.h>
 #include <ratr0/resources.h>
@@ -70,7 +70,7 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.event_system = ratr0_events_startup(&engine);
     engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
     engine.input_system = ratr0_input_startup(&engine);
-    engine.display_system = ratr0_display_startup(&engine, &display_init);
+    engine.rendering_system = ratr0_rendering_startup(&engine, &display_init);
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
     engine.physics_system = ratr0_physics_startup(&engine);
@@ -86,7 +86,7 @@ void ratr0_engine_shutdown(void)
     engine.physics_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();
-    engine.display_system->shutdown();
+    engine.rendering_system->shutdown();
     engine.input_system->shutdown();
     engine.timer_system->shutdown();
     engine.event_system->shutdown();
@@ -114,7 +114,7 @@ void ratr0_engine_game_loop(void)
         engine.input_system->update();
         engine.physics_system->update();
         engine.world_system->update();
-        engine.display_system->update();
+        engine.rendering_system->update();
 
         // For now, end when the mouse was clicked. This is just for testing
         UINT32 joystate = engine.input_system->get_joystick_state(0);
@@ -123,7 +123,7 @@ void ratr0_engine_game_loop(void)
         }
         // comment in for visual timing the loop iteration
         //*custom_color00 = 0xf00;
-        engine.display_system->wait_vblank();
+        engine.rendering_system->wait_vblank();
     }
 #else
     SDL_Window *window = SDL_CreateWindow("RATR0 Engine",

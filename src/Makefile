@@ -20,7 +20,7 @@ EXES=main
 TEST_PRGS=timer_test
 
 TEST_OBJECTS=test/timer_test.o timers.o ../chibi_test/chibi.o
-ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o display.o input.o physics.o resources.o world.o $(SYS_OBJECTS)
+ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o physics.o resources.o world.o $(SYS_OBJECTS)
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
