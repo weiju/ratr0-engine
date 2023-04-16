@@ -152,7 +152,7 @@ static void set_display_surface(struct Ratr0AmigaSurface *s)
 {
     UINT16 screenrow_bytes = s->width / 8;
     set_display_mode(s->width, s->depth);
-    UINT32 plane = (UINT32) s->display_buffer;
+    UINT32 plane = (UINT32) s->buffer;
     UINT32 clidx = bpl1pth_idx;
 
     for (int i = 0; i < s->depth; i++) {
@@ -245,7 +245,7 @@ static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
                                                              init_data->width / 8 *
                                                              init_data->height *
                                                              init_data->depth);
-    display_surface.display_buffer = engine->memory_system->block_address(h_display_buffer);
+    display_surface.buffer = engine->memory_system->block_address(h_display_buffer);
 }
 
 // Blitter and sprite queues here

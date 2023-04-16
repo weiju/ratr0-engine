@@ -36,7 +36,7 @@ struct Ratr0AmigaDisplayInfo {
 struct Ratr0AmigaSurface {
     UINT16 width, height, depth;
     BOOL is_interleaved;
-    void *display_buffer;
+    void *buffer;
 };
 
 /**

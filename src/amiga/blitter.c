@@ -112,8 +112,8 @@ void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
     // modulos are in *bytes*
     cmd->srcmod = src->width / 8 - (blit_width_words * 2);
     cmd->dstmod = dst->width / 8 - (blit_width_words * 2);
-    cmd->src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
-    cmd->dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    cmd->src_addr = ((UINT32) src->buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    cmd->dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
     cmd->bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
 }
 
@@ -127,8 +127,8 @@ void ratr0_amiga_blit_fast(struct Ratr0AmigaSurface *dst,
     // modulos are in *bytes*
     UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
     UINT16 dstmod = dst->width / 8 - (blit_width_words * 2);
-    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
-    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT32 src_addr = ((UINT32) src->buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
     UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | (blit_width_words & 0x3f);
 
     _blit_fast(dst_addr, src_addr, dstmod, srcmod, bltsize);
@@ -151,8 +151,8 @@ void ratr0_amiga_blit_ni(struct Ratr0AmigaSurface *dst,
     // modulos are in *bytes*
     UINT16 srcmod = src->width / 8 - (blit_width_words * 2);
     UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words * 2);
-    UINT32 src_addr = ((UINT32) src->display_buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
-    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT32 src_addr = ((UINT32) src->buffer) + (src->width / 8 * srcy * src->depth) + srcx / 8;
+    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
     UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (blit_width_words & 0x3f);
 
     WaitBlit();
@@ -274,7 +274,7 @@ void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
     UINT32 mask_addr = (UINT32) bobs_addr + bobs_plane_size * bobs->header.bmdepth +
         srcy * bobs->header.width / 8 + srcx / 8;
     UINT32 src_addr = ((UINT32) bobs_addr) + (bobs->header.width / 8 * srcy * bobs->header.bmdepth) + srcx / 8;
-    UINT32 dst_addr = ((UINT32) dst->display_buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
+    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
     UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
     _blit_object(dst_addr, src_addr, mask_addr, dstmod, srcmod, bobs->header.bmdepth,
                  dst_row_bytes, src_plane_size, dst_shift, alwm, bltsize);
