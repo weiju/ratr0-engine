@@ -25,10 +25,9 @@ int main(int argc, char **argv)
     engine->world_system->set_current_scene(main_scene);
     struct Ratr0TileSheet grid;
     engine->resource_system->read_tilesheet("test_assets/basegrid_320x256x3.ts", &grid);
-    /*
     struct Ratr0Backdrop *backdrop = factory->create_backdrop(&grid);
     engine->world_system->add_child(main_scene, (struct Ratr0Node *) backdrop);
-    */
+
 #ifdef AMIGA
 
     /*
@@ -60,13 +59,14 @@ int main(int argc, char **argv)
     */
 
     struct Ratr0AmigaSurface *disp_surf = ratr0_amiga_get_display_surface();
+    /*
     // Blit the background
     struct Ratr0AmigaSurface grid_surf = {
         grid.header.width, grid.header.height, grid.header.bmdepth, TRUE,
         engine->memory_system->block_address(grid.h_imgdata)
-    };
+        };*/
     //ratr0_amiga_blit_fast(disp_surf, &grid_surf, 0, 0, 0, 0, 320, 256);
-    ratr0_amiga_enqueue_blit_fast(disp_surf, &grid_surf, 0, 0, 0, 0, 320, 256);
+    //ratr0_amiga_enqueue_blit_fast(disp_surf, &grid_surf, 0, 0, 0, 0, 320, 256);
 
     /* Test for the blit queue */
     /* Blit command */

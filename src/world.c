@@ -26,8 +26,7 @@ static void ratr0_world_set_current_scene(struct Ratr0Node *);
 static void ratr0_world_update_node(struct Ratr0Node *cur)
 {
     // 1. do an update action on the current node
-    /*
-      if (cur->class_id ==  BACKDROP) {
+    if (cur->class_id ==  BACKDROP) {
        // Render backdrop
         // We actually need a system to manage the integrity of the
         // backdrop, e.g. restoring dirty rectangles etc.
@@ -42,9 +41,9 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
             backdrop->was_drawn = TRUE;
         } else {
             // dirty rectangle algorithm to restore destroyed parts
-            }
+        }
     }
-    */
+
     // 2. call update on all children
     struct Ratr0Node *cur_child = cur->children;
     while (cur_child) {
@@ -53,7 +52,7 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
     }
 }
 
-static void ratr0_world_node_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
+void ratr0_world_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
 {
     if (!parent->children) parent->children = child;
     else {
@@ -66,10 +65,14 @@ static void ratr0_world_node_add_child(struct Ratr0Node *parent, struct Ratr0Nod
 /**
  * Node factory
  */
-static struct Ratr0Node nodes[10];
+// *do not* make the arrays static !!!! Otherwise bad things happen when you
+// try accessing thim outside of the module
+struct Ratr0Node _nodes[10];
 static UINT16 next_node = 0;
-static struct Ratr0Backdrop backdrops[2]; // we don't have many of those
+
+struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
+
 static struct Ratr0NodeFactory *ratr0_world_get_node_factory(void) { return &node_factory; }
 
 /**
@@ -83,7 +86,7 @@ void ratr0_world_init_base_node(struct Ratr0Node *node, UINT16 clsid)
 
 static struct Ratr0Node *ratr0_world_create_node(void)
 {
-    struct Ratr0Node *result = &nodes[next_node++];
+    struct Ratr0Node *result = &_nodes[next_node++];
     ratr0_world_init_base_node(result, RATR0_NODE);
     return result;
 }
@@ -91,7 +94,7 @@ static struct Ratr0Node *ratr0_world_create_node(void)
 static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *,
                                                                    UINT8 *, UINT8, BOOL);
 
-static struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet);
+struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet);
 
 
 struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
@@ -106,6 +109,7 @@ struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
     world_system.update = &ratr0_world_update;
     world_system.set_current_scene = &ratr0_world_set_current_scene;
     world_system.update_node = &ratr0_world_update_node;
+    world_system.add_child = &ratr0_world_add_child;
 
     // Node factory
     node_factory.create_node = &ratr0_world_create_node;
@@ -144,9 +148,9 @@ static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0T
 #endif
 }
 
-static struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
+struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
 {
-    struct Ratr0Backdrop *result = &backdrops[next_backdrop++];
+    struct Ratr0Backdrop *result = &_backdrops[next_backdrop++];
     ratr0_world_init_base_node((struct Ratr0Node *) result, BACKDROP);
 #ifdef AMIGA
     // Initialize the backdrop
