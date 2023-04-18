@@ -26,11 +26,25 @@ static void ratr0_world_set_current_scene(struct Ratr0Node *);
 static void ratr0_world_update_node(struct Ratr0Node *cur)
 {
     // 1. do an update action on the current node
-    if (cur->class_id ==  BACKDROP) {
-        // Render backdrop
+    /*
+      if (cur->class_id ==  BACKDROP) {
+       // Render backdrop
         // We actually need a system to manage the integrity of the
         // backdrop, e.g. restoring dirty rectangles etc.
+        struct Ratr0Backdrop *backdrop = (struct Ratr0Backdrop *) cur;
+        if (!backdrop->was_drawn) {
+            // Put it in the queue
+            ratr0_amiga_enqueue_blit_fast(ratr0_amiga_get_display_surface(),
+                                          &backdrop->surface,
+                                          0, 0, 0, 0,
+                                          backdrop->surface.width, backdrop->surface.height);
+            PRINT_DEBUG("enqueue blit backdrop here");
+            backdrop->was_drawn = TRUE;
+        } else {
+            // dirty rectangle algorithm to restore destroyed parts
+            }
     }
+    */
     // 2. call update on all children
     struct Ratr0Node *cur_child = cur->children;
     while (cur_child) {
@@ -39,11 +53,11 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
     }
 }
 
-static void ratr0_world_node_add_child(struct Ratr0Node *this, struct Ratr0Node *child)
+static void ratr0_world_node_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
 {
-    if (!this->children) this->children = child;
+    if (!parent->children) parent->children = child;
     else {
-        struct Ratr0Node *cur = this->children;
+        struct Ratr0Node *cur = parent->children;
         while (cur->next) cur = cur->next;
         cur->next = child;
     }
@@ -141,6 +155,7 @@ static struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *til
     result->surface.depth = tilesheet->header.bmdepth;
     result->surface.is_interleaved = tilesheet->header.flags & TSFLAGS_NON_INTERLEAVED == 0;
     result->surface.buffer = engine->memory_system->block_address(tilesheet->h_imgdata);
+    result->was_drawn = FALSE;
 #endif
     return result;
 }

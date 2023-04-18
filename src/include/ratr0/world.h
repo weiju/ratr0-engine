@@ -67,6 +67,7 @@ struct Ratr0Backdrop {
     struct Ratr0Node node;  // include node properties
 #ifdef AMIGA
     struct Ratr0AmigaSurface surface;
+    BOOL was_drawn;
 #endif
 };
 
