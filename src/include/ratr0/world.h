@@ -4,10 +4,14 @@
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
+#ifdef AMIGA
+#include <ratr0/amiga/display.h>
+#endif
 
 /* World subsystem */
-enum {
-    RATR0_NODE = 1, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
+
+enum _Ratr0NodeClassIDs {
+    RATR0_NODE = 1, BACKDROP, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
 };
 
 /*
@@ -23,11 +27,6 @@ struct Ratr0Node {
     UINT16 class_id;
 
     struct Ratr0Node *next, *children;
-
-    void (*add_child)(struct Ratr0Node *this, struct Ratr0Node *child);
-
-    // a method that is called every frame
-    void (*update)(struct Ratr0Node *);
 };
 
 /*
@@ -50,7 +49,7 @@ struct Ratr0AnimatedSprite {
     // next in render queue
     struct Ratr0AnimatedSprite *next;
 
-    UINT16 x,y;
+    UINT16 x,y,zindex;
     UINT8 speed;  // speed in frames
     UINT8 num_frames; // number of frames in animation
     UINT8 current_frame; // current animation frame displayed
@@ -61,9 +60,14 @@ struct Ratr0AnimatedSprite {
     struct Ratr0CollisionBox collision_box;
 };
 
+/**
+ * This is the background of the game.
+ */
 struct Ratr0Backdrop {
     struct Ratr0Node node;  // include node properties
-    struct Ratr0TileSheet *tilesheet;
+#ifdef AMIGA
+    struct Ratr0AmigaSurface surface;
+#endif
 };
 
 /**
@@ -83,6 +87,10 @@ struct Ratr0WorldSystem {
     void (*shutdown)(void);
 
     struct Ratr0NodeFactory *(*get_node_factory)(void);
+    void (*add_child)(struct Ratr0Node *parent, struct Ratr0Node *child);
+
+    // a method that is called every frame
+    void (*update_node)(struct Ratr0Node *);
 };
 
 /**

@@ -9,6 +9,11 @@
 // information about a tile sheet
 #define FILE_ID_LEN (8)
 
+#define TSFLAGS_LITTLE_ENDIAN     (1)
+#define TSFLAGS_RGB               (2)
+#define TSFLAGS_NON_INTERLEAVED   (4)
+#define TSFLAGS_HAS_MASK          (8)
+
 // information about a tile sheet
 // File format version 2
 // changes to version 1:

@@ -176,6 +176,8 @@ static void set_display_surface(struct Ratr0AmigaSurface *s)
 
 /**
  * Private function to build the main copper list.
+ * For now, this is very basic and simple. Going forward, we absolutely need
+ * a copper list compiler, to allow for complex sprite multiplexing and color management
  */
 static void build_copper_list()
 {

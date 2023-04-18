@@ -7,11 +7,17 @@
 /* Amiga Display subsystem */
 /*
   Amiga specific information about the display, used both for
-  initialization and query information.
+  initialization and query information. This includes aspects of the
+  playfield hardware, sprites and the blitter.
 */
 struct Ratr0AmigaDisplayInfo {
-    /* Width and height will be restricted to 320x200 (NTSC)
-       and 320x256 (PAL) for now */
+    /*
+      Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
+      256 for PAL. Smaller values will typically result in less memory consumption and faster
+      refresh times.
+      Sensible values for width can be { 320, 304, 288 }
+      Sensible values for height can be { 192, 208, 224, 240 }
+    */
     UINT16 width, height;
 
     /* This can be a value between 1 and 5 */

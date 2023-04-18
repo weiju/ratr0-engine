@@ -62,6 +62,7 @@ int main(int argc, char **argv)
     ratr0_amiga_enqueue_blit_fast(disp_surf, &tiles_surf, 32, 32, 16, 0, 16, 16);
     ratr0_amiga_enqueue_blit_fast(disp_surf, &tiles_surf, 48, 48, 32, 0, 16, 16);
 
+    
     // Blit BOB
     for (int i = 0; i < 12; i++) {
         ratr0_amiga_enqueue_blit_object(disp_surf, &bobs, 0, 0, 16 + i * 2, 16 * i);
