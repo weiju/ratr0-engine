@@ -17,6 +17,12 @@ struct Ratr0AmigaDisplayInfo {
     /* This can be a value between 1 and 5 */
     UINT8 depth;
 
+    /* How many frames to update the backbuffer ? For now, this
+     * should only be either 1 or 2. More than that heavily impacts
+     * gameplay experience.
+     */
+    UINT8 update_frames;
+
     /* Display buffer */
     BOOL use_doublebuffer;
 

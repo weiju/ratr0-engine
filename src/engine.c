@@ -142,7 +142,7 @@ void ratr0_engine_game_loop(void)
         printf("Failed to get the surface from the window\n");
         return;
     }
-    SDL_Surface *splash_screen = IMG_Load("ratr0_background_2planes.png");
+    SDL_Surface *splash_screen = IMG_Load("test_assets/ratr0_background_2planes.png");
     SDL_BlitSurface(splash_screen, NULL, window_surface, NULL);
 
     SDL_Event e;

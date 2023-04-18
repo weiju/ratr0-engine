@@ -16,6 +16,7 @@ int main(int argc, char **argv)
 {
     Ratr0Engine *engine = ratr0_engine_startup();
 
+#ifdef AMIGA
     // Use the scene system to setup the objects of the game
     struct Ratr0NodeFactory *factory = engine->world_system->get_node_factory();
     struct Ratr0Node *main_scene = factory->create_node();
@@ -30,8 +31,6 @@ int main(int argc, char **argv)
     engine->resource_system->read_tilesheet("test_assets/basegrid_320x256x3.ts", &grid);
     engine->resource_system->read_tilesheet("test_assets/tiles_48x48x3.ts", &tiles);
     engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
-
-#ifdef AMIGA
 
     /*
     UINT8 frames[] = {0};
@@ -72,11 +71,13 @@ int main(int argc, char **argv)
     // Then run the game loop
     engine->game_loop();
 
+#ifdef AMIGA
     // Game cleanup optional
     engine->resource_system->free_tilesheet_data(&bobs);
     engine->resource_system->free_tilesheet_data(&tiles);
     engine->resource_system->free_tilesheet_data(&grid);
     //engine->resource_system->free_tilesheet_data(&sprite);
+#endif
 
     engine->shutdown();
 

@@ -41,6 +41,7 @@ static int last_blit = -1;  // end of the queue
 static struct Interrupt vbint, bltint, *old_bltint;
 static BOOL has_blitint, process_blit_queue = FALSE;
 static UINT32 counter = 0, blitcounter = 0;
+static UINT16 frames = 0;
 
 void VertBServer(void)
 {
@@ -49,6 +50,13 @@ void VertBServer(void)
     // they will be changed before the DMA is in the visible part of
     // the display. This could be e.g. Sprite updates, scrolling, e.g.
     //counter++;
+
+    // 2. We can use this as a way to keep the framerate stable
+    // E.g. when we can't guarantuee a 50/60 Hz framerate, we can
+    // switch to a 25/30 Hz framerate, and are able to do twice as much
+    // Note that this automatically mandates the usage of a back buffer
+    // and double buffering since we need the changes
+    frames++;
 }
 void BlitHandler(void)
 {
