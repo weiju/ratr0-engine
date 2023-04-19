@@ -13,6 +13,9 @@
 #include <ratr0/amiga/world.h>
 #endif
 
+#define GRID_PATH ("test_assets/basegrid_320x256x3.ts")
+#define BOBS_PATH ("test_assets/fox-idle_16x16x3.ts")
+//#define BOBS_PATH ("test_assets/bobs_masked.ts")
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mMAIN\033[0m", __VA_ARGS__)
 
 int main(int argc, char **argv)
@@ -20,7 +23,8 @@ int main(int argc, char **argv)
     Ratr0Engine *engine = ratr0_engine_startup();
 
     struct Ratr0TileSheet grid;
-    engine->resource_system->read_tilesheet("test_assets/basegrid_320x256x3.ts", &grid);
+    engine->resource_system->read_tilesheet(GRID_PATH, &grid);
+
     // Use the scene system to setup the objects of the game
     struct Ratr0NodeFactory *factory = engine->world_system->get_node_factory();
     struct Ratr0Node *main_scene = factory->create_node();
@@ -32,7 +36,7 @@ int main(int argc, char **argv)
 #ifdef AMIGA
 
     struct Ratr0TileSheet bobs;
-    engine->resource_system->read_tilesheet("test_assets/bobs_masked.ts", &bobs);
+    engine->resource_system->read_tilesheet(BOBS_PATH, &bobs);
     ratr0_amiga_set_palette(bobs.palette, 8);
     UINT8 frames[] = {0};
     struct Ratr0AnimatedSprite *bob1 = factory->create_animated_sprite(&bobs, frames, 1, FALSE);
