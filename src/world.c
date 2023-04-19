@@ -23,6 +23,16 @@ static void ratr0_world_shutdown(void);
 static void ratr0_world_update(void);
 static void ratr0_world_set_current_scene(struct Ratr0Node *);
 
+/**
+ * Adds a dirty rectangle to the set of dirty rectangles.
+ * Since we need to translate the rectangles into blitter commands,
+ * just make sure we have unique elements, order doesn't matter
+ */
+void ratr0_world_add_dirty_rect(UINT16 rx, UINT16 ry)
+{
+    // TODO
+}
+
 static void ratr0_world_update_node(struct Ratr0Node *cur)
 {
     // 1. do an update action on the current node
@@ -47,9 +57,7 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
         break;
     case AMIGA_BOB:
 #ifdef AMIGA
-        // TODO: enqueue the bob and add the obscured rectangles to the dirty list
         {
-            // dirty rectangle algorithm to restore destroyed parts
             struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) cur;
             // TODO: map the current animation frame to a tile position
             UINT16 tilex = 0, tiley = 0;
@@ -57,6 +65,23 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
             ratr0_amiga_enqueue_blit_object(ratr0_amiga_get_display_surface(),
                                             bob->tilesheet, tilex, tiley,
                                             dstx, dsty);
+
+            // TODO: dirty rectangle algorithm to restore destroyed parts
+            // for this, we need to know the tiles, we are obscuring
+            // Start with the top left corner: That rectangle needs to go in first
+            int rx_0 = dstx / 16;
+            int ry_0 = dsty / 16;
+            int rx_m = (dstx + bob->tilesheet->header.tile_width) / 16;
+            int ry_n = (dstx + bob->tilesheet->header.tile_height) / 16;
+
+            // now we have the bounding box of the bob and now we can add all
+            // obscured rectangles to the dirty set [rx_0..rx_n]x[ry_0..ry_n]
+            for (int ry_i = ry_0; ry_i <= ry_n; ry_i++) {
+                for (int rx_j = rx_0; rx_j <= rx_m; rx_j++) {
+                    // add dirty rectangle (rxi, rxg)
+                    ratr0_world_add_dirty_rect(rx_j, ry_i);
+                }
+            }
         }
 #endif
         break;

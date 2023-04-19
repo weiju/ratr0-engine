@@ -17,9 +17,9 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 
 EXES=main
-TEST_PRGS=timer_test
+TEST_PRGS=timer_test fixed_point_test
 
-TEST_OBJECTS=test/timer_test.o timers.o ../chibi_test/chibi.o
+TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o ../chibi_test/chibi.o
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o physics.o resources.o world.o $(SYS_OBJECTS)
 
 .PHONY : clean check
@@ -48,7 +48,10 @@ main: $(ENGINE_OBJECTS)
 #chibi.o: ../chibi_test/chibi.c
 #	$(CC) $(TEST_CFLAGS) -c -o $@ $^
 
-timer_test: $(TEST_OBJECTS)
+timer_test: test/timer_test.o timers.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^
+
+fixed_point_test: test/fixed_point_test.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
 #timer_test.o: test/timer_test.c
