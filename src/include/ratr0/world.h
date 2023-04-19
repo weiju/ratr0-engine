@@ -49,7 +49,7 @@ struct Ratr0AnimatedSprite {
     // next in render queue
     struct Ratr0AnimatedSprite *next;
 
-    UINT16 x,y,zindex;
+    UINT16 x, y, zindex;
     UINT8 speed;  // speed in frames
     UINT8 num_frames; // number of frames in animation
     UINT8 current_frame; // current animation frame displayed

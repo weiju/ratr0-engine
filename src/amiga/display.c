@@ -376,9 +376,9 @@ void ratr0_amiga_enqueue_blit_fast(struct Ratr0AmigaSurface *dst,
 }
 
 void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
-                                            struct Ratr0TileSheet *bobs,
-                                            UINT16 tilex, UINT16 tiley,
-                                            UINT16 dstx, UINT16 dsty)
+                                     struct Ratr0TileSheet *bobs,
+                                     UINT16 tilex, UINT16 tiley,
+                                     UINT16 dstx, UINT16 dsty)
 {
     ratr0_amiga_make_blit_object(&blit_queue[++last_blit],
                                  dst, bobs, tilex, tiley, dstx,dsty);

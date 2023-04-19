@@ -47,10 +47,12 @@ extern void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
 /*
  * Direct fast blit function.
  */
+/*
 extern void ratr0_amiga_blit_fast(struct Ratr0AmigaSurface *dst,
                                   struct Ratr0AmigaSurface *src,
                                   UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                   UINT16 blit_width_pixels, UINT16 blit_height_pixels);
+*/
 /*
  * Common case 2: Blit a masked object to the screen. This is a general blit.
  */

@@ -26,22 +26,43 @@ static void ratr0_world_set_current_scene(struct Ratr0Node *);
 static void ratr0_world_update_node(struct Ratr0Node *cur)
 {
     // 1. do an update action on the current node
-    if (cur->class_id ==  BACKDROP) {
-       // Render backdrop
-        // We actually need a system to manage the integrity of the
-        // backdrop, e.g. restoring dirty rectangles etc.
-        struct Ratr0Backdrop *backdrop = (struct Ratr0Backdrop *) cur;
-        if (!backdrop->was_drawn) {
-            // Put it in the queue
-            ratr0_amiga_enqueue_blit_fast(ratr0_amiga_get_display_surface(),
-                                          &backdrop->surface,
-                                          0, 0, 0, 0,
-                                          backdrop->surface.width, backdrop->surface.height);
-            PRINT_DEBUG("enqueue blit backdrop here");
-            backdrop->was_drawn = TRUE;
-        } else {
-            // dirty rectangle algorithm to restore destroyed parts
+    switch (cur->class_id) {
+    case BACKDROP:
+        {
+            // Render backdrop
+            // We actually need a system to manage the integrity of the
+            // backdrop, e.g. restoring dirty rectangles etc.
+            struct Ratr0Backdrop *backdrop = (struct Ratr0Backdrop *) cur;
+#ifdef AMIGA
+            if (!backdrop->was_drawn) {
+                // Put it in the queue
+                ratr0_amiga_enqueue_blit_fast(ratr0_amiga_get_display_surface(),
+                                              &backdrop->surface,
+                                              0, 0, 0, 0,
+                                              backdrop->surface.width, backdrop->surface.height);
+                backdrop->was_drawn = TRUE;
+            }
+#endif
         }
+        break;
+    case AMIGA_BOB:
+#ifdef AMIGA
+        // TODO: enqueue the bob and add the obscured rectangles to the dirty list
+        {
+            // dirty rectangle algorithm to restore destroyed parts
+            struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) cur;
+            // TODO: map the current animation frame to a tile position
+            UINT16 tilex = 0, tiley = 0;
+            UINT16 dstx = bob->base_obj.x, dsty = bob->base_obj.y;
+            ratr0_amiga_enqueue_blit_object(ratr0_amiga_get_display_surface(),
+                                            bob->tilesheet, tilex, tiley,
+                                            dstx, dsty);
+        }
+#endif
+        break;
+    default:
+        PRINT_DEBUG("UNKNOWN CLASS ID: %d", (int) cur->class_id);
+        break;
     }
 
     // 2. call update on all children
