@@ -16,11 +16,11 @@ LDFLAGS=-L/opt/homebrew/lib -lsdl2 -lsdl2_image
 TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 
-EXES=main
-TEST_PRGS=timer_test fixed_point_test
+EXES=main test_coord_sets
+TEST_PRGS=timer_test fixed_point_test coord_set_test
 
-TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o ../chibi_test/chibi.o
-ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o physics.o resources.o world.o $(SYS_OBJECTS)
+TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o test/coord_set_test.o ../chibi_test/chibi.o
+ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o physics.o resources.o world.o coord_set.o $(SYS_OBJECTS)
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -44,15 +44,14 @@ main: $(ENGINE_OBJECTS)
 #
 # TESTS
 #
-
-#chibi.o: ../chibi_test/chibi.c
-#	$(CC) $(TEST_CFLAGS) -c -o $@ $^
-
 timer_test: test/timer_test.o timers.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
 fixed_point_test: test/fixed_point_test.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
-#timer_test.o: test/timer_test.c
-#	$(CC) $(TEST_CFLAGS) -c -o $@ $^
+coord_set_test: test/coord_set_test.o coord_set.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^
+
+test_coord_sets: coord_set.o test_coord_sets.o
+	$(CC) -o $@ $^
