@@ -29,7 +29,10 @@ static Ratr0Engine *engine;
 struct Coord NIL_NODE, *NIL;
 
 // TODO: Replace with allocation or something
-#define MAX_NODES (30)
+// The maximum dirty 16x16 rectangles for a 320x256 screen
+// is 320. I suspect there will be much less than 100 needed
+// make this a sensitive value, since each node in this set is 22 bytes
+#define MAX_NODES (40)
 static struct Coord coords[MAX_NODES];
 static int next_coord = 0;
 

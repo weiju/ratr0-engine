@@ -53,6 +53,15 @@ access its functionality.
 
 ### Memory subsystem
 
+This system is where all other subsystem allocate their memory from.
+By this we can ensure there is only a single point in the system where
+memory is held and freed from the operating system.
+
+  * resources
+  * dirty rectangles
+  * blit queue
+
+
 ### Display subsystem
 
 ### Event subsystem
@@ -65,7 +74,9 @@ access its functionality.
 
 ### Input subsystem
 
-### Physics / Collision subsystem
+### [Physics / Collision subsystem]
+
+The initial versions of RATR0 won't include a physics system.
 
 ## The World subsystem
 
