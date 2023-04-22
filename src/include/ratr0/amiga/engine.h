@@ -6,5 +6,6 @@
 /* Amiga specific engine functionality */
 extern void ratr0_amiga_engine_startup(Ratr0Engine *);
 extern void ratr0_amiga_engine_game_loop(void);
+extern void ratr0_amiga_engine_exit(void);
 
 #endif /* __RATR0_AMIGA_ENGINE_H__ */

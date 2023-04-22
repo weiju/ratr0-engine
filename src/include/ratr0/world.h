@@ -91,7 +91,7 @@ struct Ratr0WorldSystem {
     void (*add_child)(struct Ratr0Node *parent, struct Ratr0Node *child);
 
     // a method that is called every frame
-    void (*update_node)(struct Ratr0Node *);
+    //void (*update_node)(struct Ratr0Node *);
 };
 
 /**

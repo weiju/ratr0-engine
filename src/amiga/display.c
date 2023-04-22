@@ -34,25 +34,35 @@
 extern struct GfxBase *GfxBase;
 extern struct Custom custom;
 
-#define MAX_COMMANDS (20)
+#define MAX_COMMANDS (30)
 static struct Ratr0AmigaBlitCommand command_pool[MAX_COMMANDS];
 static struct Ratr0AmigaBlitCommand *command_queue[MAX_COMMANDS];
 static int queue_size = 0;
 static int next_command = 0;
 static int last_intreq = 0;
 
+// Double buffer management
+#define NUM_BUFFERS (2)
+static void set_display_surface(struct Ratr0AmigaSurface *s);
+static struct Ratr0AmigaSurface display_surface[NUM_BUFFERS];
+Ratr0MemHandle h_display_buffer[NUM_BUFFERS];
+static int front = 0, back = 1, shown = 0;
+
+
 /**
  * Blitter Queue functions.
  */
 int _blit_command_lt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
 {
-    // Higher destination addresses should come later
+    // Higher destination addresses should come later, so should higher zindex
+    //return a->zindex > b->zindex || a->zindex == b->zindex && a->dst_addr > b->dst_addr;
     return a->dst_addr > b->dst_addr;
 }
 
 int _blit_command_gt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
 {
-    // Lower destination addresses should come earlier
+    // Lower destination addresses should come earlier, so should lower zindex
+    //return a->zindex < b->zindex || a->zindex == b->zindex && a->dst_addr < b->dst_addr;
     return a->dst_addr < b->dst_addr;
 }
 
@@ -66,6 +76,20 @@ static APTR saved;
 
 void VertBServer()
 {
+    frames++;
+    // Show the other buffer every second
+    if (frames == 10) {
+        //shown = (shown + 1) % 2;
+        //set_display_surface(&display_surface[shown]);
+        //frames = 0;
+        // 1. swap front and back indexes
+        int tmp = front;
+        front = back;
+        back = tmp;
+        // 2. set new front buffer to copper list
+        set_display_surface(&display_surface[front]);
+        frames = 0;
+    }
     // TODO: Handle vertical blank interrupts here
     // Do the things that have an immediate effect on the screen, so
     // they will be changed before the DMA is in the visible part of
@@ -77,7 +101,6 @@ void VertBServer()
     // switch to a 25/30 Hz framerate, and are able to do twice as much
     // Note that this automatically mandates the usage of a back buffer
     // and double buffering since we need the changes
-    frames++;
 }
 
 /**
@@ -98,7 +121,8 @@ static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
 static Ratr0Engine *engine;
 
-// Data fetch
+// Data fetch for a 320 pixel wide image: DDFSTRT = 0x38, DDFSTOP = 0xd0
+// Data fetch for a 288 pixel wide image: DDFSTRT = 0x3a, DDFSTOP = 0xce
 #define DDFSTRT_VALUE      0x0038
 #define DDFSTOP_VALUE      0x00d0
 
@@ -163,12 +187,13 @@ void set_display_mode(UINT16 width, UINT8 num_bitplanes)
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-static struct Ratr0AmigaSurface display_surface;
-Ratr0MemHandle h_display_buffer;
-
-struct Ratr0AmigaSurface *ratr0_amiga_get_display_surface(void)
+struct Ratr0AmigaSurface *ratr0_amiga_get_front_buffer(void)
 {
-    return &display_surface;
+    return &display_surface[front];
+}
+struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void)
+{
+    return &display_surface[back];
 }
 
 /**
@@ -259,21 +284,23 @@ static void build_copper_list()
 
     // Just for diagnostics
     copperlist_size = cl_index;
-    set_display_surface(&display_surface);
+    set_display_surface(&display_surface[front]);
 }
 
 static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
 {
-    display_surface.width = init_data->width;
-    display_surface.height = init_data->height;
-    display_surface.depth = init_data->depth;
-    display_surface.is_interleaved = TRUE;
-    // TODO: double buffer
-    h_display_buffer = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
-                                                             init_data->width / 8 *
-                                                             init_data->height *
-                                                             init_data->depth);
-    display_surface.buffer = engine->memory_system->block_address(h_display_buffer);
+    for (int i = 0; i < NUM_BUFFERS; i++) {
+        display_surface[i].width = init_data->width;
+        display_surface[i].height = init_data->height;
+        display_surface[i].depth = init_data->depth;
+        display_surface[i].is_interleaved = TRUE;
+        // TODO: double buffer
+        h_display_buffer[i] = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
+                                                                    init_data->width / 8 *
+                                                                    init_data->height *
+                                                                    init_data->depth);
+        display_surface[i].buffer = engine->memory_system->block_address(h_display_buffer[i]);
+    }
 }
 
 // Blitter and sprite queues here
@@ -383,17 +410,21 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
     copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
 }
 
-void ratr0_amiga_enqueue_blit_fast(struct Ratr0AmigaSurface *dst,
+void ratr0_amiga_enqueue_blit_rect(struct Ratr0AmigaSurface *dst,
                                    struct Ratr0AmigaSurface *src,
                                    UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                    UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
     struct Ratr0AmigaBlitCommand *cmd = &command_pool[next_command++];
-    ratr0_amiga_make_blit_fast(cmd,
+    ratr0_amiga_make_blit_rect(cmd,
                                dst, src, dstx, dsty, srcx, srcy,
                                blit_width_pixels, blit_height_pixels);
+#ifdef HEAP_QUEUE
     queue_size = ratr0_heap_insert((void **) command_queue, queue_size, (void *) cmd,
                                    (int (*)(void *, void *)) &_blit_command_lt);
+#else
+    command_queue[queue_size++] = cmd;
+#endif
 }
 
 void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
@@ -404,24 +435,53 @@ void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
     struct Ratr0AmigaBlitCommand *cmd = &command_pool[next_command++];
     ratr0_amiga_make_blit_object(cmd,
                                  dst, bobs, tilex, tiley, dstx,dsty);
+#ifdef HEAP_QUEUE
     queue_size = ratr0_heap_insert((void **) command_queue, queue_size, (void *) cmd,
                                    (int (*)(void *, void *)) &_blit_command_lt);
+#else
+    command_queue[queue_size++] = cmd;
+#endif
+}
+
+void ratr0_amiga_enqueue_blit_object_il(struct Ratr0AmigaSurface *dst,
+                                        struct Ratr0TileSheet *bobs,
+                                        UINT16 tilex, UINT16 tiley,
+                                        UINT16 dstx, UINT16 dsty)
+{
+    struct Ratr0AmigaBlitCommand *cmd = &command_pool[next_command++];
+    ratr0_amiga_make_blit_object_il(cmd, dst, bobs, tilex, tiley, dstx,dsty);
+#ifdef HEAP_QUEUE
+    queue_size = ratr0_heap_insert((void **) command_queue, queue_size, (void *) cmd,
+                                   (int (*)(void *, void *)) &_blit_command_lt);
+#else
+    command_queue[queue_size++] = cmd;
+#endif
 }
 
 
-
+/**
+ * This is the primary Amiga rendering function. Most performance critical stuff will
+ * likely happen here, so make sure it runs fast
+ */
 void ratr0_amiga_display_update()
 {
     // For now, we process the blitter queue without interrupt, thus
     // avoiding concurrency and keeping things simple
     if (queue_size > 0) {
         OwnBlitter();
+#ifdef HEAP_QUEUE
         while (queue_size > 0) {
             struct Ratr0AmigaBlitCommand *cmd;
             cmd = ratr0_heap_extract_max((void **) command_queue, &queue_size,
                                          (int (*)(void *, void *)) &_blit_command_gt);
             ratr0_amiga_do_blit_command(cmd);
         }
+#else
+        for (int i = 0; i < queue_size; i++) {
+            ratr0_amiga_do_blit_command(command_queue[i]);
+        }
+        queue_size = 0;
+#endif
         // *NOTE* clean up the command pool when it's empty or we will write into
         // illegal space
         next_command = 0;

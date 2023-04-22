@@ -10,20 +10,23 @@ LDFLAGS=-lamiga -lauto
 TEST_CFLAGS=-Iinclude -I../chibi_test
 else
 CC=gcc
-SYS_OBJECTS=
+SYS_OBJECTS=SDL/engine.o
 CFLAGS=-I/opt/homebrew/include -Iinclude -DDEBUG -DUSE_SDL2
 LDFLAGS=-L/opt/homebrew/lib -lsdl2 -lsdl2_image
 TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 
 EXES=main
-TEST_PRGS=timer_test fixed_point_test coord_set_test heap_test
+PERF_PRGS=set_perf
+TEST_PRGS=timer_test fixed_point_test coord_set_test heap_test bitset_test
 
 TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o test/coord_set_test.o \
-	test/heap_test.o ../chibi_test/chibi.o
+	test/heap_test.o test/bitset_test.o ../chibi_test/chibi.o
 
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	physics.o resources.o world.o coord_set.o heap.o $(SYS_OBJECTS)
+	resources.o world.o heap.o bitset.o $(SYS_OBJECTS)
+
+TEST_OBJECTS=benchmark/set_perf.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -32,8 +35,10 @@ all: main
 
 check: $(TEST_PRGS)
 
+perf: $(PERF_PRGS)
+
 clean:
-	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_OBJECTS) $(TEST_PRGS)
+	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_OBJECTS) $(PERF_PRGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -57,4 +62,14 @@ coord_set_test: test/coord_set_test.o coord_set.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
 heap_test: test/heap_test.o heap.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^
+
+bitset_test: test/bitset_test.o bitset.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^
+
+
+#
+# PERFORMANCE TESTS
+#
+set_perf: benchmark/set_perf.o bitset.o coord_set.o
 	$(CC) -o $@ $^

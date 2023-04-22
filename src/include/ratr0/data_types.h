@@ -34,6 +34,9 @@ typedef int16_t BOOL;
 #ifndef NULL
 #define NULL (0)
 #endif
+#ifndef LITTLE_ENDIAN
+#define LITTLE_ENDIAN
+#endif
 #endif
 
 /*

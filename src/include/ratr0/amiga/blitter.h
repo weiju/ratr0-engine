@@ -12,7 +12,7 @@ struct Ratr0TileSheet;
  * Blitter commands are just data.
  */
 enum BlitType {
-    BLIT_BLOCK, BLIT_BOB
+    BLIT_BLOCK, BLIT_BOB, BLIT_BOB_IL
 };
 
 struct Ratr0AmigaBlitCommand {
@@ -37,7 +37,7 @@ extern void ratr0_amiga_do_blit_command(struct Ratr0AmigaBlitCommand *cmd);
  * where the block width is a multiple of 16 and the source is arranged in multiples of 16 pixels.
  * Fast blit: Initialize a blitter command that is part of the queue.
  */
-extern void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
+extern void ratr0_amiga_make_blit_rect(struct Ratr0AmigaBlitCommand *cmd,
                                        struct Ratr0AmigaSurface *dst,
                                        struct Ratr0AmigaSurface *src,
                                        UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
@@ -47,12 +47,16 @@ extern void ratr0_amiga_make_blit_fast(struct Ratr0AmigaBlitCommand *cmd,
 /*
  * Direct fast blit function.
  */
-/*
-extern void ratr0_amiga_blit_fast(struct Ratr0AmigaSurface *dst,
-                                  struct Ratr0AmigaSurface *src,
-                                  UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                                  UINT16 blit_width_pixels, UINT16 blit_height_pixels);
-*/
+extern UINT16 ratr0_amiga_blit_rect(struct Ratr0AmigaSurface *dst,
+                                    struct Ratr0AmigaSurface *src,
+                                    UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                                    UINT16 blit_width_pixels, UINT16 blit_height_pixels);
+
+extern void ratr0_amiga_blit_rect_fast(struct Ratr0AmigaSurface *dst,
+                                       struct Ratr0AmigaSurface *src,
+                                       UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                                       UINT16 bltsize);
+
 /*
  * Common case 2: Blit a masked object to the screen. This is a general blit.
  */
@@ -62,12 +66,22 @@ extern void ratr0_amiga_make_blit_object(struct Ratr0AmigaBlitCommand *cmd,
                                          int tilex, int tiley,
                                          int dstx, int dsty);
 
-/*
- * Common case 3: Blasting an 8x8 block from the source to the destination without masking.
- */
-extern void ratr0_amiga_blit_8x8(struct Ratr0AmigaSurface *dst,
-                                 struct Ratr0AmigaSurface *src,
-                                 UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy);
+
+extern void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
+                                    struct Ratr0TileSheet *bobs,
+                                    int tilex, int tiley,
+                                    int dstx, int dsty);
+
+extern void ratr0_amiga_make_blit_object_il(struct Ratr0AmigaBlitCommand *cmd,
+                                            struct Ratr0AmigaSurface *dst,
+                                            struct Ratr0TileSheet *bobs,
+                                            int tilex, int tiley,
+                                            int dstx, int dsty);
+
+extern void ratr0_amiga_blit_object_il(struct Ratr0AmigaSurface *dst,
+                                       struct Ratr0TileSheet *bobs,
+                                       int tilex, int tiley,
+                                       int dstx, int dsty);
 
 
 #endif /* __RATR0_AMIGA_BLITTER_H__ */

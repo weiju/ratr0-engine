@@ -6,6 +6,12 @@
  * Top level module. This is the main interface to the user and the
  * management system for the subsystems.
  */
+
+// Switches for testing performance
+//#define HEAP_QUEUE
+#define INTERLEAVED_BOBS
+//#define QUEUED_RENDERING
+
 typedef struct {
     struct Ratr0MemorySystem *memory_system;
     struct Ratr0EventSystem *event_system;

@@ -79,7 +79,8 @@ extern void ratr0_amiga_display_update(void);
  * given specification.
  * The data in the display buffer is assumed to be interleaved.
  */
-extern struct Ratr0AmigaSurface *ratr0_amiga_get_display_surface(void);
+extern struct Ratr0AmigaSurface *ratr0_amiga_get_front_buffer(void);
+extern struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void);
 
 extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
@@ -91,7 +92,7 @@ extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
 /**
  * Put a fast blit into the queue
  */
-extern void ratr0_amiga_enqueue_blit_fast(struct Ratr0AmigaSurface *dst,
+extern void ratr0_amiga_enqueue_blit_rect(struct Ratr0AmigaSurface *dst,
                                           struct Ratr0AmigaSurface *src,
                                           UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                           UINT16 blit_width_pixels, UINT16 blit_height_pixels);
@@ -102,4 +103,8 @@ extern void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
                                             UINT16 tilex, UINT16 tiley,
                                             UINT16 dstx, UINT16 dsty);
 
+extern void ratr0_amiga_enqueue_blit_object_il(struct Ratr0AmigaSurface *dst,
+                                               struct Ratr0TileSheet *bobs,
+                                               UINT16 tilex, UINT16 tiley,
+                                               UINT16 dstx, UINT16 dsty);
 #endif /* __RATR0_AMIGA_DISPLAY_H__ */

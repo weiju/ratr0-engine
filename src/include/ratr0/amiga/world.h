@@ -25,7 +25,7 @@ struct Ratr0AnimatedAmigaBob {
     struct Ratr0TileSheet *tilesheet;
 };
 
-extern void ratr0_amiga_world_startup(Ratr0Engine *eng);
+extern void ratr0_amiga_world_startup(Ratr0Engine *eng, struct Ratr0WorldSystem *ws);
 
 extern struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
                                                                   UINT8 *frame_indexes, UINT8 num_frames);
