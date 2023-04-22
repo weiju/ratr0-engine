@@ -58,6 +58,11 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
     case AMIGA_BOB:
 #ifdef AMIGA
         {
+            // TODO: we only need to do stuff if anything changed
+            //   1. animation frame changed
+            //   2. position changed
+            //   3. overlap with another BOB object
+
             struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) cur;
             // TODO: map the current animation frame to a tile position
             UINT16 tilex = 0, tiley = 0;

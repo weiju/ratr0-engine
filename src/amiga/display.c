@@ -39,14 +39,32 @@ static struct Ratr0AmigaBlitCommand command_pool[MAX_COMMANDS];
 static struct Ratr0AmigaBlitCommand *command_queue[MAX_COMMANDS];
 static int queue_size = 0;
 static int next_command = 0;
+static int last_intreq = 0;
+
+/**
+ * Blitter Queue functions.
+ */
+int _blit_command_lt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
+{
+    // Higher destination addresses should come later
+    return a->dst_addr > b->dst_addr;
+}
+
+int _blit_command_gt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
+{
+    // Lower destination addresses should come earlier
+    return a->dst_addr < b->dst_addr;
+}
 
 // For our interrupt handlers
 static struct Interrupt vbint, bltint, *old_bltint;
 static BOOL has_blitint, process_blit_queue = FALSE;
-static UINT32 counter = 0, blitcounter = 0;
+static UINT32 blitcounter = 0;
 static UINT16 frames = 0;
 
-void VertBServer(void)
+static APTR saved;
+
+void VertBServer()
 {
     // TODO: Handle vertical blank interrupts here
     // Do the things that have an immediate effect on the screen, so
@@ -62,25 +80,16 @@ void VertBServer(void)
     frames++;
 }
 
-void BlitHandler(void)
+/**
+ * BlitHandler is implemented as a software interrupt. We currently
+ * don't use it. It's just here for illustrating an InterruptHandler interface
+ */
+void BlitHandler(__reg("d1") UINT32 intreq, __reg("a1") APTR handler_data)
 {
-    /*
-    // TODO: Handle blitter finished interrupts here, e.g.
-    // Queue processing
-    //blitcounter++;
-    if (process_blit_queue) {
-        if (last_blit >= current_blit) {
-            // This handler processes the next blitter request in the queue
-            // If there are none, just exit
-            ratr0_amiga_do_blit_command(&blit_queue[current_blit++]);
-        } else {
-            // empty the queue
-            current_blit = 0;
-            last_blit = -1;
-            process_blit_queue = FALSE;
-        }
+    if (process_blit_queue && queue_size > 0) {
+        UINT32 *pcount = (UINT32 *) handler_data;
+        (*pcount)++;
     }
-    */
     custom.intreq = INTF_BLIT;
 }
 
@@ -276,15 +285,16 @@ void _install_interrupts(void)
     vbint.is_Node.ln_Type = NT_INTERRUPT;
     vbint.is_Node.ln_Pri = -60;
     vbint.is_Node.ln_Name = "vbinter";
-    vbint.is_Data = (APTR) &counter;
+    vbint.is_Data = (APTR) NULL;  // unused
     vbint.is_Code = VertBServer;
     AddIntServer(INTB_VERTB, &vbint);
 
+#ifdef USE_BLITHANDLER
     // Interrupt handler for BLIT, blit finished has to be serviced through
     // handler
     bltint.is_Node.ln_Type = NT_INTERRUPT;
     bltint.is_Node.ln_Pri = -60;
-    bltint.is_Node.ln_Name = "vbinter";
+    bltint.is_Node.ln_Name = "blitinter";
     bltint.is_Data = (APTR) &blitcounter;
     bltint.is_Code = BlitHandler;
 
@@ -293,16 +303,19 @@ void _install_interrupts(void)
     custom.intena = INTF_BLIT;
     old_bltint = SetIntVector(INTB_BLIT, &bltint);
     custom.intena = INTF_SETCLR | INTF_BLIT;
+#endif
 }
 
 void _uninstall_interrupts(void)
 {
+#ifdef USE_BLITHANDLER
     // remove blitter handler
     custom.intena = INTF_BLIT;
     SetIntVector(INTB_BLIT, old_bltint);
     if (has_blitint) {
         custom.intena = INTF_SETCLR | INTF_BLIT;
     }
+#endif
 
     // Remove vertical blank handler
     RemIntServer(INTB_VERTB, &vbint);
@@ -335,14 +348,16 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
     build_copper_list();
     custom.cop1lc = (ULONG) copper_list;
 
-    //_install_interrupts();
+    _install_interrupts();
 }
 
 void ratr0_amiga_display_shutdown(void)
 {
-    //_uninstall_interrupts();
+    _uninstall_interrupts();
 
     PRINT_DEBUG("Copper list size: %d", copperlist_size);
+    PRINT_DEBUG("# blitter interrupts: %u", blitcounter);
+    PRINT_DEBUG("frames: %u", frames);
     engine->memory_system->free_block(h_copper_list);
     ratr0_amiga_sprites_shutdown();
 
@@ -366,21 +381,6 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
     int spr_idx = spr0pth_idx + 2 * sprite_num;
     copper_list[spr_idx] = ((UINT32) data >> 16) & 0xffff;
     copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
-}
-
-/**
- * Blitter Queue functions.
- */
-int _blit_command_lt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
-{
-    // Higher destination addresses should come later
-    return a->dst_addr > b->dst_addr;
-}
-
-int _blit_command_gt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
-{
-    // Lower destination addresses should come earlier
-    return a->dst_addr < b->dst_addr;
 }
 
 void ratr0_amiga_enqueue_blit_fast(struct Ratr0AmigaSurface *dst,
@@ -412,23 +412,12 @@ void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
 
 void ratr0_amiga_display_update()
 {
-    // We need to find and restore dirty rectangles. This is rather hard, because on Amiga, there
-    // are multiple ways to do that. We can have a restore buffer which is the easiest, but
-    // if the game is double buffered, we need to have 3 buffers
-    // An alternative is using tile map based restoration.
-
-    // We might be able to use priority queues for sorting our BOBs, so we can draw them from
-    // top to bottom
-    // Same for sprites, but we need to interact with the copper list for multiplexing
-    OwnBlitter();
-    // TODO: for now, we just process the blitter queue without interrupts
-    // until we figured out the best way to do it. That gets rid of the concurrency
-    // issues until we understand it better
-    // Start putting in the first blitter request here
+    // For now, we process the blitter queue without interrupt, thus
+    // avoiding concurrency and keeping things simple
     if (queue_size > 0) {
+        OwnBlitter();
         while (queue_size > 0) {
             struct Ratr0AmigaBlitCommand *cmd;
-            int last_queue_size = queue_size;
             cmd = ratr0_heap_extract_max((void **) command_queue, &queue_size,
                                          (int (*)(void *, void *)) &_blit_command_gt);
             ratr0_amiga_do_blit_command(cmd);
@@ -436,6 +425,6 @@ void ratr0_amiga_display_update()
         // *NOTE* clean up the command pool when it's empty or we will write into
         // illegal space
         next_command = 0;
+        DisownBlitter();  // and free the blitter
     }
-    DisownBlitter();  // and free the blitter
 }
