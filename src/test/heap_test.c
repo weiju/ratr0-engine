@@ -63,6 +63,15 @@ CHIBI_TEST(TestSimpleHeap)
     chibi_assert(max5 == NULL);
 }
 
+CHIBI_TEST(TestExtractMaxEmptyHeap)
+{
+    Coord *array[1];
+    int heap_size = 0;
+    Coord *max0 = ratr0_heap_extract_max((void **) array, &heap_size,
+                                         (int (*)(void *, void *)) &coord_greater);
+    chibi_assert(max0 == NULL);
+    chibi_assert_eq_int(0, heap_size);
+}
 /*
  * SUITE DEFINITION
  */
@@ -72,6 +81,7 @@ chibi_suite *CoreSuite(void)
     chibi_suite *suite = chibi_suite_new_fixture("ratr0.HeapSuite", heaptest_setup,
                                                  heaptest_teardown, NULL);
     chibi_suite_add_test(suite, TestSimpleHeap);
+    chibi_suite_add_test(suite, TestExtractMaxEmptyHeap);
 
     return suite;
 }

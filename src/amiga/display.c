@@ -12,6 +12,7 @@
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
 #include <ratr0/memory.h>
+#include <ratr0/heap.h>
 #include <ratr0/amiga/hw_registers.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/sprites.h>
@@ -33,9 +34,11 @@
 extern struct GfxBase *GfxBase;
 extern struct Custom custom;
 
-static struct Ratr0AmigaBlitCommand blit_queue[20];
-static int current_blit = 0; // this is the iteration index
-static int last_blit = -1;  // end of the queue
+#define MAX_COMMANDS (20)
+static struct Ratr0AmigaBlitCommand command_pool[MAX_COMMANDS];
+static struct Ratr0AmigaBlitCommand *command_queue[MAX_COMMANDS];
+static int queue_size = 0;
+static int next_command = 0;
 
 // For our interrupt handlers
 static struct Interrupt vbint, bltint, *old_bltint;
@@ -58,8 +61,10 @@ void VertBServer(void)
     // and double buffering since we need the changes
     frames++;
 }
+
 void BlitHandler(void)
 {
+    /*
     // TODO: Handle blitter finished interrupts here, e.g.
     // Queue processing
     //blitcounter++;
@@ -75,6 +80,7 @@ void BlitHandler(void)
             process_blit_queue = FALSE;
         }
     }
+    */
     custom.intreq = INTF_BLIT;
 }
 
@@ -365,14 +371,29 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
 /**
  * Blitter Queue functions.
  */
+int _blit_command_lt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
+{
+    // Higher destination addresses should come later
+    return a->dst_addr > b->dst_addr;
+}
+
+int _blit_command_gt(struct Ratr0AmigaBlitCommand *a, struct Ratr0AmigaBlitCommand *b)
+{
+    // Lower destination addresses should come earlier
+    return a->dst_addr < b->dst_addr;
+}
+
 void ratr0_amiga_enqueue_blit_fast(struct Ratr0AmigaSurface *dst,
                                    struct Ratr0AmigaSurface *src,
                                    UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
                                    UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
-    ratr0_amiga_make_blit_fast(&blit_queue[++last_blit],
+    struct Ratr0AmigaBlitCommand *cmd = &command_pool[next_command++];
+    ratr0_amiga_make_blit_fast(cmd,
                                dst, src, dstx, dsty, srcx, srcy,
                                blit_width_pixels, blit_height_pixels);
+    queue_size = ratr0_heap_insert((void **) command_queue, queue_size, (void *) cmd,
+                                   (int (*)(void *, void *)) &_blit_command_lt);
 }
 
 void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
@@ -380,8 +401,11 @@ void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
                                      UINT16 tilex, UINT16 tiley,
                                      UINT16 dstx, UINT16 dsty)
 {
-    ratr0_amiga_make_blit_object(&blit_queue[++last_blit],
+    struct Ratr0AmigaBlitCommand *cmd = &command_pool[next_command++];
+    ratr0_amiga_make_blit_object(cmd,
                                  dst, bobs, tilex, tiley, dstx,dsty);
+    queue_size = ratr0_heap_insert((void **) command_queue, queue_size, (void *) cmd,
+                                   (int (*)(void *, void *)) &_blit_command_lt);
 }
 
 
@@ -401,13 +425,17 @@ void ratr0_amiga_display_update()
     // until we figured out the best way to do it. That gets rid of the concurrency
     // issues until we understand it better
     // Start putting in the first blitter request here
-    if (last_blit >= 0) { // for now that's the condition
-        process_blit_queue = TRUE;  // enable the blit queue
-        current_blit = 0; // start at the front
-        while (current_blit <= last_blit)
-            ratr0_amiga_do_blit_command(&blit_queue[current_blit++]);
-        process_blit_queue = FALSE;
-        last_blit = -1;
+    if (queue_size > 0) {
+        while (queue_size > 0) {
+            struct Ratr0AmigaBlitCommand *cmd;
+            int last_queue_size = queue_size;
+            cmd = ratr0_heap_extract_max((void **) command_queue, &queue_size,
+                                         (int (*)(void *, void *)) &_blit_command_gt);
+            ratr0_amiga_do_blit_command(cmd);
+        }
+        // *NOTE* clean up the command pool when it's empty or we will write into
+        // illegal space
+        next_command = 0;
     }
     DisownBlitter();  // and free the blitter
 }

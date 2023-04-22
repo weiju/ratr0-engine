@@ -41,6 +41,10 @@ int main(int argc, char **argv)
     UINT8 frames[] = {0};
     struct Ratr0AnimatedSprite *bob1 = factory->create_animated_sprite(&bobs, frames, 1, FALSE);
     engine->world_system->add_child(main_scene, (struct Ratr0Node *) bob1);
+    struct Ratr0AnimatedSprite *bob2 = factory->create_animated_sprite(&bobs, frames, 1, FALSE);
+    bob2->x = 16;
+    bob2->y = 16;
+    engine->world_system->add_child(main_scene, (struct Ratr0Node *) bob2);
 
     /*
     // Blit BOB

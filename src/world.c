@@ -86,7 +86,7 @@ static void ratr0_world_update_node(struct Ratr0Node *cur)
 #endif
         break;
     default:
-        PRINT_DEBUG("UNKNOWN CLASS ID: %d", (int) cur->class_id);
+        //PRINT_DEBUG("UNKNOWN CLASS ID: %d", (int) cur->class_id);
         break;
     }
 
