@@ -110,7 +110,7 @@ CHIBI_TEST(TestClearSet)
  * Iteration test. Simply count and sum the components.
  */
 static int counter0 = 0, x0 = 0, y0 = 0;
-static void process_coord(struct Coord *node)
+static void process_coord(struct Coord *node, void *user_data)
 {
     counter0++;
     x0 += node->x;
@@ -122,7 +122,7 @@ CHIBI_TEST(TestIterate)
     coord_set_insert(coord_set, 1, 2);
     coord_set_insert(coord_set, 2, 5);
 
-    coord_set_iterate(coord_set, &process_coord);
+    coord_set_iterate(coord_set, &process_coord, NULL);
     chibi_assert_eq_int(2, counter0);
     chibi_assert_eq_int(3, x0);
     chibi_assert_eq_int(7, y0);

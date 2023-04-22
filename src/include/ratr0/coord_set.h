@@ -40,7 +40,7 @@ extern struct CoordSets *ratr0_startup_coord_sets(Ratr0Engine *engine);
  */
 extern BOOL coord_set_insert(struct CoordSet *set, UINT16 x, UINT16 y);
 extern void coord_set_iterate(struct CoordSet *set,
-                              void (*process_coord)(struct Coord *));
+                              void (*process_coord)(struct Coord *, void *), void *user_data);
 extern void coord_set_clear(struct CoordSet *set);
 #endif /* __RATR0_COORD_SET_H__ */
 

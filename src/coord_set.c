@@ -194,19 +194,19 @@ BOOL coord_set_insert(struct CoordSet *set, UINT16 x, UINT16 y)
 /**
  * Inorder processing of the CoordSet.
  */
-void _rbt_inorder(struct Coord *node, void (*process_coord)(struct Coord *))
+void _rbt_inorder(struct Coord *node, void (*process_coord)(struct Coord *, void *), void *user_data)
 {
     if (node != NIL) {
-        _rbt_inorder(node->left, process_coord);
-        process_coord(node);
-        _rbt_inorder(node->right, process_coord);
+        _rbt_inorder(node->left, process_coord, user_data);
+        process_coord(node, user_data);
+        _rbt_inorder(node->right, process_coord, user_data);
     }
 }
 
 void coord_set_iterate(struct CoordSet *set,
-                       void (*process_coord)(struct Coord *))
+                       void (*process_coord)(struct Coord *, void *), void *user_data)
 {
-    _rbt_inorder(set->root, process_coord);
+    _rbt_inorder(set->root, process_coord, user_data);
 }
 
 void coord_set_clear(struct CoordSet *set)
