@@ -45,7 +45,6 @@ static int last_intreq = 0;
 #define NUM_BUFFERS (2)
 static void set_display_surface(struct Ratr0AmigaSurface *s);
 static struct Ratr0AmigaSurface display_surface[NUM_BUFFERS];
-Ratr0MemHandle h_display_buffer[NUM_BUFFERS];
 static int front = 0, back = 1, shown = 0;
 
 
@@ -79,9 +78,6 @@ void VertBServer()
     frames++;
     // Show the other buffer every second
     if (frames == 10) {
-        //shown = (shown + 1) % 2;
-        //set_display_surface(&display_surface[shown]);
-        //frames = 0;
         // 1. swap front and back indexes
         int tmp = front;
         front = back;
@@ -287,19 +283,29 @@ static void build_copper_list()
     set_display_surface(&display_surface[front]);
 }
 
+static int display_buffer_size;
 static void build_display_buffer(struct Ratr0AmigaDisplayInfo *init_data)
 {
+    display_buffer_size = init_data->width / 8 * init_data->height * init_data->depth;
     for (int i = 0; i < NUM_BUFFERS; i++) {
         display_surface[i].width = init_data->width;
         display_surface[i].height = init_data->height;
         display_surface[i].depth = init_data->depth;
         display_surface[i].is_interleaved = TRUE;
-        // TODO: double buffer
-        h_display_buffer[i] = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
-                                                                    init_data->width / 8 *
-                                                                    init_data->height *
-                                                                    init_data->depth);
-        display_surface[i].buffer = engine->memory_system->block_address(h_display_buffer[i]);
+        // display buffer memory is allocated directly from the OS, otherwise the memory allocator
+        // gets too inflexible
+        display_surface[i].buffer = (void *) AllocMem(display_buffer_size, MEMF_CHIP|MEMF_CLEAR);
+        if (display_surface[i].buffer == NULL) {
+            PRINT_DEBUG("ERROR: can't allocate memory for display buffers !");
+            break;
+        }
+    }
+}
+
+static void free_display_buffer(void)
+{
+    for (int i = 0; i < NUM_BUFFERS; i++) {
+        FreeMem(display_surface[i].buffer, display_buffer_size);
     }
 }
 
@@ -380,6 +386,7 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0AmigaDisplayInfo 
 
 void ratr0_amiga_display_shutdown(void)
 {
+    free_display_buffer();
     _uninstall_interrupts();
 
     PRINT_DEBUG("Copper list size: %d", copperlist_size);

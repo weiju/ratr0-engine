@@ -37,7 +37,7 @@ Ratr0Engine *ratr0_engine_startup(void)
     struct Ratr0DisplayInfo display_init = { 320, 256, 3, FALSE };
     struct Ratr0MemoryConfig mem_config = {
         8192, 20,   // 8k general purpose memory with max 20 mem blocks
-        100000, 20  // 128k chip memory with max 20 mem blocks
+        65536, 20  // 64k chip memory with max 20 mem blocks
     };
 
     PRINT_DEBUG("Start up...");
