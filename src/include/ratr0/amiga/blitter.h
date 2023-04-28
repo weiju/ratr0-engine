@@ -84,4 +84,13 @@ extern void ratr0_amiga_blit_object_il(struct Ratr0AmigaSurface *dst,
                                        int dstx, int dsty);
 
 
+/*
+ *
+ */
+extern UINT16 ratr0_amiga_blit_8x8(struct Ratr0AmigaSurface *dst,
+                                   struct Ratr0AmigaSurface *src,
+                                   UINT16 dstx, UINT16 dsty,
+                                   char c,
+                                   UINT8 plane_num);
+
 #endif /* __RATR0_AMIGA_BLITTER_H__ */

@@ -6,9 +6,13 @@
 
 /* Rendering subsystem */
 struct Ratr0DisplayInfo {
-    UINT16 width, height;
+    /* Size of viewport */
+    UINT16 vp_width, vp_height;
+
+    /* Size of display buffer */
+    UINT16 buffer_width, buffer_height;
     UINT8 depth;
-    BOOL use_doublebuffer;
+    UINT8 num_buffers;
 };
 
 /**

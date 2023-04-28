@@ -15,22 +15,23 @@ struct Ratr0AmigaDisplayInfo {
       Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
       256 for PAL. Smaller values will typically result in less memory consumption and faster
       refresh times.
-      Sensible values for width can be { 320, 304, 288 }
+      Sensible values for width can be { 320, 288 }
       Sensible values for height can be { 192, 208, 224, 240 }
     */
-    UINT16 width, height;
+    UINT16 vp_width, vp_height;
+    UINT16 buffer_width, buffer_height;
 
     /* This can be a value between 1 and 5 */
     UINT8 depth;
+
+    /* Display buffer */
+    UINT8 num_buffers;
 
     /* How many frames to update the backbuffer ? For now, this
      * should only be either 1 or 2. More than that heavily impacts
      * gameplay experience.
      */
     UINT8 update_frames;
-
-    /* Display buffer */
-    BOOL use_doublebuffer;
 
     /* Readonly section */
     /* This is the Amiga relevant part. We can't explicitly set
@@ -54,7 +55,8 @@ struct Ratr0AmigaSurface {
 /**
  * Start up the display subsystem.
  */
-extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0AmigaDisplayInfo *);
+extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0RenderingSystem *,
+                                        struct Ratr0DisplayInfo *);
 
 /**
  * Shut down the display subsystem.
@@ -65,6 +67,8 @@ extern void ratr0_amiga_display_shutdown(void);
  * Wait for vertical blank
  */
 extern void ratr0_amiga_wait_vblank(void);
+
+extern void ratr0_amiga_display_swap_buffers(void);
 
 /**
  * Process all queued up render commands.

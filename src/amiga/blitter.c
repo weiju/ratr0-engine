@@ -38,7 +38,7 @@ void ratr0_amiga_blitter_startup(Ratr0Engine *eng)
  *   - both src and dst have the same depth
  */
 UINT16 _blit_rect(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
-                UINT16 bltsize)
+                  UINT16 bltsize)
 {
     WaitBlit();
     // D = A => LF = 0xf0, channels A and D turned on => 0x09
@@ -341,4 +341,97 @@ void ratr0_amiga_make_blit_object_il(struct Ratr0AmigaBlitCommand *cmd,
                                     int tilex, int tiley,
                                     int dstx, int dsty)
 {
+}
+
+
+
+UINT16 _blit_8x8(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
+                 UINT8 ashift,
+                 UINT16 afwm, UINT16 alwm,
+                 UINT16 bltsize)
+{
+    WaitBlit();
+    // D = A + D => LF = 0xfc, channels A, B and D turned on => 0x0d
+    custom.bltcon0 = 0x0dfc | (ashift << 12);
+
+    custom.bltafwm = afwm;
+    custom.bltalwm = alwm;
+
+    custom.bltamod = srcmod;
+    custom.bltbmod = dstmod;
+    custom.bltcmod = 0;
+    custom.bltdmod = dstmod;
+
+    custom.bltapt = (UINT8 *) src_addr;
+    custom.bltbpt = (UINT8 *) dst_addr;
+    custom.bltcpt = 0;
+    custom.bltdpt = (UINT8 *) dst_addr;
+    custom.bltsize = bltsize;
+    return bltsize;
+}
+
+/*
+ * A text blitting function
+ */
+UINT16 ratr0_amiga_blit_8x8(struct Ratr0AmigaSurface *dst,
+                            struct Ratr0AmigaSurface *src,
+                            UINT16 dstx, UINT16 dsty,
+                            char c,
+                            UINT8 plane_num)
+{
+    // 1, if we don't shift or if the shifted part is in the right half
+    // 2, if we shift the left half
+    UINT16 blit_width_words = 1;
+    UINT16 src_width_bytes = src->width >> 3;
+    UINT16 dst_width_bytes = dst->width >> 3;
+    UINT16 alwm = 0xffff, afwm = 0xffff;
+    int c_index = c - ' ';
+    UINT16 srcy = (c_index >> 5) << 3 ;   // div 32 * 8
+    UINT16 srcx = (c_index & 0x1f) << 3;  // mod 32 * 8
+    // A shift needs to happen if the modulos of dst and src mismatch
+    UINT8 ashift = (dstx & 0x0f) != (srcx & 0x0f) ?  8 : 0;
+
+    // Determine which portion of the 16x8 field, left or right
+    BOOL use_left = ((srcx & 0x0f) == 0);
+    srcx &= 0xfff0; // always align to the word
+    if (!use_left && ashift == 8) { // only if we need to shift the right half
+        blit_width_words = 2;
+    }
+
+    // modulos are in *bytes*
+    UINT16 dst_row_bytes = dst->width >> 3;
+    UINT16 srcmod = src_width_bytes - (blit_width_words << 1);
+    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words << 1);
+
+    UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
+    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
+    dst_addr += dst_row_bytes * plane_num;  // target plane
+
+    // Shift adjustments
+    // For the left half 8 pixel of the 16 pixel field this always works
+    if (ashift == 8) {
+        if (use_left) { // left half
+            alwm = 0xff00;
+            afwm = 0xff00;
+        } else {
+            // Right half: shift needs to be extended by 1, shift by 8 and
+            // AFWM/ALWM mask
+            dst_addr -= 2;
+            afwm = 0x00ff;
+            alwm = 0x0000;
+        }
+    } else { // no shift
+        if (use_left) { // left half
+            afwm = 0xff00;
+            alwm = 0xff00;
+        } else {
+            afwm = 0x00ff;
+            alwm = 0x00ff;
+        }
+    }
+    // We only blit a single plane
+    UINT16 bltsize = (UINT16) (8 << 6) | blit_width_words;
+    return _blit_8x8(dst_addr, src_addr, dstmod, srcmod,
+                     ashift, afwm, alwm,
+                     bltsize);
 }

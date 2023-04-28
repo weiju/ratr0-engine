@@ -18,13 +18,13 @@ endif  # ifdef AMIGA
 
 EXES=main
 PERF_PRGS=set_perf
-TEST_PRGS=timer_test fixed_point_test coord_set_test heap_test bitset_test
+TEST_PRGS=timer_test fixed_point_test bitset_test
 
-TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o test/coord_set_test.o \
-	test/heap_test.o test/bitset_test.o ../chibi_test/chibi.o
+TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
+	test/bitset_test.o ../chibi_test/chibi.o
 
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	resources.o world.o heap.o bitset.o $(SYS_OBJECTS)
+	resources.o world.o bitset.o $(SYS_OBJECTS)
 
 TEST_OBJECTS=benchmark/set_perf.o
 
@@ -58,18 +58,6 @@ timer_test: test/timer_test.o timers.o ../chibi_test/chibi.o
 fixed_point_test: test/fixed_point_test.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
-coord_set_test: test/coord_set_test.o coord_set.o ../chibi_test/chibi.o
-	$(CC) -o $@ $^
-
-heap_test: test/heap_test.o heap.o ../chibi_test/chibi.o
-	$(CC) -o $@ $^
-
 bitset_test: test/bitset_test.o bitset.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
-
-#
-# PERFORMANCE TESTS
-#
-set_perf: benchmark/set_perf.o bitset.o coord_set.o
-	$(CC) -o $@ $^

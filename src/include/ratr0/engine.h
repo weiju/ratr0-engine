@@ -8,9 +8,7 @@
  */
 
 // Switches for testing performance
-//#define HEAP_QUEUE
 #define INTERLEAVED_BOBS
-//#define QUEUED_RENDERING
 
 typedef struct {
     struct Ratr0MemorySystem *memory_system;

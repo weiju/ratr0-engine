@@ -34,7 +34,7 @@ Ratr0Engine *ratr0_engine_startup(void)
 #endif
 
     /* Just an example for a configuration, should come from a config file */
-    struct Ratr0DisplayInfo display_init = { 320, 256, 3, FALSE };
+    struct Ratr0DisplayInfo display_init = { 320, 256, 320, 256, 3, 2 };
     struct Ratr0MemoryConfig mem_config = {
         8192, 20,   // 8k general purpose memory with max 20 mem blocks
         65536, 20  // 64k chip memory with max 20 mem blocks

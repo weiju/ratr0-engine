@@ -4,7 +4,6 @@
 
 #ifdef AMIGA
 #include <ratr0/amiga/display.h>
-static struct Ratr0AmigaDisplayInfo display_info;
 #else
 void ratr0_rendering_update(void);
 void ratr0_rendering_wait_vblank(void);
@@ -21,15 +20,7 @@ struct Ratr0RenderingSystem *ratr0_rendering_startup(Ratr0Engine *eng,
     rendering_system.shutdown = &ratr0_rendering_shutdown;
 
 #ifdef AMIGA
-    rendering_system.wait_vblank = &ratr0_amiga_wait_vblank;
-    rendering_system.update = &ratr0_amiga_display_update;
-
-    display_info.width = init_data->width;
-    display_info.height = init_data->height;
-    display_info.depth = init_data->depth;
-    display_info.use_doublebuffer = init_data->use_doublebuffer;
-
-    ratr0_amiga_display_startup(eng, &display_info);
+    ratr0_amiga_display_startup(eng, &rendering_system, init_data);
 #else
     rendering_system.wait_vblank = ratr0_rendering_wait_vblank;
     rendering_system.update = ratr0_rendering_update;
