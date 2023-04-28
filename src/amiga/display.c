@@ -220,15 +220,6 @@ static void build_copper_list()
     int cl_index = 0;
     cl_index = _cop_move(FMODE, 0, cl_index);  // 4 bytes
 
-    // Initialize the sprites with the NULL address (8x8 = 64 bytes)
-    UINT16 spr_ptr = SPR0PTH;
-    spr0pth_idx = cl_index + 1;
-    for (int i = 0; i < 8; i++) {
-        cl_index = _cop_move(spr_ptr, (((ULONG) NULL_SPRITE_DATA) >> 16) & 0xffff, cl_index);
-        cl_index = _cop_move(spr_ptr + 2, ((ULONG) NULL_SPRITE_DATA) & 0xffff, cl_index);
-        spr_ptr += 4;
-    }
-
     // set up the display and DMA windows (16 bytes)
     cl_index = _cop_move(DDFSTRT, DDFSTRT_VALUE, cl_index);
     cl_index = _cop_move(DDFSTOP, DDFSTOP_VALUE, cl_index);
@@ -239,7 +230,6 @@ static void build_copper_list()
         cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_NTSC, cl_index);
     }
 
-    // TODO: set up the bitmap for the display
     // 1. BPLCONx (8 bytes)
     bplcon0_idx = cl_index + 1;
     cl_index = _cop_move(BPLCON0, 0, cl_index); // 2 bitplanes for splash screen
@@ -250,16 +240,26 @@ static void build_copper_list()
     cl_index = _cop_move(BPL1MOD, 0, cl_index);
     cl_index = _cop_move(BPL2MOD, 0, cl_index);
 
-    // 3. COLORxx (32 colors => 32 * 4 = 128 bytes)
-    color00_idx = cl_index + 1;
-    for (int i = 0; i < 32; i++) {
-        cl_index = _cop_move(COLOR00 + i * 2, 0, cl_index);
-    }
-    // 4. BPLxPTH/BPLxPTL (NUM_BITLANES * 8 bytes => 12 bytes)
+    // 3. BPLxPTH/BPLxPTL (NUM_BITLANES * 8 bytes => 12 bytes)
     bpl1pth_idx = cl_index + 1;
     for (int i = 0; i < MAX_BITPLANES; i++) {
         cl_index = _cop_move(BPL1PTH + i * 4, 0, cl_index);
         cl_index = _cop_move(BPL1PTL + i * 4, 0, cl_index);
+    }
+
+    // 4. Initialize the sprites with the NULL address (8x8 = 64 bytes)
+    UINT16 spr_ptr = SPR0PTH;
+    spr0pth_idx = cl_index + 1;
+    for (int i = 0; i < 8; i++) {
+        cl_index = _cop_move(spr_ptr, (((ULONG) NULL_SPRITE_DATA) >> 16) & 0xffff, cl_index);
+        cl_index = _cop_move(spr_ptr + 2, ((ULONG) NULL_SPRITE_DATA) & 0xffff, cl_index);
+        spr_ptr += 4;
+    }
+
+    // 5. COLORxx (32 colors => 32 * 4 = 128 bytes)
+    color00_idx = cl_index + 1;
+    for (int i = 0; i < 32; i++) {
+        cl_index = _cop_move(COLOR00 + i * 2, 0, cl_index);
     }
 
     // End the copper list (4 bytes)
