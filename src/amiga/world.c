@@ -41,6 +41,18 @@ struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tile
     struct Ratr0AnimatedAmigaBob *result = &bob_table[next_bob++];
     result->base_obj.node.class_id = AMIGA_BOB;
     result->tilesheet = tilesheet;
+    result->base_obj.current_frame = 0;
+    result->base_obj.bounding_box.x = 0;
+    result->base_obj.bounding_box.y = 0;
+    result->base_obj.bounding_box.width = tilesheet->header.tile_width;
+    result->base_obj.bounding_box.height = tilesheet->header.tile_height;
+
+    // By default, set the collision box to the same size
+    result->base_obj.collision_box.x = 0;
+    result->base_obj.collision_box.y = 0;
+    result->base_obj.collision_box.width = tilesheet->header.tile_width;
+    result->base_obj.collision_box.height = tilesheet->header.tile_height;
+
     return result;
 }
 

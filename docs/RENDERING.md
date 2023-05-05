@@ -1,0 +1,77 @@
+# Rendering Architecture (Amiga)
+
+## Motivation
+
+The rendering system on the Amiga was designed with the restrictions
+of the Amiga hardware in mind. There is a limit on how many blits can
+be performed per frame and it is not very high.
+Since a game needs to also update its game world, we took measurements
+of how much effect dirty rectangle restoration and blit queue would 
+take.
+
+On a barebones A500 system, there is surprisingy little time available
+for blitting if the game also needs to update other data structures and 
+game logic, so it was decided to forego explicit queuing of blits and
+just directly blit objects as they are updated.
+
+
+## Central Concepts
+
+### Double buffering
+
+The render component will strictly use double buffering. This is to ensure smooth
+transitions at the cost of moderate additional space consumption
+
+
+### Background restoration algorithm (dirty rectangles)
+
+#### Idea
+
+As the screen buffers get modified by game objects, obstructed portions need to be
+restored. The restoration method is taking care of that.
+
+#### BOB changes
+
+A change for a BOB happened when
+
+   * the object moved
+   * the object frame changed
+
+We need to
+
+   * calculate the restore tiles on the old object
+   * add these tiles to the display buffer's dirty list
+
+**** WE MIGHT NOT NEED THIS !!!!
+If a change is detected, we need to know which display buffers are affected.
+We can do this by determining how many frames have elapsed since the last change.
+This means we need a unchanged time counter or a last change timestamp
+
+##### Dirty rectangle sets
+
+We want to make sure we capture dirty regions, so they can be blitted all in one
+go. Also, since multiple objects can obstruct the same space, we want to ensure those
+rectangles only get restored once, so some kind of set data structure is needed.
+
+We are splitting the play area into 16x16 pixel tiles, which is a good tradeoff between
+size, efficiency and flexibility.
+
+After initial prototyping it became clear that tree or list based data structures
+are a bit costly in terms of space and CPU time, O(log(n)) insertion turned out
+costlier than expected for something that has to be run repeatedly for every frame.
+So the next thing that came to mind was a hash table. It turns out that due to
+the regular matrix structure map, we can efficiently map dirty tiles into a bit
+set, implemented as arrays of 32 bit integers. Insertion is O(1) and we can
+relatively efficiently query the set, since each 32 bit number that is a zero
+means that we can skip it.
+
+##### The algorithm
+
+We obviously need to determine every object that has some kind of change before
+we render them.
+
+We then add the dirty rectangles to the set of every affected buffer, which means
+both the back buffer and possibly the front buffer, since that would be next.
+
+In a first approach, we just add the dirty to both buffers
+

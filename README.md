@@ -57,11 +57,6 @@ This system is where all other subsystem allocate their memory from.
 By this we can ensure there is only a single point in the system where
 memory is held and freed from the operating system.
 
-  * resources
-  * dirty rectangles
-  * blit queue
-
-
 ### Display subsystem
 
 ### Event subsystem
@@ -90,3 +85,11 @@ The world subsystem is based around scene trees. At each moment, there is a curr
 scene with a root node.
 Nodes are communicating down the hierarchy by passing arguments to function calls and we use signals
 to communicate up or across the hierarchy.
+
+## Building
+
+$ make
+
+### Building for Amiga
+
+$ make AMIGA=1

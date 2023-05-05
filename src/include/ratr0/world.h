@@ -34,7 +34,7 @@ struct Ratr0Node {
  * Collisions should usually be based on bounding shapes
  * that are tweaked for playability.
  */
-struct Ratr0CollisionBox {
+struct Ratr0BoundingBox {
     UINT16 x, y, width, height;
 };
 
@@ -57,7 +57,8 @@ struct Ratr0AnimatedSprite {
     BOOL  is_looping;  // indicates whether this is a looping animation
 
     // collision boundaries
-    struct Ratr0CollisionBox collision_box;
+    struct Ratr0BoundingBox collision_box;
+    struct Ratr0BoundingBox bounding_box;
 };
 
 /**

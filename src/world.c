@@ -21,9 +21,9 @@ static struct Ratr0NodeFactory node_factory;
 static Ratr0Engine *engine;
 static struct Ratr0Node *current_scene;
 
-#define BITSET_SIZE (10)
-#define TILES_PER_ROW (16)
-UINT32 bitset_arr[BITSET_SIZE];  // 320 elements
+//#define BITSET_SIZE (10)
+//#define TILES_PER_ROW (16)
+//UINT32 bitset_arr[BITSET_SIZE];  // 320 elements
 
 static void ratr0_world_shutdown(void);
 static void ratr0_world_update(void);
