@@ -18,15 +18,13 @@ endif  # ifdef AMIGA
 
 EXES=main
 PERF_PRGS=set_perf
-TEST_PRGS=timer_test fixed_point_test bitset_test
+TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test
 
 TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
-	test/bitset_test.o ../chibi_test/chibi.o
+	test/bitset_test.o test/treeset_test.o ../chibi_test/chibi.o
 
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	resources.o world.o bitset.o $(SYS_OBJECTS)
-
-TEST_OBJECTS=benchmark/set_perf.o
+	resources.o world.o bitset.o treeset.o $(SYS_OBJECTS)
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -61,3 +59,5 @@ fixed_point_test: test/fixed_point_test.o ../chibi_test/chibi.o
 bitset_test: test/bitset_test.o bitset.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
+treeset_test: test/treeset_test.o treeset.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^

@@ -289,7 +289,7 @@ void ratr0_amiga_blit_object_il(struct Ratr0AmigaSurface *dst,
     // Source variables
     UINT16 src_blit_width_pixels = bobs->header.tile_width;
     UINT16 src_blit_width_words = src_blit_width_pixels >> 4;
-    if (bobs->header.tile_width & 0x0f != 0) {
+    if ((bobs->header.tile_width & 0x0f) != 0) {
         // It's not evenly dividable by 16 -> add another word
         src_blit_width_words++;
     }

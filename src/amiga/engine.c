@@ -6,6 +6,7 @@
 #include <ratr0/timers.h>
 #include <ratr0/world.h>
 #include <ratr0/bitset.h>
+#include <ratr0/treeset.h>
 
 // Amiga specific subsystem access
 #include <ratr0/amiga/engine.h>
@@ -25,7 +26,8 @@ static volatile UWORD *custom_color00 = (volatile UWORD *) 0xdff180;
 
 struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 //#define BOBS_PATH ("test_assets/fox_jump_23x21x3_ni.ts")
-#define BOBS_PATH_IL ("test_assets/fox_jump_23x21x3.ts")
+//#define BOBS_PATH_IL ("test_assets/fox_jump_23x21x3.ts")
+#define BOBS_PATH_IL ("test_assets/fox_run_20x23x3.ts")
 #define GRID_PATH ("test_assets/basegrid_320x256x3.ts")
 #define TILES_PATH_IL ("test_assets/tiles_48x48x3.ts")
 #define FONT_PATH ("test_assets/arcade_font_1bit.ts")
@@ -33,13 +35,13 @@ struct Ratr0TileSheet bobs_il, tiles_il, font;
 struct Ratr0AmigaSurface tiles_surf, font_surf;
 /**/
 struct Ratr0AnimatedAmigaBob *bobs[2];
-UINT8 bob_frames[2] = {0, 1};
+UINT8 bob_frames[6] = {0, 1, 2, 3, 4, 5};
+struct TreeSets *tree_sets;
 
 /**
  * Queue of changed BOBs
  */
-static struct Ratr0AnimatedAmigaBob *bob_queue[2][30];
-static int bob_queue_size[2] = {0, 0};
+static struct TreeSet *bob_queue[2];
 
 // A bitset for each buffer, 10x32 = 320 rectangles each
 // representing 20x16 rectangles of 16x16 pixels on a 320x256 frame
@@ -69,10 +71,15 @@ void ratr0_amiga_engine_startup(Ratr0Engine *eng)
     // grab too much CPU
     SetTaskPri(FindTask(NULL), TASK_PRIORITY);
 
+    tree_sets = ratr0_startup_tree_sets(eng);
+
+    // data structures for efficient rendering
     front = 0;
     back = 1;
     ratr0_bitset_clear(bitset_arr[back], 10);
     ratr0_bitset_clear(bitset_arr[front], 10);
+    bob_queue[front] = tree_sets->get_tree_set();
+    bob_queue[back] = tree_sets->get_tree_set();
 }
 
 void ratr0_amiga_engine_post_startup(void)
@@ -91,12 +98,22 @@ void ratr0_amiga_engine_post_startup(void)
     engine->resource_system->read_tilesheet(FONT_PATH, &font);
 
     bobs[0] = ratr0_create_amiga_bob(&bobs_il, bob_frames, 2);
-    bobs[0]->base_obj.x = 48;
+    bobs[0]->base_obj.x = 50; // (48 is cut off !!!) TODO
     bobs[0]->base_obj.y = 16;
+    // init animation
+    bobs[0]->base_obj.num_frames = 6;
+    bobs[0]->base_obj.current_frame = 0;
+    bobs[0]->base_obj.current_tick = 0;
+    bobs[0]->base_obj.speed = 5;
 
     bobs[1] = ratr0_create_amiga_bob(&bobs_il, bob_frames, 2);
-    bobs[1]->base_obj.x = 80;
+    bobs[1]->base_obj.x = 83; // (80 is cut off !!!!) TODO
     bobs[1]->base_obj.y = 32;
+
+    bobs[1]->base_obj.num_frames = 6;
+    bobs[1]->base_obj.current_frame = 0;
+    bobs[1]->base_obj.current_tick = 0;
+    bobs[1]->base_obj.speed = 10;
 
     // Tile surface
     tiles_surf.width = tiles_il.header.width;
@@ -143,7 +160,7 @@ void ratr0_amiga_engine_exit(void)
 }
 
 static UINT16 dirty_bltsize = 0;
-struct Ratr0AmigaSurface *back_buffer, *front_buffer;
+struct Ratr0AmigaSurface *back_buffer;
 void process_bit(UINT16 index)
 {
     UINT16 x = BITSET_X(index) << 4;  // * 16
@@ -182,14 +199,26 @@ void add_restore_tiles_for_bob(struct Ratr0AnimatedAmigaBob *bob)
 static int anim_frames = 0;
 BOOL update_bob(struct Ratr0AnimatedAmigaBob *bob)
 {
-    anim_frames++;
-    if (anim_frames >= 5) {
+    bob->base_obj.current_tick++;
+    if (bob->base_obj.current_tick >= bob->base_obj.speed) {
         // Add an actual frame switcher
-        bob->base_obj.current_frame = (bob->base_obj.current_frame + 1) % 2;
-        anim_frames = 0;
+        bob->base_obj.current_frame = (bob->base_obj.current_frame + 1) % bob->base_obj.num_frames;
+        bob->base_obj.current_tick = 0;
         return TRUE;
     }
     return FALSE;
+}
+
+BOOL ptr_lt(void *a, void *b) { return a < b; }
+BOOL ptr_eq(void *a, void *b) { return a == b; }
+
+void blit_bob(struct TreeSetNode *node, void *data)
+{
+    struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) node->value;
+    ratr0_amiga_blit_object_il(back_buffer, bob->tilesheet,
+                               0, bob->base_obj.current_frame,
+                               bob->base_obj.x,
+                               bob->base_obj.y);
 }
 
 void ratr0_amiga_engine_game_loop(void)
@@ -206,10 +235,9 @@ void ratr0_amiga_engine_game_loop(void)
         for (int i = 0; i < 2; i++) {
             if (update_bob(bobs[i])) {
                 add_restore_tiles_for_bob(bobs[i]);
-                // TODO: we actually need to queue the BOB for the following frame, too
-                // But don't queue it multiple times !!!!
-                bob_queue[front][bob_queue_size[front]++] = bobs[i];
-                bob_queue[back][bob_queue_size[back]++] = bobs[i];
+                // Add the BOB to the blit set for this and the next frame
+                tree_set_insert(bob_queue[back], bobs[i], ptr_lt, ptr_eq);
+                tree_set_insert(bob_queue[front], bobs[i], ptr_lt, ptr_eq);
             }
         }
 
@@ -222,17 +250,8 @@ void ratr0_amiga_engine_game_loop(void)
         dirty_bltsize = 0;
 
         // 2. Blit updated objects
-        //ratr0_amiga_blit_object_il(back_buffer, &bobs_il, 0, frame, 32, 0);
-        //ratr0_amiga_blit_object_il(back_buffer, &bobs_il, 0, frame, 48, 16);
-        // TODO: only blit the ones that actually changed, so the best is to
-        // put them in a queue
-        for (int i = 0; i < bob_queue_size[back]; i++) {
-            ratr0_amiga_blit_object_il(back_buffer, bob_queue[back][i]->tilesheet,
-                                       0, bob_queue[back][i]->base_obj.current_frame,
-                                       bob_queue[back][i]->base_obj.x,
-                                       bob_queue[back][i]->base_obj.y);
-        }
-        bob_queue_size[back] = 0;
+        tree_set_iterate(bob_queue[back], blit_bob, NULL);
+        tree_set_clear(bob_queue[back]);
         DisownBlitter();
 
         // comment in for visual timing the loop iteration
