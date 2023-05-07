@@ -89,26 +89,84 @@ extern struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void);
 extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
 
-/**
- * This is the interface to the blitter queue.
- */
+extern void add_dirty_rectangle(UINT16 x, UINT16 y);
+extern void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y));
 
 /**
- * Put a fast blit into the queue
+ * Current front and back buffer numbers, these are made global for efficiency,
+ * never write directly and use with caution !
  */
-extern void ratr0_amiga_enqueue_blit_rect(struct Ratr0AmigaSurface *dst,
-                                          struct Ratr0AmigaSurface *src,
-                                          UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                                          UINT16 blit_width_pixels, UINT16 blit_height_pixels);
+extern UINT16 ratr0_amiga_back_buffer;
+extern UINT16 ratr0_amiga_front_buffer;
 
-struct Ratr0TileSheet;
-extern void ratr0_amiga_enqueue_blit_object(struct Ratr0AmigaSurface *dst,
-                                            struct Ratr0TileSheet *bobs,
-                                            UINT16 tilex, UINT16 tiley,
-                                            UINT16 dstx, UINT16 dsty);
 
-extern void ratr0_amiga_enqueue_blit_object_il(struct Ratr0AmigaSurface *dst,
-                                               struct Ratr0TileSheet *bobs,
-                                               UINT16 tilex, UINT16 tiley,
-                                               UINT16 dstx, UINT16 dsty);
+/**
+ * Display Objects
+ */
+
+/*
+ * Collision box.
+ * Collisions should usually be based on bounding shapes
+ * that are tweaked for playability.
+ */
+struct Ratr0BoundingBox {
+    UINT16 x, y, width, height;
+};
+
+/*
+ * Visual component of an animated object. We keep it simple.
+ *   - an animated sprite only represents a single animation state, if
+ *     want more, group them, e.g. into a state pattern.
+ *   - has an animation speed
+ */
+struct Ratr0AnimatedSprite {
+    struct Ratr0Node node;
+    // next in render queue
+    //struct Ratr0AnimatedSprite *next;
+
+    UINT16 x, y, zindex;
+    UINT8 speed;  // speed in frames
+    UINT8 num_frames; // number of frames in animation
+    UINT8 current_frame; // current animation frame displayed
+    UINT8 current_tick;  // current tick, will reset to speed after reaching 0
+    BOOL  is_looping;  // indicates whether this is a looping animation
+
+    // collision boundaries
+    struct Ratr0BoundingBox collision_box;
+    struct Ratr0BoundingBox bounding_box;
+};
+
+/**
+ * This is the background of the game.
+ */
+struct Ratr0Backdrop {
+    struct Ratr0AmigaSurface surface;
+    BOOL was_drawn;
+};
+
+/**
+ * Sprites have different specifications than
+ * Blitter object, as they have a special data structure, we need
+ * to have a representation that accomodates for that.
+ */
+struct Ratr0AnimatedAmigaSprite {
+    struct Ratr0AnimatedSprite base_obj;  // inherited base members
+    UINT16 *sprite_data;
+};
+
+struct Ratr0AnimatedAmigaBob {
+    struct Ratr0AnimatedSprite base_obj;  // inherited base members
+    struct Ratr0TileSheet *tilesheet;
+};
+
+extern struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
+                                                                  UINT8 *frame_indexes, UINT8 num_frames);
+
+/**
+ * Create a blitter object from a tile sheet.
+ */
+extern struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tilesheet,
+                                                          UINT8 *frames, UINT8 num_frames);
+
+
 #endif /* __RATR0_AMIGA_DISPLAY_H__ */

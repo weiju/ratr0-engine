@@ -3,7 +3,7 @@ ifdef AMIGA
 CC=vc +kick13
 ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
 SYS_OBJECTS=amiga/display.o amiga/sprites.o amiga/blitter.o amiga/input.o amiga/memory.o \
-	amiga/engine.o amiga/audio.o amiga/world.o \
+	amiga/engine.o amiga/audio.o \
 	../ptplayer/ptplayer.o
 CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
 LDFLAGS=-lamiga -lauto

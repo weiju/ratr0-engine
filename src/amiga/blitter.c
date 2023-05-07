@@ -75,33 +75,6 @@ void _blit_rect_fast(UINT32 dst_addr, UINT32 src_addr, UINT16 bltsize)
     custom.bltsize = bltsize;
 }
 
-void ratr0_amiga_do_blit_command(struct Ratr0AmigaBlitCommand *cmd)
-{
-    if (cmd->blit_type == BLIT_BLOCK) {
-        _blit_rect(cmd->dst_addr, cmd->src_addr, cmd->dstmod, cmd->srcmod,
-                   cmd->bltsize);
-    } else if (cmd->blit_type == BLIT_BOB) {
-        _blit_object(cmd->dst_addr, cmd->src_addr, cmd->mask_addr,
-                     cmd->dstmod, cmd->srcmod, cmd->num_planes,
-                     cmd->dst_row_bytes, cmd->src_plane_size,
-                     cmd->dst_shift, cmd->alwm, cmd->bltsize);
-    } else if (cmd->blit_type == BLIT_BOB_IL) {
-        _blit_object_il(cmd->dst_addr, cmd->src_addr, cmd->mask_addr, cmd->dstmod, cmd->srcmod,
-                        cmd->dst_shift, cmd->alwm, cmd->bltsize);
-    }
-}
-
-void ratr0_amiga_make_blit_rect(struct Ratr0AmigaBlitCommand *cmd,
-                                struct Ratr0AmigaSurface *dst,
-                                struct Ratr0AmigaSurface *src,
-                                UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                                UINT16 blit_width_pixels, UINT16 blit_height_pixels)
-{
-    cmd->blit_type = BLIT_BLOCK;
-
-    // TODO
-}
-
 UINT16 ratr0_amiga_blit_rect(struct Ratr0AmigaSurface *dst,
                            struct Ratr0AmigaSurface *src,
                            UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
@@ -175,15 +148,6 @@ void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
         dst_addr += dst_row_bytes;
     }
 }
-
-void ratr0_amiga_make_blit_object(struct Ratr0AmigaBlitCommand *cmd,
-                                  struct Ratr0AmigaSurface *dst,
-                                  struct Ratr0TileSheet *bobs,
-                                  int tilex, int tiley,
-                                  int dstx, int dsty)
-{
-}
-
 
 void ratr0_amiga_blit_object(struct Ratr0AmigaSurface *dst,
                              struct Ratr0TileSheet *bobs,
@@ -333,17 +297,6 @@ void ratr0_amiga_blit_object_il(struct Ratr0AmigaSurface *dst,
     _blit_object_il(dst_addr, src_addr, mask_addr, dstmod, srcmod,
                     dst_shift, alwm, bltsize);
 }
-
-
-void ratr0_amiga_make_blit_object_il(struct Ratr0AmigaBlitCommand *cmd,
-                                    struct Ratr0AmigaSurface *dst,
-                                    struct Ratr0TileSheet *bobs,
-                                    int tilex, int tiley,
-                                    int dstx, int dsty)
-{
-}
-
-
 
 UINT16 _blit_8x8(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
                  UINT8 ashift,

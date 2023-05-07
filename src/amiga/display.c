@@ -13,6 +13,9 @@
 #include <ratr0/engine.h>
 #include <ratr0/rendering.h>
 #include <ratr0/memory.h>
+#include <ratr0/bitset.h>
+#include <ratr0/resources.h>
+
 #include <ratr0/amiga/hw_registers.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/sprites.h>
@@ -38,21 +41,69 @@ extern struct Custom custom;
 #define MAX_BUFFERS (2)
 static void set_display_surface(struct Ratr0AmigaSurface *s);
 static struct Ratr0AmigaSurface display_surface[MAX_BUFFERS];
-static int front = 0, back = 1, shown = 0;
+UINT16 ratr0_amiga_back_buffer = 1;
+UINT16 ratr0_amiga_front_buffer = 0;
 
 // For our interrupt handlers
 static struct Interrupt vbint;
 static UINT16 frames = 0;
 
+// A bitset for each buffer, 10x32 = 320 rectangles each
+// representing 20x16 rectangles of 16x16 pixels on a 320x256 frame
+// We can map a rectangle (x,y) to a bit index by using
+// p_i = y * 20 + x and y = p_i / 20, x = p_i % 20 in row major order
+
+// If we can for example use a base 2 dimension, like the height in this case
+// we can use column major order and compute
+// p_i = x * 20 + y and x = p_i % 16, x = p_i % 16 in column major order
+// which can be faster since we can use bitwise operations instead of
+// divisions
+#define BITSET_SIZE (10)
+#define BITSET_INDEX(x, y) (y * 20 + x)
+#define BITSET_X(idx) (idx % 20)
+#define BITSET_Y(idx) (idx / 20)
+UINT32 bitset_arr[2][BITSET_SIZE];
+
+// Sprite and bob tables can be in Fastmem
+struct Ratr0AnimatedAmigaSprite hw_sprite_table[20];
+UINT16 next_hw_sprite = 0;
+struct Ratr0AnimatedAmigaBob bob_table[20];
+UINT16 next_bob = 0;
+
+void add_dirty_rectangle(UINT16 x, UINT16 y)
+{
+    // Add the rectangles to both buffers
+    ratr0_bitset_insert(bitset_arr[ratr0_amiga_front_buffer], BITSET_SIZE, BITSET_INDEX(x, y));
+    ratr0_bitset_insert(bitset_arr[ratr0_amiga_back_buffer], BITSET_SIZE, BITSET_INDEX(x, y));
+}
+
+static void (*_process_rect)(UINT16 x, UINT16 y);
+
+void process_bit(UINT16 index)
+{
+    UINT16 x = BITSET_X(index) << 4;  // * 16
+    UINT16 y = BITSET_Y(index) << 4;
+    _process_rect(x, y);
+}
+
+void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y))
+{
+    // Establish the rect processing function
+    _process_rect = process_dirty_rect;
+    // 1. Restore background using the dirty tile set
+    ratr0_bitset_iterate(bitset_arr[ratr0_amiga_back_buffer], BITSET_SIZE, &process_bit);
+    ratr0_bitset_clear(bitset_arr[ratr0_amiga_back_buffer], 10); // clear to reset
+}
+
 // Swap back and front buffers
 void ratr0_amiga_display_swap_buffers(void)
 {
     // 1. swap front and back indexes
-    int tmp = front;
-    front = back;
-    back = tmp;
+    int tmp = ratr0_amiga_front_buffer;
+    ratr0_amiga_front_buffer = ratr0_amiga_back_buffer;
+    ratr0_amiga_back_buffer = tmp;
     // 2. set new front buffer to copper list
-    set_display_surface(&display_surface[front]);
+    set_display_surface(&display_surface[ratr0_amiga_front_buffer]);
 }
 
 // Our vertical blank server only implements a simple frame counter
@@ -141,11 +192,11 @@ void set_display_mode(UINT16 width, UINT8 num_bitplanes)
  */
 struct Ratr0AmigaSurface *ratr0_amiga_get_front_buffer(void)
 {
-    return &display_surface[front];
+    return &display_surface[ratr0_amiga_front_buffer];
 }
 struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void)
 {
-    return &display_surface[back];
+    return &display_surface[ratr0_amiga_back_buffer];
 }
 
 /**
@@ -236,7 +287,7 @@ static void build_copper_list()
 
     // Just for diagnostics
     copperlist_size = cl_index;
-    set_display_surface(&display_surface[front]);
+    set_display_surface(&display_surface[ratr0_amiga_front_buffer]);
 }
 
 static int display_buffer_size;
@@ -324,6 +375,13 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0RenderingSystem *
     custom.cop1lc = (ULONG) copper_list;
 
     _install_interrupts();
+
+    // initialize the bitsets for dirty rectangles
+    ratr0_bitset_clear(bitset_arr[ratr0_amiga_back_buffer], BITSET_SIZE);
+    ratr0_bitset_clear(bitset_arr[ratr0_amiga_front_buffer], BITSET_SIZE);
+
+    // Object management initialization
+    next_hw_sprite = next_bob = 0;
 }
 
 void ratr0_amiga_display_shutdown(void)
@@ -369,4 +427,41 @@ void ratr0_amiga_display_update()
     // Restore dirty rectangles
     OwnBlitter();
     DisownBlitter();  // and free the blitter
+}
+
+
+// OBJECT MANAGEMENT
+struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
+                                                           UINT8 *frame_indexes, UINT8 num_frames)
+{
+    // Note we can only work within the Amiga hardware sprite limitations
+    // 1. Reserve memory from engine
+    // 2. Convert into sprite data structure and store into allocated memory
+    // 3. Return the initialized object
+    UINT16 *sprite_data = ratr0_amiga_make_sprite_data(tilesheet, frame_indexes, num_frames);
+    struct Ratr0AnimatedAmigaSprite *result = &hw_sprite_table[next_hw_sprite++];
+    result->sprite_data = sprite_data;
+    // store sprite information
+    return result;
+}
+
+struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tilesheet,
+                                                     UINT8 *frame_indexes, UINT8 num_frames)
+{
+    struct Ratr0AnimatedAmigaBob *result = &bob_table[next_bob++];
+    result->tilesheet = tilesheet;
+    result->base_obj.node.class_id = AMIGA_BOB;
+    result->base_obj.current_frame = 0;
+    result->base_obj.bounding_box.x = 0;
+    result->base_obj.bounding_box.y = 0;
+    result->base_obj.bounding_box.width = tilesheet->header.tile_width;
+    result->base_obj.bounding_box.height = tilesheet->header.tile_height;
+
+    // By default, set the collision box to the same size
+    result->base_obj.collision_box.x = 0;
+    result->base_obj.collision_box.y = 0;
+    result->base_obj.collision_box.width = tilesheet->header.tile_width;
+    result->base_obj.collision_box.height = tilesheet->header.tile_height;
+
+    return result;
 }

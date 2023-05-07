@@ -10,73 +10,40 @@
 
 /* World subsystem */
 
-enum _Ratr0NodeClassIDs {
-    RATR0_NODE = 1, BACKDROP, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB
-};
-
-/*
- * Top level node that is the base of a node. The node system is inspired by
- * the Godot design, but will be much simpler to accomodate to the target systems
- * that are very memory constrained.
- * In general, nodes can call methods on nodes that are below them in the scene tree,
- * while signal are used to communicate up and across the hierarchy.
- */
-struct Ratr0Node {
-    /* Identifying information. We don't support subclassing. It's rather a way to find the
-     * appropriate handlers */
-    UINT16 class_id;
-
-    struct Ratr0Node *next, *children;
-};
-
-/*
- * Collision box.
- * Collisions should usually be based on bounding shapes
- * that are tweaked for playability.
- */
-struct Ratr0BoundingBox {
-    UINT16 x, y, width, height;
-};
-
-/*
- * Visual component of an animated object. We keep it simple.
- *   - an animated sprite only represents a single animation state, if
- *     want more, group them, e.g. into a state pattern.
- *   - has an animation speed
- */
-struct Ratr0AnimatedSprite {
-    struct Ratr0Node node;  // include node properties
-    // next in render queue
-    struct Ratr0AnimatedSprite *next;
-
-    UINT16 x, y, zindex;
-    UINT8 speed;  // speed in frames
-    UINT8 num_frames; // number of frames in animation
-    UINT8 current_frame; // current animation frame displayed
-    UINT8 current_tick;  // current tick, will reset to speed after reaching 0
-    BOOL  is_looping;  // indicates whether this is a looping animation
-
-    // collision boundaries
-    struct Ratr0BoundingBox collision_box;
-    struct Ratr0BoundingBox bounding_box;
-};
-
 /**
- * This is the background of the game.
+ * A scene is a component of a game. It contains the movable and static game objects
+ * and the assets. The game can also provide functions for transitions and scene specific
+ * updates
  */
-struct Ratr0Backdrop {
-    struct Ratr0Node node;  // include node properties
-#ifdef AMIGA
-    struct Ratr0AmigaSurface surface;
-    BOOL was_drawn;
-#endif
+struct Ratr0Scene {
+    Ratr0Engine *engine;
+    /**
+     * A scene can have a backdrop, if it does not need a tile map, this might
+     * be the only thing you need. Can be null if you don't need a backdrop.
+     */
+    struct Ratr0Backdrop *backdrop;
+    /**
+     * A number of optional tilemaps, which can define a screen. Can be null if
+     * you don't need any level maps
+     */
+    struct Ratr0Node *tilemaps;
+
+    /**
+     * The animated objects in the scene.
+     * On Amiga, these are both sprites and BOBs
+     */
+    struct Ratr0AnimatedSprite *game_objects;
+
+    void (*on_enter)(struct Ratr0Scene *this_scene);
+    void (*on_exit)(struct Ratr0Scene *this_scene);
 };
 
 /**
  * This interface serves as the creator of our scene objects.
  */
+
 struct Ratr0NodeFactory {
-    struct Ratr0Node *(*create_node)(void);
+    struct Ratr0Scene *(*create_scene)(void);
     struct Ratr0AnimatedSprite *(*create_animated_sprite)(struct Ratr0TileSheet *tilesheet,
                                                           UINT8 *frame_indexes, UINT8 num_indexes,
                                                           BOOL is_hw);
@@ -84,7 +51,7 @@ struct Ratr0NodeFactory {
 };
 
 struct Ratr0WorldSystem {
-    void (*set_current_scene)(struct Ratr0Node *);
+    void (*set_current_scene)(struct Ratr0Scene *);
     void (*update)(void);
     void (*shutdown)(void);
 

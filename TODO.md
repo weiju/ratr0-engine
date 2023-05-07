@@ -5,7 +5,6 @@
 scene
   - startup shutdown transition
 
-move bob and sprites into rendering system
 separate animation system objects
 Spawning, despawning objects
 palette transitions

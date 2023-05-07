@@ -98,6 +98,10 @@ The initial versions of RATR0 won't include a physics system.
 
 ## The World subsystem
 
+Games are build from a set of scenes that are connected to each other. Each scene
+represents an isolated logical unit like a level, a title screen or a high score
+screen etc.
+
 ### Scenes and Nodes
 
 The world subsystem is based around scene trees. At each moment, there is a current
