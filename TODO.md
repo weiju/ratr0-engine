@@ -2,10 +2,13 @@
 
 ## Roadmap
 
-0. Change computation
-  * we only need to blit things again when they move, animate or change
-    * BOB frames
-    * dirty rectangles
+scene
+  - startup shutdown transition
+
+move bob and sprites into rendering system
+separate animation system objects
+Spawning, despawning objects
+palette transitions
 
 1. 8x8 blitting
    * do font blitting with a color

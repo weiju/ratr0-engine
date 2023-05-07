@@ -56,16 +56,39 @@ access its functionality.
 This system is where all other subsystem allocate their memory from.
 By this we can ensure there is only a single point in the system where
 memory is held and freed from the operating system.
+This has the following benefits:
+
+  * Testability: we can test subsystems that depend on the memory
+    subsystem by injecting a test specific allocator
+  * system independence: It can be beneficial to allocate memory through
+    OS specific allocation methods rather than standard C ones to e.g.
+    obtain memory with specific properties like chip memory in the Amiga
+  * The memory subsystem can implement more efficient allocation strategies
+    than the operating system that also can reduce fragmentation
 
 ### Display subsystem
+
+The central component to implement all visual aspects of a game. In
+RATR0 the goal is to achieve reasonably good rendering performance
+on vintage computer systems like the Amiga by taking advantage of a
+system's hardware features.
 
 ### Event subsystem
 
 ### Timer subsystem
 
+Timers are an essential tool in a game engine. They facilitate the
+implementation of time-dependent behaviors that improve the playability
+of a game.
+
 ### Resource / File subsystem
 
+A platform independent way to interactive with the operating system's file
+system to e.g. load game assets or load and store persistent data
+
 ### Audio  subsystem
+
+A service to play background music and sound effects
 
 ### Input subsystem
 
@@ -75,10 +98,6 @@ The initial versions of RATR0 won't include a physics system.
 
 ## The World subsystem
 
-### Entity Component System
-
-The world model is implemented using an entity component system.
-
 ### Scenes and Nodes
 
 The world subsystem is based around scene trees. At each moment, there is a current
@@ -86,7 +105,7 @@ scene with a root node.
 Nodes are communicating down the hierarchy by passing arguments to function calls and we use signals
 to communicate up or across the hierarchy.
 
-## Building
+## Building the Engine
 
 $ make
 
