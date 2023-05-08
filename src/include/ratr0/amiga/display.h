@@ -119,21 +119,37 @@ struct Ratr0BoundingBox {
  *     want more, group them, e.g. into a state pattern.
  *   - has an animation speed
  */
-struct Ratr0AnimatedSprite {
-    struct Ratr0Node node;
-    // next in render queue
-    //struct Ratr0AnimatedSprite *next;
+#define RATR0_MAX_ANIM_FRAMES (8)
 
-    UINT16 x, y, zindex;
+struct Ratr0AnimationFrames {
     UINT8 speed;  // speed in frames
+    UINT8 frames[RATR0_MAX_ANIM_FRAMES];
     UINT8 num_frames; // number of frames in animation
-    UINT8 current_frame; // current animation frame displayed
+    UINT8 current_frame_idx; // current animation frame index displayed
     UINT8 current_tick;  // current tick, will reset to speed after reaching 0
     BOOL  is_looping;  // indicates whether this is a looping animation
+};
+
+struct Ratr0Translate2D {
+    UINT16 x, y;
+};
+
+struct Ratr0AnimatedSprite {
+    struct Ratr0Node node;
+    struct Ratr0AnimationFrames anim_frames;
+
+    // Position and dimensions, read-only
+    struct Ratr0BoundingBox bounds;
+
+    // Translation in this frame. Movement of objects
+    // is implemented through this object. Never modify
+    // an object's position by directly setting the bounds
+    // object !!! The dirty rects algorithm relies on being
+    // able to track if position changes
+    struct Ratr0Translate2D translate;
 
     // collision boundaries
     struct Ratr0BoundingBox collision_box;
-    struct Ratr0BoundingBox bounding_box;
 };
 
 /**
@@ -160,13 +176,15 @@ struct Ratr0AnimatedAmigaBob {
 };
 
 extern struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
-                                                                  UINT8 *frame_indexes, UINT8 num_frames);
+                                                                  UINT8 frames[], UINT8 num_frames,
+                                                                  UINT8 speed);
 
 /**
  * Create a blitter object from a tile sheet.
  */
 extern struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tilesheet,
-                                                          UINT8 *frames, UINT8 num_frames);
+                                                            UINT8 frames[], UINT8 num_frames,
+                                                            UINT8 speed);
 
 
 #endif /* __RATR0_AMIGA_DISPLAY_H__ */

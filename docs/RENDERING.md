@@ -14,7 +14,6 @@ for blitting if the game also needs to update other data structures and
 game logic, so it was decided to forego explicit queuing of blits and
 just directly blit objects as they are updated.
 
-
 ## Central Concepts
 
 ### Double buffering
@@ -41,11 +40,7 @@ We need to
 
    * calculate the restore tiles on the old object
    * add these tiles to the display buffer's dirty list
-
-**** WE MIGHT NOT NEED THIS !!!!
-If a change is detected, we need to know which display buffers are affected.
-We can do this by determining how many frames have elapsed since the last change.
-This means we need a unchanged time counter or a last change timestamp
+   * add the BOB to the draw list of the both buffers
 
 ##### Dirty rectangle sets
 
@@ -75,3 +70,12 @@ both the back buffer and possibly the front buffer, since that would be next.
 
 In a first approach, we just add the dirty to both buffers
 
+
+### Graphics effects
+
+#### Palette interpolation
+
+In a palette based system like the Amiga, palette manipulation is an effective
+tool to achieve effects that don't require a lot of computational resources.
+We can easily implement fade-in/fade-out effects by interpolating a palette
+into another.

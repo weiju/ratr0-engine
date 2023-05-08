@@ -29,10 +29,13 @@ struct Ratr0Scene {
     struct Ratr0Node *tilemaps;
 
     /**
-     * The animated objects in the scene.
-     * On Amiga, these are both sprites and BOBs
+     * The animated objects in the scene that are visible/active. The world module will
+     * automatically render objects in these lists.
+     * On Amiga, these are both sprites and BOBs, and we keep these separate
+     * so we won't need any type checks.
      */
-    struct Ratr0AnimatedSprite *game_objects;
+    struct Ratr0AnimatedAmigaBob *bobs;
+    struct Ratr0AnimatedAmigaSprite *sprites;
 
     void (*on_enter)(struct Ratr0Scene *this_scene);
     void (*on_exit)(struct Ratr0Scene *this_scene);
@@ -44,9 +47,9 @@ struct Ratr0Scene {
 
 struct Ratr0NodeFactory {
     struct Ratr0Scene *(*create_scene)(void);
-    struct Ratr0AnimatedSprite *(*create_animated_sprite)(struct Ratr0TileSheet *tilesheet,
-                                                          UINT8 *frame_indexes, UINT8 num_indexes,
-                                                          BOOL is_hw);
+    struct Ratr0AnimatedSprite *(*create_sprite)(struct Ratr0TileSheet *tilesheet,
+                                                 UINT8 frames[], UINT8 num_frames,
+                                                 UINT8 speed, BOOL is_hw);
     struct Ratr0Backdrop *(*create_backdrop)(struct Ratr0TileSheet *tilesheet);
 };
 

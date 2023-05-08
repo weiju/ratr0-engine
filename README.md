@@ -66,12 +66,31 @@ This has the following benefits:
   * The memory subsystem can implement more efficient allocation strategies
     than the operating system that also can reduce fragmentation
 
-### Display subsystem
+### Rendering subsystem
 
 The central component to implement all visual aspects of a game. In
 RATR0 the goal is to achieve reasonably good rendering performance
 on vintage computer systems like the Amiga by taking advantage of a
-system's hardware features.
+system's hardware features. Go [here](docs/RENDERING.md) for more information.
+
+#### Tile data
+
+TODO
+
+#### BOBS
+
+BOB animation are stored as tile sets that are layed out in a specific format.
+To keep things simple and consistent, animation frames are stored in a single
+column, and the right side is padded so there are at least 16 pixels of space
+at the right side.
+Each frame is aligned to the left side and the image width is a multiple of
+16 pixels. This format is in accordance to the operation of the Amiga Blitter.
+
+#### Hardware Sprites
+
+Hardware sprite data is stored different from BOB data - while the frames
+are still layed out as a column, the image is always 16 pixels wide and
+2 frames are separated through a pair of 16 bit words.
 
 ### Event subsystem
 
@@ -100,7 +119,7 @@ The initial versions of RATR0 won't include a physics system.
 
 Games are build from a set of scenes that are connected to each other. Each scene
 represents an isolated logical unit like a level, a title screen or a high score
-screen etc.
+screen etc. Go [here](docs/WORLD.md) for more information.
 
 ### Scenes and Nodes
 

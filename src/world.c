@@ -73,8 +73,8 @@ static struct Ratr0Scene *ratr0_world_create_scene(void)
     return result;
 }
 
-static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *,
-                                                                   UINT8 *, UINT8, BOOL);
+static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *,
+                                                          UINT8[], UINT8, UINT8, BOOL);
 
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet);
 
@@ -91,7 +91,7 @@ struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
 
     // Node factory
     node_factory.create_scene = &ratr0_world_create_scene;
-    node_factory.create_animated_sprite = &ratr0_nf_create_animated_sprite;
+    node_factory.create_sprite = &ratr0_nf_create_sprite;
     node_factory.create_backdrop = &ratr0_nf_create_backdrop;
     world_system.get_node_factory = &ratr0_world_get_node_factory;
 
@@ -138,17 +138,16 @@ static void ratr0_world_set_current_scene(struct Ratr0Scene *scene)
     }
 }
 
-static struct Ratr0AnimatedSprite *ratr0_nf_create_animated_sprite(struct Ratr0TileSheet *tilesheet,
-                                                                   UINT8 *frame_indexes, UINT8 num_indexes,
-                                                                   BOOL is_hw)
+static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *tilesheet,
+                                                          UINT8 frames[], UINT8 num_frames,
+                                                          UINT8 speed, BOOL is_hw)
 {
 #ifdef AMIGA
     if (is_hw) {
-        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_sprite(tilesheet, frame_indexes, num_indexes);
+        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_sprite(tilesheet, frames, num_frames, speed);
     } else {
-        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_bob(tilesheet, frame_indexes, num_indexes);
+        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_bob(tilesheet, frames, num_frames, speed);
     }
-    return NULL;
 #else
     // TODO
     return NULL;
@@ -192,10 +191,10 @@ void add_restore_tiles_for_bob(struct Ratr0AnimatedAmigaBob *bob)
 {
     // Compute dirty rectangles for the BOB
     // determine first and last horizontal tile positions horizontal and vertical
-    int tx0 = bob->base_obj.x >> 4;
-    int ty0 = bob->base_obj.y >> 4;
-    int txn = (bob->base_obj.x + bob->base_obj.bounding_box.width) >> 4;
-    int tyn = (bob->base_obj.y + bob->base_obj.bounding_box.height) >> 4;
+    int tx0 = bob->base_obj.bounds.x >> 4;
+    int ty0 = bob->base_obj.bounds.y >> 4;
+    int txn = (bob->base_obj.bounds.x + bob->base_obj.bounds.width) >> 4;
+    int tyn = (bob->base_obj.bounds.y + bob->base_obj.bounds.height) >> 4;
     int x, y;
     for (y = ty0; y <= tyn; y++) {
         for (x = tx0; x <= txn; x++) {
@@ -210,14 +209,29 @@ void add_restore_tiles_for_bob(struct Ratr0AnimatedAmigaBob *bob)
 static int anim_frames = 0;
 BOOL update_bob(struct Ratr0AnimatedAmigaBob *bob)
 {
-    bob->base_obj.current_tick++;
-    if (bob->base_obj.current_tick >= bob->base_obj.speed) {
-        // Add an actual frame switcher
-        bob->base_obj.current_frame = (bob->base_obj.current_frame + 1) % bob->base_obj.num_frames;
-        bob->base_obj.current_tick = 0;
-        return TRUE;
+    BOOL result = FALSE;
+    // if there is translation, it means, we need to change the BOB position, but not
+    // in this step, because it would mess up our dirty rectangle
+    if (bob->base_obj.translate.x || bob->base_obj.translate.y) {
+        result = TRUE;
     }
-    return FALSE;
+    // switching a BOB frame means it is updated
+    bob->base_obj.anim_frames.current_tick++;
+    if (bob->base_obj.anim_frames.current_tick >= bob->base_obj.anim_frames.speed) {
+        // Add an actual frame switcher
+        bob->base_obj.anim_frames.current_frame_idx = (bob->base_obj.anim_frames.current_frame_idx + 1) % bob->base_obj.anim_frames.num_frames;
+        bob->base_obj.anim_frames.current_tick = 0;
+        result = TRUE;
+    }
+    return result;
+}
+
+void move_bob(struct Ratr0AnimatedAmigaBob *bob)
+{
+    bob->base_obj.bounds.x += bob->base_obj.translate.x;
+    bob->base_obj.bounds.y += bob->base_obj.translate.y;
+    bob->base_obj.translate.x = 0;
+    bob->base_obj.translate.y = 0;
 }
 
 BOOL ptr_lt(void *a, void *b) { return a < b; }
@@ -227,10 +241,14 @@ void blit_bob(struct TreeSetNode *node, void *data)
 {
     struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) node->value;
     ratr0_amiga_blit_object_il(back_buffer, bob->tilesheet,
-                               0, bob->base_obj.current_frame,
-                               bob->base_obj.x,
-                               bob->base_obj.y);
+                               0,
+                               bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],
+                               bob->base_obj.bounds.x,
+                               bob->base_obj.bounds.y);
 }
+
+int move_timer = 0; // JUST DEBUGGING
+int dir = 1;
 
 static void ratr0_world_update(void)
 {
@@ -238,19 +256,31 @@ static void ratr0_world_update(void)
         // update the scene
         // process all the BOBS
         back_buffer = ratr0_amiga_get_back_buffer();
-        // comment in for visual timing the loop iteration
-        //*custom_color00 = 0x000;
 
         // Simulate updating a changed BOB
         // enqueue dirties
-        struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) current_scene->game_objects;
+        struct Ratr0AnimatedAmigaBob *bob = current_scene->bobs;
         while (bob) {
+            // ****** DEBUG START
+            if (move_timer == 1) {
+                bob->base_obj.translate.x = dir;
+                if (bob->base_obj.node.next == NULL) move_timer = 0;
+            }
+            // ******* DEBUG END
             if (update_bob(bob)) {
                 add_restore_tiles_for_bob(bob);
+                move_bob(bob);
                 // Add the BOB to the blit set for this and the next frame
                 tree_set_insert(bob_queue[ratr0_amiga_back_buffer], bob, ptr_lt, ptr_eq);
                 tree_set_insert(bob_queue[ratr0_amiga_front_buffer], bob, ptr_lt, ptr_eq);
             }
+            // **** DEBUG START
+            if (bob->base_obj.bounds.x > 200) {
+                dir = -1;
+            } else if (bob->base_obj.bounds.x < 20) {
+                dir = 1;
+            }
+            // **** DEBUG END
             bob = (struct Ratr0AnimatedAmigaBob *) bob->base_obj.node.next;
         }
 
@@ -264,5 +294,12 @@ static void ratr0_world_update(void)
         tree_set_iterate(bob_queue[ratr0_amiga_back_buffer], blit_bob, NULL);
         tree_set_clear(bob_queue[ratr0_amiga_back_buffer]);
         DisownBlitter();
+
+        // ***** DEBUG START
+        move_timer++;  // DEBUGGING, REMOVE ME
+        if (move_timer > 4) {
+            move_timer = 0;
+        }
+        // ****** DEBUG END
     }
 }

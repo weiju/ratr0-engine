@@ -432,13 +432,13 @@ void ratr0_amiga_display_update()
 
 // OBJECT MANAGEMENT
 struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
-                                                           UINT8 *frame_indexes, UINT8 num_frames)
+                                                           UINT8 frames[], UINT8 num_frames, UINT8 speed)
 {
     // Note we can only work within the Amiga hardware sprite limitations
     // 1. Reserve memory from engine
     // 2. Convert into sprite data structure and store into allocated memory
     // 3. Return the initialized object
-    UINT16 *sprite_data = ratr0_amiga_make_sprite_data(tilesheet, frame_indexes, num_frames);
+    UINT16 *sprite_data = ratr0_amiga_make_sprite_data(tilesheet, frames, num_frames);
     struct Ratr0AnimatedAmigaSprite *result = &hw_sprite_table[next_hw_sprite++];
     result->sprite_data = sprite_data;
     // store sprite information
@@ -446,16 +446,32 @@ struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet
 }
 
 struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tilesheet,
-                                                     UINT8 *frame_indexes, UINT8 num_frames)
+                                                     UINT8 frames[], UINT8 num_frames,
+                                                     UINT8 speed)
 {
+    if (num_frames > RATR0_MAX_ANIM_FRAMES) {
+        PRINT_DEBUG("Can't create BOB with more than %d animation frames !", RATR0_MAX_ANIM_FRAMES);
+        return NULL;
+    }
     struct Ratr0AnimatedAmigaBob *result = &bob_table[next_bob++];
     result->tilesheet = tilesheet;
     result->base_obj.node.class_id = AMIGA_BOB;
-    result->base_obj.current_frame = 0;
-    result->base_obj.bounding_box.x = 0;
-    result->base_obj.bounding_box.y = 0;
-    result->base_obj.bounding_box.width = tilesheet->header.tile_width;
-    result->base_obj.bounding_box.height = tilesheet->header.tile_height;
+
+    result->base_obj.anim_frames.num_frames = num_frames;
+    result->base_obj.anim_frames.current_frame_idx = 0;
+    result->base_obj.anim_frames.current_tick = 0;
+    result->base_obj.anim_frames.speed = speed;
+    for (int i = 0; i < num_frames; i++) {
+        result->base_obj.anim_frames.frames[i] = frames[i];
+    }
+
+    result->base_obj.bounds.x = 0;
+    result->base_obj.bounds.y = 0;
+    result->base_obj.bounds.width = tilesheet->header.tile_width;
+    result->base_obj.bounds.height = tilesheet->header.tile_height;
+
+    result->base_obj.translate.x = 0;
+    result->base_obj.translate.y = 0;
 
     // By default, set the collision box to the same size
     result->base_obj.collision_box.x = 0;
