@@ -55,12 +55,15 @@ typedef int16_t BOOL;
  * In general, nodes can call methods on nodes that are below them in the scene tree,
  * while signal are used to communicate up and across the hierarchy.
  */
+struct Ratr0Scene;
 struct Ratr0Node {
     /* Identifying information. We don't support subclassing. It's rather a way to find the
      * appropriate handlers */
     UINT16 class_id;
 
     struct Ratr0Node *next, *children;
+
+    void (*update)(struct Ratr0Scene *scene, struct Ratr0Node *this_node);
 };
 
 enum { RATR0_NODE, BACKGROUND, ANIM_SPRITE2D, AMIGA_SPRITE, AMIGA_BOB};

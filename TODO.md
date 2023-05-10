@@ -2,25 +2,13 @@
 
 ## Roadmap
 
-  * Scene update function that is run every iteration
+  * joystick and keyboard input
   * add a way to easily implement state pattern
     * have a "active" BOB list
     * if a BOB changes from active to inactive, add its covered rectangles to dirty
       That means adding and removal needs to be a part of "world" so we can track
       BOBs becoming active/inactive
-  * integrate simple input to control movement
   * add palette interpolation
-  * subpixel movement
-  * integrate BOB movement with the rendering pipeline
-    * fix bug: overlapped BOBs need to be redrawn (but not the rectangles), compute
-      on the bounds and not on the collision boxes
-
-1. 8x8 blitting
-   * do font blitting with a color
-   * BOB blitting with mask and shift (maybe the regular one just works, but test it !)
-2. Make display ad DMA fetch changeable
-   add variable display sizes, change DMA start stop and display window
-   sizes accordingly
 
 ### Editor
 
@@ -31,11 +19,12 @@
   * implement collision detection
 
 ### World
-
+  * child nodes
+    * spatial child nodes that affect the positions of their children so we
+      can have hierarchical positioning
   * State pattern support
   * object spawning / destruction
-  * object scripts
-  * sub-pixel movement
+  * sub-pixel movement: this happens naturally by using procedural movement
   * add invisible objects that can have collision boxes (e.g. for invisible walls)
 
 ### Rendering
@@ -45,7 +34,19 @@
   * Palette interpolations
   * implement screen shake with scrolling technique 
   * research how to do sprite multiplexing with the copper
+  * CONSIDER LATER
   * non-linear animation (using a function to flip frames)
+  * 8x8 blitting
+    * do font blitting with a color
+    * BOB blitting with mask and shift (maybe the regular one just works, but test it !)
+  *  Make display ad DMA fetch changeable
+    * add variable display sizes, change DMA start stop and display window
+    * sizes accordingly
+  * Should active BOB, background, tilemaps and sprites be part of display ?
+    For now, we can leave it in the scene
+  * Known bugs:
+    * fix bug: overlapped BOBs need to be redrawn (but not the rectangles), compute
+      on the bounds and not on the collision boxes
 
 #### Later
 

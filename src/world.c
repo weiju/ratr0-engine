@@ -31,7 +31,7 @@ struct TreeSets *tree_sets;
 static struct TreeSet *bob_queue[2];
 
 static void ratr0_world_shutdown(void);
-static void ratr0_world_update(void);
+static void ratr0_world_update(UINT8);
 static void ratr0_world_set_current_scene(struct Ratr0Scene *);
 
 void ratr0_world_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
@@ -247,13 +247,27 @@ void blit_bob(struct TreeSetNode *node, void *data)
                                bob->base_obj.bounds.y);
 }
 
-int move_timer = 0; // JUST DEBUGGING
-int dir = 1;
+/**
+ * Process all nodes in the scene tree.
+ */
+static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *scene)
+{
+    if (node) {
+        if (node->update) node->update(scene, node);
+        ratr0_update_scene_node(node->children, scene);
+        ratr0_update_scene_node(node->next, scene);
+    }
+}
 
-static void ratr0_world_update(void)
+static void ratr0_world_update(UINT8 frames_elapsed)
 {
     if (current_scene) {
         // update the scene
+        if (current_scene->update) {
+            current_scene->update(current_scene, frames_elapsed);
+            // Update the children of the scene
+            ratr0_update_scene_node(current_scene->children, current_scene);
+        }
         // process all the BOBS
         back_buffer = ratr0_amiga_get_back_buffer();
 
@@ -261,12 +275,6 @@ static void ratr0_world_update(void)
         // enqueue dirties
         struct Ratr0AnimatedAmigaBob *bob = current_scene->bobs;
         while (bob) {
-            // ****** DEBUG START
-            if (move_timer == 1) {
-                bob->base_obj.translate.x = dir;
-                if (bob->base_obj.node.next == NULL) move_timer = 0;
-            }
-            // ******* DEBUG END
             if (update_bob(bob)) {
                 add_restore_tiles_for_bob(bob);
                 move_bob(bob);
@@ -274,13 +282,6 @@ static void ratr0_world_update(void)
                 tree_set_insert(bob_queue[ratr0_amiga_back_buffer], bob, ptr_lt, ptr_eq);
                 tree_set_insert(bob_queue[ratr0_amiga_front_buffer], bob, ptr_lt, ptr_eq);
             }
-            // **** DEBUG START
-            if (bob->base_obj.bounds.x > 200) {
-                dir = -1;
-            } else if (bob->base_obj.bounds.x < 20) {
-                dir = 1;
-            }
-            // **** DEBUG END
             bob = (struct Ratr0AnimatedAmigaBob *) bob->base_obj.node.next;
         }
 
@@ -294,12 +295,5 @@ static void ratr0_world_update(void)
         tree_set_iterate(bob_queue[ratr0_amiga_back_buffer], blit_bob, NULL);
         tree_set_clear(bob_queue[ratr0_amiga_back_buffer]);
         DisownBlitter();
-
-        // ***** DEBUG START
-        move_timer++;  // DEBUGGING, REMOVE ME
-        if (move_timer > 4) {
-            move_timer = 0;
-        }
-        // ****** DEBUG END
     }
 }

@@ -99,6 +99,11 @@ extern void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16
 extern UINT16 ratr0_amiga_back_buffer;
 extern UINT16 ratr0_amiga_front_buffer;
 
+/**
+ * The frame counter to show how many frames have elapsed since the last
+ * reset.
+ */
+extern UINT8 frames_elapsed;
 
 /**
  * Display Objects

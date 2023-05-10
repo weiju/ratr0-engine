@@ -46,7 +46,7 @@ UINT16 ratr0_amiga_front_buffer = 0;
 
 // For our interrupt handlers
 static struct Interrupt vbint;
-static UINT16 frames = 0;
+UINT8 frames_elapsed;
 
 // A bitset for each buffer, 10x32 = 320 rectangles each
 // representing 20x16 rectangles of 16x16 pixels on a 320x256 frame
@@ -114,7 +114,7 @@ void ratr0_amiga_display_swap_buffers(void)
 void set_zero_flag(void) = "\tmoveq.l\t#0,d0\n";
 void VertBServer()
 {
-    frames++;
+    frames_elapsed++;
     set_zero_flag();
 }
 
@@ -343,6 +343,7 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0RenderingSystem *
                                  struct Ratr0DisplayInfo *init_data)
 {
     engine = eng;
+    frames_elapsed = 0;
 
     rendering_system->wait_vblank = &ratr0_amiga_wait_vblank;
     rendering_system->update = &ratr0_amiga_display_update;
@@ -389,8 +390,6 @@ void ratr0_amiga_display_shutdown(void)
     free_display_buffer();
     _uninstall_interrupts();
 
-    PRINT_DEBUG("Copper list size: %d", copperlist_size);
-    PRINT_DEBUG("frames: %u", frames);
     engine->memory_system->free_block(h_copper_list);
     ratr0_amiga_sprites_shutdown();
 

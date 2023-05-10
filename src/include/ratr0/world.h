@@ -17,6 +17,14 @@
  */
 struct Ratr0Scene {
     Ratr0Engine *engine;
+
+    /**
+     * A hierarchy of child nodes that are used to organize the scene.
+     * Theoretically, we don't need this and can do everything in the
+     * scene object.
+     */
+    struct Ratr0Node *children;
+
     /**
      * A scene can have a backdrop, if it does not need a tile map, this might
      * be the only thing you need. Can be null if you don't need a backdrop.
@@ -39,6 +47,7 @@ struct Ratr0Scene {
 
     void (*on_enter)(struct Ratr0Scene *this_scene);
     void (*on_exit)(struct Ratr0Scene *this_scene);
+    void (*update)(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
 };
 
 /**
@@ -55,7 +64,7 @@ struct Ratr0NodeFactory {
 
 struct Ratr0WorldSystem {
     void (*set_current_scene)(struct Ratr0Scene *);
-    void (*update)(void);
+    void (*update)(UINT8 frames_elapsed);
     void (*shutdown)(void);
 
     struct Ratr0NodeFactory *(*get_node_factory)(void);

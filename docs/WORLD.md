@@ -20,3 +20,10 @@ scene are
     world subsystem will also perform collision detection on the active objects
   * Invisible objects: Those are only there for collision detection to create
     invisible walls or obstacles.
+
+## Node hierarchy
+
+Scenes have child nodes as a means to organize them into more manageable units.
+At runtime, the world system recursively processes the scene tree to update all
+the children. It is recommended to keep the tree fairly small, both for efficiency
+and easier maintainability.
