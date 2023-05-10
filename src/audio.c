@@ -1,3 +1,4 @@
+/** @file audio.c */
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/audio.h>

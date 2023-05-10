@@ -1,3 +1,7 @@
+/** @file resources.h
+ *
+ * Resources subsystem
+ */
 #pragma once
 #ifndef __RATR0_RESOURCES_H__
 #define __RATR0_RESOURCES_H__
@@ -5,49 +9,103 @@
 #include <ratr0/engine.h>
 #include <ratr0/memory.h>
 
-/* Resources subsystem */
-// information about a tile sheet
+/** \brief length of file identifier */
 #define FILE_ID_LEN (8)
 
+/** \brief file is encoded in little endian format */
 #define TSFLAGS_LITTLE_ENDIAN     (1)
+/** \brief image is encoded in RGB instead of palette */
 #define TSFLAGS_RGB               (2)
+/** \brief image data is non-interleaved */
 #define TSFLAGS_NON_INTERLEAVED   (4)
+/** \brief image data is followed by blitter mask */
 #define TSFLAGS_HAS_MASK          (8)
 
-// information about a tile sheet
-// File format version 2
-// changes to version 1:
-//   1. dropped the reserved2 word after palette_size
-//   2. changed size of checksum from ULONG to UWORD
+/**
+ * information about a tile sheet
+ * File format version 2
+ * changes to version 1:
+ *   1. dropped the reserved2 word after palette_size
+ *   2. changed size of checksum from UINT32 to UINT16
+ */
 struct Ratr0TileSheetHeader {
+    /** \brief file identifier */
     UINT8 id[FILE_ID_LEN];
-    UINT8 version, flags;
-    UINT8 reserved1, bmdepth;
-    UINT16 width, height;
-    UINT16 tile_width, tile_height;
-    UINT16 num_tiles_h, num_tiles_v;
+    /** \brief file format version */
+    UINT8 version;
+    /** \brief file flags */
+    UINT8 flags;
+    /** \brief reserved byte, don't use */
+    UINT8 reserved1;
+    /** \brief number of bitplanes */
+    UINT8 bmdepth;
+    /** \brief image width */
+    UINT16 width;
+    /** \brief image height */
+    UINT16 height;
+    /** \brief tile width */
+    UINT16 tile_width;
+    /** \brief tile height */
+    UINT16 tile_height;
+    /** \brief number of horizontal tiles in the sheet */
+    UINT16 num_tiles_h;
+    /** \brief number of vertical tiles in the sheet */
+    UINT16 num_tiles_v;
+    /** \brief number of palette entries */
     UINT16 palette_size;
+    /** \brief size of image data in bytes */
     UINT32 imgdata_size;
+    /** \brief checksum */
     UINT16 checksum;
 };
 
+/** \brief maximum palette size */
 #define MAX_PALETTE_SIZE (32)
+
+/**
+ * Ratr0TileSheet data structure.
+ */
 struct Ratr0TileSheet {
+    /** \brief tile sheet information header */
     struct Ratr0TileSheetHeader header;
+    /** \brief image palette */
     UINT16 palette[MAX_PALETTE_SIZE];
-    /* Use memory handle */
+    /** \brief handle to image data */
     Ratr0MemHandle h_imgdata;
 };
 
+/**
+ * Interface to resource subsystem.
+ */
 struct Ratr0ResourceSystem {
+    /**
+     * Reads a tilesheet from the file system.
+     *
+     * @param filename the path to the tilesheet file
+     * @param sheet pointer to an unitialized tilesheet structure
+     * @return 0 if error, 1 if success
+     */
     UINT32 (*read_tilesheet)(const char *filename, struct Ratr0TileSheet *sheet);
+
+    /**
+     * Frees the data in a tilesheet and returns it to the memory system.
+     *
+     * @param sheet pointer to an initialized tilesheet
+     */
     void (*free_tilesheet_data)(struct Ratr0TileSheet *sheet);
+
+    /**
+     * Shuts down the resources subsystem.
+     */
     void (*shutdown)(void);
 };
 
 /**
  * Start up the resources subsystem.
+ *
+ * @param engine pointer to engine instance
+ * @return pointer to initialized Ratr0ResourceSystem
  */
-extern struct Ratr0ResourceSystem *ratr0_resources_startup(Ratr0Engine *);
+extern struct Ratr0ResourceSystem *ratr0_resources_startup(Ratr0Engine *engine);
 
 #endif /* __RATR0_RESOURCES_H__ */

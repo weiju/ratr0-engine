@@ -2,4 +2,5 @@
 main
 *_test
 *_perf
-
+.DS_Store
+doxygen-out

@@ -1,3 +1,4 @@
+/** @file bitset.c */
 #include <ratr0/bitset.h>
 #include <string.h>
 #include <stdio.h>

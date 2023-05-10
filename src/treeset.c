@@ -1,3 +1,4 @@
+/** @file treeset.c */
 #include <stdio.h>
 
 #include <ratr0/data_types.h>
@@ -22,16 +23,16 @@
  * https://www.codesdope.com/course/data-structures-red-black-trees-insertion/
  */
 
-static struct TreeSets tree_sets;
+static struct Ratr0TreeSets tree_sets;
 #define MAX_INSTANCES (3)
-static struct TreeSet tree_set_instances[MAX_INSTANCES];  // just a singleton right now
+static struct Ratr0TreeSet tree_set_instances[MAX_INSTANCES];  // just a singleton right now
 static int next_instance;
 static Ratr0Engine *engine;
 
 void _tree_sets_shutdown(void) { }
-struct TreeSet *_get_tree_set(void);
+struct Ratr0TreeSet *_get_tree_set(void);
 
-struct TreeSets *ratr0_startup_tree_sets(Ratr0Engine *eng)
+struct Ratr0TreeSets *ratr0_init_tree_sets(Ratr0Engine *eng)
 {
     engine = eng;
     tree_sets.shutdown = &_tree_sets_shutdown;
@@ -40,11 +41,11 @@ struct TreeSets *ratr0_startup_tree_sets(Ratr0Engine *eng)
     return &tree_sets;
 }
 
-struct TreeSet *_get_tree_set(void) {
-    struct TreeSet *result = &tree_set_instances[next_instance++];
+struct Ratr0TreeSet *_get_tree_set(void) {
+    struct Ratr0TreeSet *result = &tree_set_instances[next_instance++];
     result->next_node = 0;
     // index zero will always be NIL
-    struct TreeSetNode *NIL = &result->nodes[result->next_node++];
+    struct Ratr0TreeSetNode *NIL = &result->nodes[result->next_node++];
     // initialize the singleton set
     NIL->color = RBT_BLACK;
     NIL->parent = NIL->left = NIL->right = NULL;
@@ -58,9 +59,9 @@ struct TreeSet *_get_tree_set(void) {
 /**
  * Red-Black Tree operations.
  */
-void _rbt_left_rotate(struct TreeSet *set, struct TreeSetNode *x)
+void _rbt_left_rotate(struct Ratr0TreeSet *set, struct Ratr0TreeSetNode *x)
 {
-    struct TreeSetNode *y = x->right;
+    struct Ratr0TreeSetNode *y = x->right;
     x->right = y->left;
     if (y->left != set->NIL)
         y->left->parent = x;
@@ -77,9 +78,9 @@ void _rbt_left_rotate(struct TreeSet *set, struct TreeSetNode *x)
     x->parent = y;
 }
 
-void _rbt_right_rotate(struct TreeSet *set, struct TreeSetNode *x)
+void _rbt_right_rotate(struct Ratr0TreeSet *set, struct Ratr0TreeSetNode *x)
 {
-    struct TreeSetNode *y = x->left;
+    struct Ratr0TreeSetNode *y = x->left;
     x->left = y->right;
     if (y->right != set->NIL)
         y->right->parent = x;
@@ -99,11 +100,11 @@ void _rbt_right_rotate(struct TreeSet *set, struct TreeSetNode *x)
 /*
  * Only insert if element did not exist, if it exists, return FALSE
  */
-BOOL _tree_insert(struct TreeSet *set, struct TreeSetNode *z,
+BOOL _tree_insert(struct Ratr0TreeSet *set, struct Ratr0TreeSetNode *z,
                   BOOL (*_lt)(void *, void *),
                   BOOL (*_eq)(void *, void *))
 {
-    struct TreeSetNode *y = set->NIL, *x = set->root;
+    struct Ratr0TreeSetNode *y = set->NIL, *x = set->root;
 
     while (x != set->NIL) {
         y = x;
@@ -126,12 +127,12 @@ BOOL _tree_insert(struct TreeSet *set, struct TreeSetNode *z,
     return TRUE;
 }
 
-BOOL tree_set_insert(struct TreeSet *set, void *value,
+BOOL ratr0_tree_set_insert(struct Ratr0TreeSet *set, void *value,
                      BOOL (*_lt)(void *, void *),
                      BOOL (*_eq)(void *, void *))
 {
     // Part 1: BST tree insertion
-    struct TreeSetNode *node_x = &set->nodes[set->next_node++];
+    struct Ratr0TreeSetNode *node_x = &set->nodes[set->next_node++];
     node_x->value = value;
     node_x->left = node_x->right = set->NIL;
     node_x->parent = NULL;
@@ -144,7 +145,7 @@ BOOL tree_set_insert(struct TreeSet *set, void *value,
     while (node_x->parent->color == RBT_RED) {
         if (node_x->parent == node_x->parent->parent->left) {
             // parent is left child of its parent
-            struct TreeSetNode *y = node_x->parent->parent->right;
+            struct Ratr0TreeSetNode *y = node_x->parent->parent->right;
             if (y->color == RBT_RED) {
                 node_x->parent->color = RBT_BLACK;
                 y->color = RBT_BLACK;
@@ -161,7 +162,7 @@ BOOL tree_set_insert(struct TreeSet *set, void *value,
             }
         } else {
             // parent is right child of its parent
-            struct TreeSetNode *y = node_x->parent->parent->left;
+            struct Ratr0TreeSetNode *y = node_x->parent->parent->left;
             if (y->color == RBT_RED) {
                 node_x->parent->color = RBT_BLACK;
                 y->color = RBT_BLACK;
@@ -183,10 +184,10 @@ BOOL tree_set_insert(struct TreeSet *set, void *value,
 }
 
 /**
- * Inorder processing of the TreeSet.
+ * Inorder processing of the Ratr0TreeSet.
  */
-void _rbt_inorder(struct TreeSet *set, struct TreeSetNode *node,
-                  void (*process_node)(struct TreeSetNode *, void *),
+void _rbt_inorder(struct Ratr0TreeSet *set, struct Ratr0TreeSetNode *node,
+                  void (*process_node)(struct Ratr0TreeSetNode *, void *),
                   void *user_data)
 {
     if (node != set->NIL) {
@@ -196,13 +197,13 @@ void _rbt_inorder(struct TreeSet *set, struct TreeSetNode *node,
     }
 }
 
-void tree_set_iterate(struct TreeSet *set,
-                       void (*process_node)(struct TreeSetNode *, void *), void *user_data)
+void ratr0_tree_set_iterate(struct Ratr0TreeSet *set,
+                       void (*process_node)(struct Ratr0TreeSetNode *, void *), void *user_data)
 {
     _rbt_inorder(set, set->root, process_node, user_data);
 }
 
-void tree_set_clear(struct TreeSet *set)
+void ratr0_tree_set_clear(struct Ratr0TreeSet *set)
 {
     set->root = set->NIL;
     set->num_elements = 0;

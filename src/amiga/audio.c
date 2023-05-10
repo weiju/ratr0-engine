@@ -1,3 +1,4 @@
+/** @file audio.c */
 #include <ratr0/debug_utils.h>
 #include <ratr0/amiga/audio.h>
 #include <graphics/gfxbase.h>

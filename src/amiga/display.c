@@ -1,3 +1,4 @@
+/** @file display.c */
 #include <stdio.h>
 
 #include <exec/interrupts.h>
@@ -164,18 +165,13 @@ static int spr0pth_idx;
 static int bplcon0_idx;
 static int bpl1mod_idx;
 
-void ratr0_amiga_wait_vblank(void)
-{
-    WaitTOF();
-}
-
 /**
  * We need to adjust the BPLCONx and BPLxMOD values after changing the
  * display mode.
  * Note: bplmod is currently the same for BPL1MOD and BPL2MOD, so no
  * dual playfield as for now
  */
-void set_display_mode(UINT16 width, UINT8 num_bitplanes)
+static void set_display_mode(UINT16 width, UINT8 num_bitplanes)
 {
     // width *needs* to be a multiple of 16 because Amiga playfield hardware operates
     // on word boundaries
@@ -345,9 +341,6 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0RenderingSystem *
     engine = eng;
     frames_elapsed = 0;
 
-    rendering_system->wait_vblank = &ratr0_amiga_wait_vblank;
-    rendering_system->update = &ratr0_amiga_display_update;
-
     ratr0_amiga_sprites_startup(eng);
     ratr0_amiga_blitter_startup(eng);
 
@@ -414,20 +407,6 @@ void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data)
     copper_list[spr_idx] = ((UINT32) data >> 16) & 0xffff;
     copper_list[spr_idx + 2] = (UINT32) data & 0xffff;
 }
-
-/**
- * This is the primary Amiga rendering function. Most performance critical stuff will
- * likely happen here, so make sure it runs fast
- */
-void ratr0_amiga_display_update()
-{
-    // For now, we process the blitter queue without interrupt, thus
-    // avoiding concurrency and keeping things simple
-    // Restore dirty rectangles
-    OwnBlitter();
-    DisownBlitter();  // and free the blitter
-}
-
 
 // OBJECT MANAGEMENT
 struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,

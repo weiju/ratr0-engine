@@ -1,42 +1,52 @@
+/** @file display.h
+ *
+ * Amiga Display subsystem
+ */
 #pragma once
 #ifndef __RATR0_AMIGA_DISPLAY_H__
 #define __RATR0_AMIGA_DISPLAY_H__
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 
-/* Amiga Display subsystem */
-/*
-  Amiga specific information about the display, used both for
-  initialization and query information. This includes aspects of the
-  playfield hardware, sprites and the blitter.
-*/
+/**
+ * Amiga specific information about the display, used both for
+ * initialization and query information. This includes aspects of the
+ * playfield hardware, sprites and the blitter.
+ */
 struct Ratr0AmigaDisplayInfo {
-    /*
-      Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
-      256 for PAL. Smaller values will typically result in less memory consumption and faster
-      refresh times.
-      Sensible values for width can be { 320, 288 }
-      Sensible values for height can be { 192, 208, 224, 240 }
-    */
-    UINT16 vp_width, vp_height;
-    UINT16 buffer_width, buffer_height;
+    /**
+     * \brief viewport width
+     *
+     * Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
+     * 256 for PAL. Smaller values will typically result in less memory consumption and faster
+     * refresh times.
+     * Sensible values for width can be { 320, 288 }
+     * Sensible values for height can be { 192, 208, 224, 240 }
+     */
+    UINT16 vp_width;
+    /** \brief viewport height */
+    UINT16 vp_height;
+    /** \brief display buffer width */
+    UINT16 buffer_width;
+    /** \brief display buffer height */
+    UINT16 buffer_height;
 
-    /* This can be a value between 1 and 5 */
+    /** \brief display depth, can be a value between 1 and 5 */
     UINT8 depth;
 
-    /* Display buffer */
+    /** \brief number of display buffers (always 2) */
     UINT8 num_buffers;
 
-    /* How many frames to update the backbuffer ? For now, this
+    /**
+     * \brief number of frames to switch buffers
+     *
+     * How many frames to update the backbuffer ? For now, this
      * should only be either 1 or 2. More than that heavily impacts
-     * gameplay experience.
+     * gameplay experience. Currently it is always 1
      */
     UINT8 update_frames;
 
-    /* Readonly section */
-    /* This is the Amiga relevant part. We can't explicitly set
-       PAL or NTSC since it is dependent on the machine, so it is query
-       only */
+    /** \brief if PAL, this is TRUE, if NTSC, this is FALSE */
     BOOL is_pal;
 };
 
@@ -47,16 +57,28 @@ struct Ratr0AmigaDisplayInfo {
  * information.
  */
 struct Ratr0AmigaSurface {
-    UINT16 width, height, depth;
+    /** \brief surface width */
+    UINT16 width;
+    /** \brief surface height */
+    UINT16 height;
+    /** \brief surface bitplane number */
+    UINT16 depth;
+    /** \brief TRUE if the data is interleaved */
     BOOL is_interleaved;
+    /** \brief image data */
     void *buffer;
 };
 
 /**
  * Start up the display subsystem.
+ *
+ * @param engine pointer to the Ratr0Engine instance
+ * @param render_sys pointer to the rendering subsystem
+ * @param display_info display configuration data
  */
-extern void ratr0_amiga_display_startup(Ratr0Engine *, struct Ratr0RenderingSystem *,
-                                        struct Ratr0DisplayInfo *);
+extern void ratr0_amiga_display_startup(Ratr0Engine *engine,
+                                        struct Ratr0RenderingSystem *render_sys,
+                                        struct Ratr0DisplayInfo *display_info);
 
 /**
  * Shut down the display subsystem.
@@ -68,6 +90,9 @@ extern void ratr0_amiga_display_shutdown(void);
  */
 extern void ratr0_amiga_wait_vblank(void);
 
+/**
+ * Swap back buffer with the front buffer.
+ */
 extern void ratr0_amiga_display_swap_buffers(void);
 
 /**
@@ -75,93 +100,158 @@ extern void ratr0_amiga_display_swap_buffers(void);
  */
 extern void ratr0_amiga_display_update(void);
 
-/**
- * Quick access functions to the copper list.
- */
-/**
- * Adjust the copper list to point to the specified display buffer with the
- * given specification.
- * The data in the display buffer is assumed to be interleaved.
- */
-extern struct Ratr0AmigaSurface *ratr0_amiga_get_front_buffer(void);
-extern struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void);
+//
+// Quick access functions to the copper list.
+//
 
+/**
+ * Sets the display palette.
+ *
+ * @param colors array of colors
+ * @param num_colors length of array
+ */
 extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
+
+/**
+ * Points the specified sprite to the image data.
+ *
+ * @param sprite_num sprite number
+ * @param data pointer to sprite data structure
+ */
 extern void ratr0_amiga_display_set_sprite(int sprite_num, UINT16 *data);
 
-extern void add_dirty_rectangle(UINT16 x, UINT16 y);
-extern void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y));
+/**
+ * Returns a pointer to the current front buffer.
+ *
+ * @return pointer to the current front buffer
+ */
+extern struct Ratr0AmigaSurface *ratr0_amiga_get_front_buffer(void);
 
 /**
- * Current front and back buffer numbers, these are made global for efficiency,
- * never write directly and use with caution !
+ * Returns a pointer to the current back buffer.
+ *
+ * @return pointer to the current back buffer
  */
+extern struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void);
+
+//
+// Current front and back buffer numbers, these are made global for efficiency,
+// never write directly and use with caution !
+//
+/** \brief index of the current back buffer */
 extern UINT16 ratr0_amiga_back_buffer;
+/** \brief index of the current front buffer */
 extern UINT16 ratr0_amiga_front_buffer;
 
 /**
- * The frame counter to show how many frames have elapsed since the last
- * reset.
+ * Adds a dirty rectangle to the list at the specified position. The coordinates
+ * are based on 16 pixel tiles rather than individual pixels.
+ *
+ * @param x coordinate of the dirty tile
+ * @param y coordinate of the dirty tile
+ */
+extern void add_dirty_rectangle(UINT16 x, UINT16 y);
+
+/**
+ * Processes the dirty rectangle list of the current back buffer.
+ *
+ * @param process_dirty_rect a function that is called for every dirty rectangle
+ */
+extern void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y));
+
+/**
+ * \brief frame counter to show how many frames have elapsed since the last reset
  */
 extern UINT8 frames_elapsed;
 
-/**
- * Display Objects
- */
+//
+// Display Objects
+//
 
-/*
+/**
  * Collision box.
  * Collisions should usually be based on bounding shapes
  * that are tweaked for playability.
  */
 struct Ratr0BoundingBox {
-    UINT16 x, y, width, height;
+    /** \brief x-coordinate of origin */
+    UINT16 x;
+    /** \brief y-coordinate of origin */
+    UINT16 y;
+    /** \brief width of bounding box */
+    UINT16 width;
+    /** \brief height of bounding box */
+    UINT16 height;
 };
 
-/*
+/** \brief maximum number of animation frames in a Ratr0AnimationFrames object */
+#define RATR0_MAX_ANIM_FRAMES (8)
+
+/**
  * Visual component of an animated object. We keep it simple.
  *   - an animated sprite only represents a single animation state, if
  *     want more, group them, e.g. into a state pattern.
  *   - has an animation speed
  */
-#define RATR0_MAX_ANIM_FRAMES (8)
-
 struct Ratr0AnimationFrames {
-    UINT8 speed;  // speed in frames
+    /** \brief speed in frames */
+    UINT8 speed;
+    /** \brief frame numbers of the animation */
     UINT8 frames[RATR0_MAX_ANIM_FRAMES];
-    UINT8 num_frames; // number of frames in animation
-    UINT8 current_frame_idx; // current animation frame index displayed
-    UINT8 current_tick;  // current tick, will reset to speed after reaching 0
-    BOOL  is_looping;  // indicates whether this is a looping animation
+    /** \brief length of the frames array */
+    UINT8 num_frames;
+    /** \brief current animation frame index displayed */
+    UINT8 current_frame_idx;
+    /** \brief current tick, will reset to speed after reaching 0 */
+    UINT8 current_tick;
+    /** \brief indicates whether this is a looping animation */
+    BOOL  is_looping;
 };
 
+/**
+ * A translation object. Movement of objects
+ * is implemented through this data structure. Never modify
+ * an object's position by directly setting the bounds
+ * object variables !!! The dirty rects algorithm relies on being
+ * able to track position changes
+ */
 struct Ratr0Translate2D {
-    UINT16 x, y;
+    /** \brief x translation */
+    UINT16 x;
+    /** \brief y translation */
+    UINT16 y;
 };
 
+/**
+ * The base data structure for animated objects. It is assumed that each such object
+ * describes its boundary box, a collision box, a translation object and animation frames.
+ */
 struct Ratr0AnimatedSprite {
+    /** \brief base node data */
     struct Ratr0Node node;
+
+    /** \brief animation frames object */
     struct Ratr0AnimationFrames anim_frames;
 
-    // Position and dimensions, read-only
+    /** \brief Position and dimensions of the sprite, don't set directly !!! */
     struct Ratr0BoundingBox bounds;
 
-    // Translation in this frame. Movement of objects
-    // is implemented through this object. Never modify
-    // an object's position by directly setting the bounds
-    // object !!! The dirty rects algorithm relies on being
-    // able to track if position changes
+    /** \brief Translation object to describe the next move */
     struct Ratr0Translate2D translate;
 
-    // collision boundaries
+    /** \brief collision boundaries */
     struct Ratr0BoundingBox collision_box;
 };
 
 /**
- * This is the background of the game.
+ * This is the background of the game. Backdrops are drawn to the display buffer in
+ * their entirety the first time. After that, they serve as the source for restore
+ * operations.
  */
 struct Ratr0Backdrop {
+    /** \brief surface object containing the image data  */
     struct Ratr0AmigaSurface surface;
+    /** \brief flag to indicate whether the backdrop was drawn */
     BOOL was_drawn;
 };
 
@@ -171,21 +261,43 @@ struct Ratr0Backdrop {
  * to have a representation that accomodates for that.
  */
 struct Ratr0AnimatedAmigaSprite {
-    struct Ratr0AnimatedSprite base_obj;  // inherited base members
+    /** \brief base node data */
+    struct Ratr0AnimatedSprite base_obj;
+    /** \brief sprite image data in Amiga sprite format */
     UINT16 *sprite_data;
 };
 
+/**
+ * Representation of a BOB.
+ */
 struct Ratr0AnimatedAmigaBob {
-    struct Ratr0AnimatedSprite base_obj;  // inherited base members
+    /** \brief base node data */
+    struct Ratr0AnimatedSprite base_obj;
+    /** \brief BOB image data, stored in a tile sheet */
     struct Ratr0TileSheet *tilesheet;
 };
 
+/**
+ * Create an Amiga hardware sprite object from a tilesheet.
+ *
+ * @param tilesheet pointer to tilesheet containing the image data
+ * @param frames array containing the frames of the animation
+ * @param num_frames length of the frames array
+ * @param speed animation speed in frames
+ * @return pointer to an initialized sprite data structure
+ */
 extern struct Ratr0AnimatedAmigaSprite *ratr0_create_amiga_sprite(struct Ratr0TileSheet *tilesheet,
                                                                   UINT8 frames[], UINT8 num_frames,
                                                                   UINT8 speed);
 
 /**
  * Create a blitter object from a tile sheet.
+ *
+ * @param tilesheet pointer to tilesheet containing the image data
+ * @param frames array containing the frames of the animation
+ * @param num_frames length of the frames array
+ * @param speed animation speed in frames
+ * @return pointer to an initialized BOB data structure
  */
 extern struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tilesheet,
                                                             UINT8 frames[], UINT8 num_frames,

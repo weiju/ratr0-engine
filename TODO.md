@@ -2,12 +2,15 @@
 
 ## Roadmap
 
+  * rename world system to scene system
+  * look into making world system serializable / persistent
   * joystick and keyboard input
   * add a way to easily implement state pattern
     * have a "active" BOB list
     * if a BOB changes from active to inactive, add its covered rectangles to dirty
       That means adding and removal needs to be a part of "world" so we can track
       BOBs becoming active/inactive
+  * tilemaps
   * add palette interpolation
 
 ### Editor

@@ -1,27 +1,43 @@
+/** @file engine.h
+ *
+ * Top level engine module. This is the main interface to the user and the
+ * management system for the subsystems.
+ */
 #pragma once
 #ifndef __RATR0_ENGINE_H__
 #define __RATR0_ENGINE_H__
 
 /**
- * Top level module. This is the main interface to the user and the
- * management system for the subsystems.
+ * Engine interface.
  */
-
-// Switches for testing performance
-#define INTERLEAVED_BOBS
-
 typedef struct {
+    /** \brief memory subsystem */
     struct Ratr0MemorySystem *memory_system;
+    /** \brief event subsystem */
     struct Ratr0EventSystem *event_system;
+    /** \brief timer subsystem */
     struct Ratr0TimerSystem *timer_system;
+    /** \brief input subsystem */
     struct Ratr0InputSystem *input_system;
+    /** \brief rendering subsystem */
     struct Ratr0RenderingSystem *rendering_system;
+    /** \brief audio subsystem */
     struct Ratr0AudioSystem *audio_system;
+    /** \brief resource subsystem */
     struct Ratr0ResourceSystem *resource_system;
+    /** \brief physics subsystem */
     struct Ratr0PhysicsSystem *physics_system;
+    /** \brief scene subsystem */
     struct Ratr0WorldSystem *world_system;
 
+    /**
+     * Shuts down the engine.
+     */
     void (*shutdown)(void);
+
+    /**
+     * Game loop function.
+     */
     void (*game_loop)(void);
 
     /**
@@ -33,6 +49,8 @@ typedef struct {
 
 /**
  * Startup the engine and all its subsystems.
+ *
+ * @return pointer to the initialized engine system
  */
 extern Ratr0Engine *ratr0_engine_startup(void);
 

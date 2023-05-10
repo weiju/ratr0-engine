@@ -1,3 +1,4 @@
+/** @file main_scene.c */
 #include <ratr0/main_scene.h>
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)

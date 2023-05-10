@@ -1,3 +1,4 @@
+/** @file events.c */
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/events.h>

@@ -1,3 +1,4 @@
+/** @file main.c */
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
 #include <ratr0/world.h>

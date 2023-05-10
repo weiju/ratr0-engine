@@ -1,3 +1,4 @@
+/** @file blitter.c */
 #include <hardware/custom.h>
 #include <clib/graphics_protos.h>
 

@@ -111,6 +111,8 @@ A service to play background music and sound effects
 
 ### Input subsystem
 
+Go [here](docs/INPUT.md) for more information
+
 ### [Physics / Collision subsystem]
 
 The initial versions of RATR0 won't include a physics system.

@@ -22,7 +22,7 @@ void mock_free_block(Ratr0MemHandle handle) {
 }
 void *mock_block_address(Ratr0MemHandle handle) { return mock_mem; }
 
-struct TreeSets *tree_sets;
+struct Ratr0TreeSets *tree_sets;
 
 void treeset_test_setup(void *userdata)
 {
@@ -31,7 +31,7 @@ void treeset_test_setup(void *userdata)
     memsys.free_block = &mock_free_block;
     memsys.block_address = &mock_block_address;
     mock_engine.memory_system = &memsys;
-    tree_sets = ratr0_startup_tree_sets(&mock_engine);
+    tree_sets = ratr0_init_tree_sets(&mock_engine);
 }
 void treeset_test_teardown(void *userdata) {
     if (mock_mem) {
@@ -57,16 +57,16 @@ BOOL eq(void *a, void *b) { return a == b; }
 
 CHIBI_TEST(TestInitTreeSet)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     chibi_assert(tree_set->root->color == RBT_BLACK);
     chibi_assert_eq_int(0, tree_set->num_elements);
 }
 
 CHIBI_TEST(TestInsertSingle)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     struct Coord a = {1,2};
-    tree_set_insert(tree_set, &a, lt, eq);
+    ratr0_tree_set_insert(tree_set, &a, lt, eq);
     chibi_assert_not_null(tree_set->root);
     chibi_assert(&a == tree_set->root->value);
     chibi_assert_eq_int(1, tree_set->num_elements);
@@ -74,55 +74,55 @@ CHIBI_TEST(TestInsertSingle)
 
 CHIBI_TEST(TestInsertTwoElements)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     struct Coord a = {1,2};
     struct Coord b = {2,5};
 
-    tree_set_insert(tree_set, &a, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &a, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
     chibi_assert_not_null(tree_set->root);
     chibi_assert_eq_int(2, tree_set->num_elements);
 }
 
 CHIBI_TEST(TestInsertTwoElementsAndDuplicate)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     struct Coord a = {1,2};
     struct Coord b = {2,5};
 
-    tree_set_insert(tree_set, &a, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &a, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
     chibi_assert_not_null(tree_set->root);
     chibi_assert_eq_int(2, tree_set->num_elements);
 }
 
 CHIBI_TEST(TestInsertTwoElementsDuplicateAndOneMore)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     struct Coord a = {1,2};
     struct Coord b = {2,5};
     struct Coord c = {3,5};
 
-    tree_set_insert(tree_set, &a, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
-    tree_set_insert(tree_set, &c, lt, eq);
+    ratr0_tree_set_insert(tree_set, &a, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &c, lt, eq);
     chibi_assert_not_null(tree_set->root);
     chibi_assert_eq_int(3, tree_set->num_elements);
 }
 
 CHIBI_TEST(TestClearSet)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     struct Coord a = {1,2};
     struct Coord b = {2,5};
 
-    tree_set_insert(tree_set, &a, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &a, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
     chibi_assert_eq_int(2, tree_set->num_elements);
 
-    tree_set_clear(tree_set);
+    ratr0_tree_set_clear(tree_set);
     chibi_assert_eq_int(0, tree_set->num_elements);
 }
 
@@ -130,7 +130,7 @@ CHIBI_TEST(TestClearSet)
  * Iteration test. Simply count and sum the components.
  */
 static int counter0 = 0, x0 = 0, y0 = 0;
-static void process_node(struct TreeSetNode *node, void *user_data)
+static void process_node(struct Ratr0TreeSetNode *node, void *user_data)
 {
     counter0++;
     x0 += ((struct Coord *) node->value)->x;
@@ -139,14 +139,14 @@ static void process_node(struct TreeSetNode *node, void *user_data)
 
 CHIBI_TEST(TestIterate)
 {
-    struct TreeSet *tree_set = tree_sets->get_tree_set();
+    struct Ratr0TreeSet *tree_set = tree_sets->get_tree_set();
     struct Coord a = {1,2};
     struct Coord b = {2,5};
 
-    tree_set_insert(tree_set, &a, lt, eq);
-    tree_set_insert(tree_set, &b, lt, eq);
+    ratr0_tree_set_insert(tree_set, &a, lt, eq);
+    ratr0_tree_set_insert(tree_set, &b, lt, eq);
 
-    tree_set_iterate(tree_set, &process_node, NULL);
+    ratr0_tree_set_iterate(tree_set, &process_node, NULL);
     chibi_assert_eq_int(2, counter0);
     chibi_assert_eq_int(3, x0);
     chibi_assert_eq_int(7, y0);

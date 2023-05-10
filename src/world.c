@@ -1,3 +1,4 @@
+/** @file world.c */
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
@@ -24,11 +25,11 @@ static struct Ratr0NodeFactory node_factory;
 static Ratr0Engine *engine;
 static struct Ratr0Scene *current_scene;
 static struct Ratr0Backdrop *backdrop;
-struct TreeSets *tree_sets;
+struct Ratr0TreeSets *tree_sets;
 /**
  * Queue of changed BOBs, one for each buffer
  */
-static struct TreeSet *bob_queue[2];
+static struct Ratr0TreeSet *bob_queue[2];
 
 static void ratr0_world_shutdown(void);
 static void ratr0_world_update(UINT8);
@@ -96,7 +97,7 @@ struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
     world_system.get_node_factory = &ratr0_world_get_node_factory;
 
     // Rendering system
-    tree_sets = ratr0_startup_tree_sets(eng);
+    tree_sets = ratr0_init_tree_sets(eng);
 
     // data structures for efficient rendering
     bob_queue[ratr0_amiga_front_buffer] = tree_sets->get_tree_set();
@@ -237,7 +238,7 @@ void move_bob(struct Ratr0AnimatedAmigaBob *bob)
 BOOL ptr_lt(void *a, void *b) { return a < b; }
 BOOL ptr_eq(void *a, void *b) { return a == b; }
 
-void blit_bob(struct TreeSetNode *node, void *data)
+void blit_bob(struct Ratr0TreeSetNode *node, void *data)
 {
     struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) node->value;
     ratr0_amiga_blit_object_il(back_buffer, bob->tilesheet,
@@ -279,8 +280,8 @@ static void ratr0_world_update(UINT8 frames_elapsed)
                 add_restore_tiles_for_bob(bob);
                 move_bob(bob);
                 // Add the BOB to the blit set for this and the next frame
-                tree_set_insert(bob_queue[ratr0_amiga_back_buffer], bob, ptr_lt, ptr_eq);
-                tree_set_insert(bob_queue[ratr0_amiga_front_buffer], bob, ptr_lt, ptr_eq);
+                ratr0_tree_set_insert(bob_queue[ratr0_amiga_back_buffer], bob, ptr_lt, ptr_eq);
+                ratr0_tree_set_insert(bob_queue[ratr0_amiga_front_buffer], bob, ptr_lt, ptr_eq);
             }
             bob = (struct Ratr0AnimatedAmigaBob *) bob->base_obj.node.next;
         }
@@ -292,8 +293,8 @@ static void ratr0_world_update(UINT8 frames_elapsed)
         dirty_bltsize = 0;
 
         // 2. Blit updated objects
-        tree_set_iterate(bob_queue[ratr0_amiga_back_buffer], blit_bob, NULL);
-        tree_set_clear(bob_queue[ratr0_amiga_back_buffer]);
+        ratr0_tree_set_iterate(bob_queue[ratr0_amiga_back_buffer], blit_bob, NULL);
+        ratr0_tree_set_clear(bob_queue[ratr0_amiga_back_buffer]);
         DisownBlitter();
     }
 }

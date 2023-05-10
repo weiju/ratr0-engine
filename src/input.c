@@ -1,3 +1,4 @@
+/** @file input.c */
 #include <ratr0/debug_utils.h>
 #include <ratr0/input.h>
 

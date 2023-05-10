@@ -1,3 +1,4 @@
+/** @file sprites.c */
 #include <ratr0/debug_utils.h>
 #include <ratr0/memory.h>
 #include <ratr0/resources.h>
@@ -41,7 +42,8 @@ void set_sprite_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UINT16 vs
  * This function extracts the specified frames from a Ratr0TileSheet and arranges it
  * into a sprite data structure.
  */
-UINT16 *ratr0_amiga_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 *frames, UINT8 num_frames)
+UINT16 *ratr0_amiga_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
+                                     UINT8 num_frames)
 {
     // for now I assume the sprite data is arranged in 16 pixel width and being 2 bits deep
     // we only support 2 or 4 bits

@@ -1,3 +1,4 @@
+/** @file engine.c */
 #include <ratr0/debug_utils.h>
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
@@ -20,13 +21,6 @@
 
 static Ratr0Engine *engine;
 static volatile UWORD *custom_color00 = (volatile UWORD *) 0xdff180;
-
-//struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
-//#define TILES_PATH_IL ("test_assets/tiles_48x48x3.ts")
-//#define FONT_PATH ("test_assets/arcade_font_1bit.ts")
-//struct Ratr0TileSheet tiles_il, font;
-//struct Ratr0AmigaSurface tiles_surf, font_surf;
-/**/
 
 void ratr0_amiga_engine_startup(Ratr0Engine *eng)
 {

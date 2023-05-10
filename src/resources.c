@@ -1,3 +1,4 @@
+/** @file resources.c */
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/memory.h>
@@ -12,12 +13,12 @@
 /**
  * Endianess swapping on Intel machines.
  */
-UINT16 byteswap16(UINT16 value)
+static UINT16 byteswap16(UINT16 value)
 {
     return ((value & 0x00ff) << 8) | ((value & 0xff00) >> 8);
 }
 
-UINT32 byteswap32(UINT32 value)
+static UINT32 byteswap32(UINT32 value)
 {
     return ((value & 0xff00ff00) >> 8) | ((value & 0x00ff00ff) << 8);
 }
