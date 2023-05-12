@@ -24,7 +24,7 @@ TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 	test/bitset_test.o test/treeset_test.o ../chibi_test/chibi.o
 
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	resources.o world.o bitset.o treeset.o main_scene.o $(SYS_OBJECTS)
+	resources.o scenes.o bitset.o treeset.o main_scene.o $(SYS_OBJECTS)
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm

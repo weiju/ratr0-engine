@@ -6,7 +6,7 @@
 #ifndef __MAIN_SCENE_H__
 #define __MAIN_SCENE_H__
 
-#include <ratr0/world.h>
+#include <ratr0/scenes.h>
 #include <ratr0/engine.h>
 
 /**

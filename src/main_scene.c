@@ -16,8 +16,8 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *engine)
 {
-        // Use the world module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->world_system->get_node_factory();
+    // Use the scenes module to create a scene and run that
+    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
     struct Ratr0Scene *main_scene = node_factory->create_scene();
     main_scene->update = main_scene_update;
 

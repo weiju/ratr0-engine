@@ -28,7 +28,7 @@ typedef struct {
     /** \brief physics subsystem */
     struct Ratr0PhysicsSystem *physics_system;
     /** \brief scene subsystem */
-    struct Ratr0WorldSystem *world_system;
+    struct Ratr0ScenesSystem *scenes_system;
 
     /**
      * Shuts down the engine.

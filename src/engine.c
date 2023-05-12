@@ -10,7 +10,7 @@
 #include <ratr0/rendering.h>
 #include <ratr0/input.h>
 #include <ratr0/resources.h>
-#include <ratr0/world.h>
+#include <ratr0/scenes.h>
 
 #define MAX_TIMERS (10)
 #ifdef AMIGA
@@ -50,7 +50,7 @@ Ratr0Engine *ratr0_engine_startup(void)
     engine.rendering_system = ratr0_rendering_startup(&engine, &display_init);
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
-    engine.world_system = ratr0_world_startup(&engine);
+    engine.scenes_system = ratr0_scenes_startup(&engine);
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }
@@ -58,7 +58,7 @@ Ratr0Engine *ratr0_engine_startup(void)
 void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
-    engine.world_system->shutdown();
+    engine.scenes_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();
     engine.rendering_system->shutdown();

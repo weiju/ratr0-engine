@@ -1,26 +1,26 @@
-/** @file world.c */
+/** @file scenes.c */
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
 #include <ratr0/bitset.h>
 #include <ratr0/treeset.h>
-#include <ratr0/world.h>
+#include <ratr0/scenes.h>
 
 #ifdef AMIGA
 #include <clib/graphics_protos.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/blitter.h>
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mWORLD\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSCENES\033[0m", __VA_ARGS__)
 #else
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34mWORLD\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34mSCENES\033[0m", __VA_ARGS__)
 #endif
 
 /*
- * The world system is where games are implemented on a high level and tied together.
+ * The scenes system is where games are implemented on a high level and tied together.
  * It builds on all the subsystems that deal with low-level aspects and integrates
  * with the scripting system.
  */
-static struct Ratr0WorldSystem world_system;
+static struct Ratr0ScenesSystem scenes_system;
 static struct Ratr0NodeFactory node_factory;
 static Ratr0Engine *engine;
 static struct Ratr0Scene *current_scene;
@@ -31,11 +31,11 @@ struct Ratr0TreeSets *tree_sets;
  */
 static struct Ratr0TreeSet *bob_queue[2];
 
-static void ratr0_world_shutdown(void);
-static void ratr0_world_update(UINT8);
-static void ratr0_world_set_current_scene(struct Ratr0Scene *);
+static void ratr0_scenes_shutdown(void);
+static void ratr0_scenes_update(UINT8);
+static void ratr0_scenes_set_current_scene(struct Ratr0Scene *);
 
-void ratr0_world_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
+void ratr0_scenes_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
 {
     if (!parent->children) parent->children = child;
    else {
@@ -56,18 +56,18 @@ static UINT16 next_scene = 0;
 struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
 
-static struct Ratr0NodeFactory *ratr0_world_get_node_factory(void) { return &node_factory; }
+static struct Ratr0NodeFactory *ratr0_scenes_get_node_factory(void) { return &node_factory; }
 
 /**
  * Base node initialization
  */
-void ratr0_world_init_base_node(struct Ratr0Node *node, UINT16 clsid)
+void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid)
 {
     node->class_id = clsid;
     node->children = node->next = NULL;
 }
 
-static struct Ratr0Scene *ratr0_world_create_scene(void)
+static struct Ratr0Scene *ratr0_scenes_create_scene(void)
 {
     struct Ratr0Scene *result = &_scenes[next_scene++];
     result->engine = engine;
@@ -79,22 +79,21 @@ static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet 
 
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet);
 
-struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
+struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng)
 {
     engine = eng;
     current_scene = NULL;
 
-    world_system.update = &ratr0_world_update;
-    world_system.shutdown = &ratr0_world_shutdown;
-    world_system.set_current_scene = &ratr0_world_set_current_scene;
-    // world_system.update_node = &ratr0_world_update_node;
-    world_system.add_child = &ratr0_world_add_child;
+    scenes_system.update = &ratr0_scenes_update;
+    scenes_system.shutdown = &ratr0_scenes_shutdown;
+    scenes_system.set_current_scene = &ratr0_scenes_set_current_scene;
+    scenes_system.add_child = &ratr0_scenes_add_child;
 
     // Node factory
-    node_factory.create_scene = &ratr0_world_create_scene;
+    node_factory.create_scene = &ratr0_scenes_create_scene;
     node_factory.create_sprite = &ratr0_nf_create_sprite;
     node_factory.create_backdrop = &ratr0_nf_create_backdrop;
-    world_system.get_node_factory = &ratr0_world_get_node_factory;
+    scenes_system.get_node_factory = &ratr0_scenes_get_node_factory;
 
     // Rendering system
     tree_sets = ratr0_init_tree_sets(eng);
@@ -104,15 +103,15 @@ struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng)
     bob_queue[ratr0_amiga_back_buffer] = tree_sets->get_tree_set();
 
     PRINT_DEBUG("Startup finished.");
-    return &world_system;
+    return &scenes_system;
 }
 
-static void ratr0_world_shutdown(void)
+static void ratr0_scenes_shutdown(void)
 {
     PRINT_DEBUG("Shutdown finished.");
 }
 
-static void ratr0_world_set_current_scene(struct Ratr0Scene *scene)
+static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
 {
     // Leave previous scene if existing
     if (current_scene && current_scene->on_exit) {
@@ -158,7 +157,7 @@ static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet 
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
 {
     struct Ratr0Backdrop *result = &_backdrops[next_backdrop++];
-    ratr0_world_init_base_node((struct Ratr0Node *) result, BACKGROUND);
+    ratr0_scenes_init_base_node((struct Ratr0Node *) result, BACKGROUND);
 #ifdef AMIGA
     // Initialize the backdrop
     result->surface.width = tilesheet->header.width;
@@ -260,7 +259,7 @@ static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *s
     }
 }
 
-static void ratr0_world_update(UINT8 frames_elapsed)
+static void ratr0_scenes_update(UINT8 frames_elapsed)
 {
     if (current_scene) {
         // update the scene

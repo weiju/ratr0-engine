@@ -5,7 +5,7 @@
 #include <ratr0/rendering.h>
 #include <ratr0/input.h>
 #include <ratr0/timers.h>
-#include <ratr0/world.h>
+#include <ratr0/scenes.h>
 #include <ratr0/treeset.h>
 
 // Amiga specific subsystem access
@@ -46,7 +46,7 @@ void ratr0_amiga_engine_game_loop(void)
 {
     while (game_state != GAMESTATE_QUIT) {
         WaitTOF();
-        engine->world_system->update(frames_elapsed);
+        engine->scenes_system->update(frames_elapsed);
 
         // comment in for visual timing the loop iteration
         //*custom_color00 = 0xf00;

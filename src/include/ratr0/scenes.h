@@ -1,10 +1,10 @@
-/** @file world.h
+/** @file scenes.h
  *
- * This is RATR0 Engine's implementation of the World subsystem.
+ * This is RATR0 Engine's implementation of the Scenes subsystem.
  */
 #pragma once
-#ifndef __RATR0_WORLD_H__
-#define __RATR0_WORLD_H__
+#ifndef __RATR0_SCENES_H__
+#define __RATR0_SCENES_H__
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
@@ -45,7 +45,7 @@ struct Ratr0Scene {
     struct Ratr0Node *tilemaps;
 
     //
-    // The animated objects in the scene that are visible/active. The world module will
+    // The animated objects in the scene that are visible/active. The scenes module will
     // automatically render objects in these lists.
     // On Amiga, these are both sprites and BOBs, and we keep these separate
     // so we won't need any type checks.
@@ -115,9 +115,9 @@ struct Ratr0NodeFactory {
 
 
 /**
- * Interface to the World subsystem.
+ * Interface to the Scenes subsystem.
  */
-struct Ratr0WorldSystem {
+struct Ratr0ScenesSystem {
     /**
      * Sets the currently active scene.
      *
@@ -126,14 +126,14 @@ struct Ratr0WorldSystem {
     void (*set_current_scene)(struct Ratr0Scene *scene);
 
     /**
-     * Called every game loop iteration to update the World system.
+     * Called every game loop iteration to update the Scenes system.
      *
      * @param frames_elapsed frames elapsed since last invocation
      */
     void (*update)(UINT8 frames_elapsed);
 
     /**
-     * Shutdown the World subsystem.
+     * Shutdown the Scenes subsystem.
      */
     void (*shutdown)(void);
 
@@ -157,9 +157,9 @@ struct Ratr0WorldSystem {
  * Start up the scene subsystem.
  *
  * @param eng the engine object
- * @return an initialized Ratr0WorldSystem instance
+ * @return an initialized Ratr0SceneSystem instance
  */
-extern struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng);
+extern struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng);
 
 /**
  * Base node initialization. Sets a Ratr0Node struct members to a defined state.
@@ -167,6 +167,6 @@ extern struct Ratr0WorldSystem *ratr0_world_startup(Ratr0Engine *eng);
  * @param node pointer to the node to initialize
  * @param clsid the class id
  */
-extern void ratr0_world_init_base_node(struct Ratr0Node *node, UINT16 clsid);
+extern void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid);
 
-#endif /* __RATR0_WORLD_H__ */
+#endif /* __RATR0_SCENES_H__ */
