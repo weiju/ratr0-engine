@@ -12,6 +12,7 @@
 
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
+#include <ratr0/input.h>
 #include <ratr0/rendering.h>
 #include <ratr0/memory.h>
 #include <ratr0/bitset.h>
@@ -37,6 +38,7 @@
  */
 extern struct GfxBase *GfxBase;
 extern struct Custom custom;
+static Ratr0Engine *engine;
 
 // Double buffer management
 #define MAX_BUFFERS (2)
@@ -116,13 +118,13 @@ void set_zero_flag(void) = "\tmoveq.l\t#0,d0\n";
 void VertBServer()
 {
     frames_elapsed++;
+    engine->input_system->update();
     set_zero_flag();
 }
 
 static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
-static Ratr0Engine *engine;
 
 // Data fetch for a 320 pixel wide image: DDFSTRT = 0x38, DDFSTOP = 0xd0
 // Data fetch for a 288 pixel wide image: DDFSTRT = 0x3a, DDFSTOP = 0xce

@@ -114,20 +114,33 @@ void ratr0_amiga_input_shutdown(void)
 
 static volatile UINT8 *ciaa_pra = (volatile UINT8 *) 0xbfe001;
 #define  PRA_FIR0_BIT (1 << 6)
-static BOOL was_joy0fir0_pressed(void) { return (*ciaa_pra & PRA_FIR0_BIT) == 0; }
+#define  PRA_FIR1_BIT (1 << 7)
+#define JOY0FIR0_PRESSED (!(*ciaa_pra & PRA_FIR0_BIT))
+#define JOY1FIR0_PRESSED (!(*ciaa_pra & PRA_FIR1_BIT))
 
-UINT32 _ratr0_amiga_get_joystick_state(UINT16 device_num)
+volatile UINT16 *joy0dat = (volatile UINT16 *) 0xdff00a;
+volatile UINT16 *joy1dat = (volatile UINT16 *) 0xdff00c;
+
+UINT16 ratr0_amiga_get_joystick_state(UINT8 device_num)
 {
+    UINT16 result = 0;
+    UINT16 tmp = (device_num == 0) ? *joy0dat : *joy1dat;
+    BOOL fire_button = device_num == 0 ? JOY0FIR0_PRESSED : JOY1FIR0_PRESSED;
+
+    // This code is not really efficient, but it works, optimize if
+    // it becomes an issue
+    UINT16 bit0  =  tmp & 0x01;
+    UINT16 right = (tmp >> 1) & 0x01;
+    UINT16 bit8  = (tmp >> 8) & 0x01;
+    UINT16 left  = (tmp >> 9) & 0x01;
+    UINT16 down  = right ^ bit0;
+    UINT16 up = left ^ bit8;
+
     // currently only the mouse port is supported
-    UINT32 result = 0;
-    if (was_joy0fir0_pressed()) result |= JOY_FIRE0;
+    if (left) result |= JOY_D_LEFT;
+    if (right) result |= JOY_D_RIGHT;
+    if (up) result |= JOY_D_UP;
+    if (down) result |= JOY_D_DOWN;
+    if (fire_button) result |= JOY_FIRE0;
     return result;
 }
-
-static UINT32 last_joy0_state;
-void ratr0_amiga_input_update(void)
-{
-    last_joy0_state = _ratr0_amiga_get_joystick_state(0);
-}
-
-UINT32 ratr0_amiga_get_joystick_state(UINT16 device_num) { return last_joy0_state; }

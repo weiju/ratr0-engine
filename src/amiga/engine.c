@@ -46,17 +46,9 @@ void ratr0_amiga_engine_game_loop(void)
 {
     while (game_state != GAMESTATE_QUIT) {
         WaitTOF();
-        engine->scenes_system->update(frames_elapsed);
-
         // comment in for visual timing the loop iteration
         //*custom_color00 = 0xf00;
-        engine->input_system->update();
-        // For now, end when the mouse was clicked. This is just for testing
-        UINT32 joystate = engine->input_system->get_joystick_state(0);
-        if (joystate != 0) {
-            if (joystate & JOY_FIRE0 == JOY_FIRE0) ratr0_amiga_engine_exit();
-        }
-
+        engine->scenes_system->update(frames_elapsed);
         // we are done with the back buffer. now swap it to the front
         ratr0_amiga_display_swap_buffers();
         frames_elapsed = 0;  // Reset the update frame counter

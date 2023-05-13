@@ -8,23 +8,50 @@
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 
-/** \brief the supported set of keyboard keys */
-enum PhysicalKeys {
-    PHYS_KEY_ESCAPE, PHYS_KEY_SPACE, PHYS_KEY_UP, PHYS_KEY_DOWN, PHYS_KEY_LEFT, PHYS_KEY_RIGHT
+/**
+ * \var typedef INT16 RATR0_ACTION_ID
+ * \brief A type definition for input action ids.
+ */
+typedef INT16 RATR0_ACTION_ID;
+
+/** \brief available input classes */
+enum Ratr0InputClasses {
+    RATR0_IC_KB = 0, RATR0_IC_JS0, RATR0_IC_JS1, RATR0_IC_MOUSE
 };
 
-// 32 bit flags for joystick/mouse state
+/** \brief number of input classes */
+#define RATR0_NUM_INPUT_CLASSES (RATR0_IC_MOUSE - RATR0_IC_KB)
 
-/** \brief fire 0 button on joystick */
-#define JOY_FIRE0   (1)
-/** \brief digital joystick left */
-#define JOY_D_LEFT  (2)
-/** \brief digital joystick right */
-#define JOY_D_RIGHT (4)
-/** \brief digital joystick up */
-#define JOY_D_UP    (8)
-/** \brief digital joystick down */
-#define JOY_D_DOWN  (16)
+/** \brief number of input ids per class */
+#define RATR0_NUM_INPUT_IDS (10)
+
+/** \brief the supported set of keyboard keys */
+enum Ratr0PhysicalKeys {
+    RATR0_KEY_ESCAPE = 0, RATR0_KEY_SPACE, RATR0_KEY_UP, RATR0_KEY_DOWN,
+    RATR0_KEY_LEFT, RATR0_KEY_RIGHT
+};
+
+/** \brief available joystick input actions */
+enum Ratr0JoystickInputs {
+    RATR0_INPUT_JS_LEFT = 0, RATR0_INPUT_JS_RIGHT, RATR0_INPUT_JS_UP, RATR0_INPUT_JS_DOWN,
+    RATR0_INPUT_JS_BUTTON0
+};
+
+/**
+ * Abstraction for an input event.
+ */
+struct Ratr0InputEvent {
+    /** \brief input class */
+    UINT16 input_class;
+    /** \brief input id within the class */
+    UINT16 input_id;
+
+    /** \brief mapped action id */
+    RATR0_ACTION_ID action_id;
+
+    /** \brief next input event in the list */
+    struct Ratr0InputEvent *next;
+};
 
 /**
  * Input subsystem. This abstracts system specific input events into actions.
@@ -38,13 +65,31 @@ struct Ratr0InputSystem {
      * Update the input system state.
      */
     void (*update)(void);
+
     /**
-     * Returns the joystick state.
+     * Allocate an action.
      *
-     * @param joystick number
-     * @return the joystick state encoded in an integer number
+     * @return a new action id
      */
-    UINT32 (*get_joystick_state)(UINT16 device_num);
+    RATR0_ACTION_ID (*alloc_action)(void);
+
+    /**
+     * Maps an input to an action. Multiple inputs can be mapped to an action.
+     *
+     * @param action_id the action id
+     * @param input_class input class
+     * @param input_id input id
+     */
+    void (*map_input_to_action)(RATR0_ACTION_ID action_id, UINT16 input_class, UINT16 input_id);
+
+    /**
+     * Returns TRUE if the specified action was pressed in the current loop iteration.
+     * Multiple actions can  be active in a single loop iteration.
+     *
+     * @param action_id action id
+     * @return TRUE if action was pressed, FALSE otherwise
+     */
+    BOOL (*was_action_pressed)(RATR0_ACTION_ID action_id);
 };
 
 /**

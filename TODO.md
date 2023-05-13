@@ -2,9 +2,8 @@
 
 ## Roadmap
 
-  * rename world system to scene system
+  * joystick input
   * look into making world system serializable / persistent
-  * joystick and keyboard input
   * add a way to easily implement state pattern
     * have a "active" BOB list
     * if a BOB changes from active to inactive, add its covered rectangles to dirty
@@ -62,6 +61,8 @@
 ### Input 
 
   * Support joystick
+  * Support Keyboard
+  * Support mouse
 
 ### Other
 

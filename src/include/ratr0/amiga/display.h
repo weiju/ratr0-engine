@@ -217,9 +217,9 @@ struct Ratr0AnimationFrames {
  */
 struct Ratr0Translate2D {
     /** \brief x translation */
-    UINT16 x;
+    INT16 x;
     /** \brief y translation */
-    UINT16 y;
+    INT16 y;
 };
 
 /**
