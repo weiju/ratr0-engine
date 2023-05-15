@@ -273,8 +273,9 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
 
         // Simulate updating a changed BOB
         // enqueue dirties
-        struct Ratr0AnimatedAmigaBob *bob = current_scene->bobs;
-        while (bob) {
+        struct Ratr0AnimatedAmigaBob *bob;
+        for (int i = 0; i < current_scene->num_bobs; i++) {
+            bob = current_scene->bobs[i];
             if (update_bob(bob)) {
                 add_restore_tiles_for_bob(bob);
                 move_bob(bob);
@@ -282,7 +283,6 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
                 ratr0_tree_set_insert(bob_queue[ratr0_amiga_back_buffer], bob, ptr_lt, ptr_eq);
                 ratr0_tree_set_insert(bob_queue[ratr0_amiga_front_buffer], bob, ptr_lt, ptr_eq);
             }
-            bob = (struct Ratr0AnimatedAmigaBob *) bob->base_obj.node.next;
         }
 
         OwnBlitter();

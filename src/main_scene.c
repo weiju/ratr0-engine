@@ -49,8 +49,9 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     bobs[1]->base_obj.bounds.x = 83;
     bobs[1]->base_obj.bounds.y = 32;
 
-    bobs[0]->base_obj.node.next = (struct Ratr0Node *) bobs[1];
-    main_scene->bobs = bobs[0];
+    main_scene->bobs[0] = bobs[0];
+    main_scene->bobs[1] = bobs[1];
+    main_scene->num_bobs = 2;
     main_scene->backdrop = node_factory->create_backdrop(&grid);
     return main_scene;
 }

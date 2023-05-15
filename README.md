@@ -1,10 +1,10 @@
-# RATR0 Engine
+# RATR0 Game Development Framework
 
 ## Description
 
-A game engine in C for creating retro style 2D games. The goal is to
-have a platform that works on both modern systems down to 16 and 8 bit
-machines.
+A game development framework written in C for creating retro style 2D games.
+The goal is to have a platform that works on both modern systems down to 16
+and 8 bit machines.
 
 On modern systems, RATR0 will build on top of SDL, while on retro systems
 it will be direct hardware abstraction.
@@ -18,7 +18,7 @@ fixed point math will be possible to allow for smoother animations and movement
 
 ## Architecture
 
-The engine implements the standard architecture of having a collection
+RATR0 implements a standard game engine architecture of having a collection
 of subsystems that are tied and coordinated by the engine.
 The engine is responsible for starting and shutting down all of the
 sub systems.
@@ -45,7 +45,7 @@ The following subsystems are planned
 
 ## The subsystems
 
-Below are the subsystems of the engine. In general every subsystem aims to be
+Below are the subsystems of RATR0. In general every subsystem aims to be
 updated once per frame, assuming a frame rate of 60fps, or 50 on retro systems
 in the PAL region.
 Each subsystem has a globally available service object that can be used to
@@ -115,7 +115,7 @@ Go [here](docs/INPUT.md) for more information
 
 ### [Physics / Collision subsystem]
 
-The initial versions of RATR0 won't include a physics system.
+Go [here](docs/COLLISIONS.md) for more information
 
 ## The World subsystem
 
@@ -130,7 +130,7 @@ scene with a root node.
 Nodes are communicating down the hierarchy by passing arguments to function calls and we use signals
 to communicate up or across the hierarchy.
 
-## Building the Engine
+## Building the system
 
 $ make
 

@@ -18,13 +18,14 @@ endif  # ifdef AMIGA
 
 EXES=main
 PERF_PRGS=set_perf
-TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test
+TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test
 
 TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
-	test/bitset_test.o test/treeset_test.o ../chibi_test/chibi.o
+	test/bitset_test.o test/treeset_test.o test/quadtree_test.o \
+	test/vector_test.o ../chibi_test/chibi.o
 
 ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	resources.o scenes.o bitset.o treeset.o main_scene.o $(SYS_OBJECTS)
+	resources.o scenes.o bitset.o treeset.o quadtree.o vector.o main_scene.o $(SYS_OBJECTS)
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -60,4 +61,10 @@ bitset_test: test/bitset_test.o bitset.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
 treeset_test: test/treeset_test.o treeset.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^
+
+quadtree_test: test/quadtree_test.o vector.o quadtree.o ../chibi_test/chibi.o
+	$(CC) -o $@ $^
+
+vector_test: test/vector_test.o vector.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^

@@ -51,9 +51,12 @@ struct Ratr0Scene {
     // so we won't need any type checks.
     //
     /** \brief list of active BOBs in the scene */
-    struct Ratr0AnimatedAmigaBob *bobs;
+    struct Ratr0AnimatedAmigaBob *bobs[10];
+
+    /** \brief number of bobs in the array */
+    int num_bobs;
     /** \brief list of active hardware sprites in the scene */
-    struct Ratr0AnimatedAmigaSprite *sprites;
+    struct Ratr0AnimatedAmigaSprite *sprites[10];
 
     /**
      * User provided function that is called when this scene is set to the current scene.

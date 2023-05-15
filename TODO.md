@@ -2,7 +2,8 @@
 
 ## Roadmap
 
-  * joystick input
+  * collisions, overlaps, quadtree
+  * grid-based movement
   * look into making world system serializable / persistent
   * add a way to easily implement state pattern
     * have a "active" BOB list
@@ -19,6 +20,7 @@
 ### Collision system
 
   * implement collision detection
+  * alternative: spatial hashing
 
 ### World
   * child nodes
@@ -60,7 +62,6 @@
 
 ### Input 
 
-  * Support joystick
   * Support Keyboard
   * Support mouse
 

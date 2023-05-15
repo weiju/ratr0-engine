@@ -1,4 +1,4 @@
-# RATR0 SDL based engine components
+# RATR0 SDL based components
 
 ## Description
 

@@ -435,7 +435,6 @@ struct Ratr0AnimatedAmigaBob *ratr0_create_amiga_bob(struct Ratr0TileSheet *tile
     }
     struct Ratr0AnimatedAmigaBob *result = &bob_table[next_bob++];
     result->tilesheet = tilesheet;
-    result->base_obj.node.class_id = AMIGA_BOB;
 
     result->base_obj.anim_frames.num_frames = num_frames;
     result->base_obj.anim_frames.current_frame_idx = 0;
