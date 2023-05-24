@@ -21,6 +21,26 @@ just directly blit objects as they are updated.
 The render component will strictly use double buffering. This is to ensure smooth
 transitions at the cost of moderate additional space consumption
 
+### Render list
+
+On each frame we need to determine
+
+  * the dirty background rectangles
+  * the changed objects to redraw
+  * the collided objects
+
+We need therefore to have data structures for the following:
+
+  * background tiles
+  * BOBs
+  * collision boxes
+
+Unfortunately, trees seem to be significantly slower on Amiga than
+hashing, so we use hash sets for BOB sets and a hash grids
+to process collisions
+
+
+
 
 ### Background restoration algorithm (dirty rectangles)
 

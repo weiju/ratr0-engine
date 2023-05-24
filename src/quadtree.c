@@ -68,6 +68,7 @@ UINT8 ratr0_quadtree_quadrants(struct Ratr0QuadTreeNode *node, struct Ratr0Bound
 
 void ratr0_quadtree_clear(void)
 {
+    nodes[0].num_elems = 0;
     next_node = 1;
 }
 

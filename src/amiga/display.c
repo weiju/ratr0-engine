@@ -126,16 +126,31 @@ static struct Ratr0AmigaDisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
 
+// DDFSTRT (lores) = DIWSTRT_h / 2 - 8.5
+// so $81 -> $38
+// DDFSTRT = DDFSTOP-(8*(word count-1))for low resolution
+// DDFSTOP = DDFSTRT + (8 * (word count - 1))
 // Data fetch for a 320 pixel wide image: DDFSTRT = 0x38, DDFSTOP = 0xd0
-// Data fetch for a 288 pixel wide image: DDFSTRT = 0x3a, DDFSTOP = 0xce
-// Data fetch for a 304 pixel wide image: e.g. DDFSTRT = 0x38, DDFSTOP = 0xce
-#define DDFSTRT_VALUE      0x0038
-#define DDFSTOP_VALUE      0x00d0
+// Data fetch for a 288 pixel wide image: DDFSTRT = 0x46, DDFSTOP = 0xce
+#define DDFSTRT_VALUE_320      0x0038
+#define DDFSTOP_VALUE_320      0x00d0
+
+// 1. 40/c8
+#define DDFSTRT_VALUE_288      0x0040
+#define DDFSTOP_VALUE_288      0x00c8
 
 // Display window
-#define DIWSTRT_VALUE      0x2c81
-#define DIWSTOP_VALUE_PAL  0x2cc1
-#define DIWSTOP_VALUE_NTSC 0xf4c1
+#define DIWSTRT_VALUE_320      0x2c81
+#define DIWSTOP_VALUE_PAL_320  0x2cc1
+#define DIWSTOP_VALUE_NTSC_320 0xf4c1
+
+// DDFSTRT = DIWSTRT / 2 - 8.5
+// DIWSTRT = (DDFSTRT + 8.5) * 2
+// DIWSTRT_h = (DDFSTRT_h + 8.5) * 2
+// 288 horizontal centered
+#define DIWSTRT_VALUE_288      0x2c91
+#define DIWSTOP_VALUE_PAL_288  0x2cb1
+#define DIWSTOP_VALUE_NTSC_288 0xf4b1
 
 
 /* This is a bit of a trick: I pre-allocate dummy sprite data */
@@ -179,7 +194,10 @@ static void set_display_mode(UINT16 width, UINT8 num_bitplanes)
     // on word boundaries
     UINT16 screenrow_bytes = width / 8;
     UINT16 bplmod = screenrow_bytes * (num_bitplanes - 1);
-    copper_list[bplcon0_idx] = (num_bitplanes << 12) | 0x200;
+    UINT16 bplcon0_value = (num_bitplanes << 12) | 0x200;
+    PRINT_DEBUG("screenrow_bytes: %d bpl1mod: %d num_bitplanes: %d bplcon0: %04x",
+                screenrow_bytes, bplmod, num_bitplanes);
+    copper_list[bplcon0_idx] = bplcon0_value;
     copper_list[bpl1mod_idx] = bplmod;
     copper_list[bpl1mod_idx + 2] = bplmod;
 }
@@ -203,7 +221,6 @@ struct Ratr0AmigaSurface *ratr0_amiga_get_back_buffer(void)
 static void set_display_surface(struct Ratr0AmigaSurface *s)
 {
     UINT16 screenrow_bytes = s->width / 8;
-    set_display_mode(s->width, s->depth);
     UINT32 plane = (UINT32) s->buffer;
     UINT32 clidx = bpl1pth_idx;
 
@@ -220,19 +237,32 @@ static void set_display_surface(struct Ratr0AmigaSurface *s)
  * For now, this is very basic and simple. Going forward, we absolutely need
  * a copper list compiler, to allow for complex sprite multiplexing and color management
  */
-static void build_copper_list()
+static void build_copper_list(struct Ratr0AmigaDisplayInfo *init_data)
 {
     int cl_index = 0;
     cl_index = _cop_move(FMODE, 0, cl_index);  // 4 bytes
 
     // set up the display and DMA windows (16 bytes)
-    cl_index = _cop_move(DDFSTRT, DDFSTRT_VALUE, cl_index);
-    cl_index = _cop_move(DDFSTOP, DDFSTOP_VALUE, cl_index);
-    cl_index = _cop_move(DIWSTRT, DIWSTRT_VALUE, cl_index);
-    if (display_info.is_pal) {
-        cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_PAL, cl_index);
+    // TODO:  look at the viewport size to build display window and DMA start
+    if (init_data->vp_width == 288) {
+        PRINT_DEBUG("288 DDFSTRT");
+        cl_index = _cop_move(DDFSTRT, DDFSTRT_VALUE_288, cl_index);
+        cl_index = _cop_move(DDFSTOP, DDFSTOP_VALUE_288, cl_index);
+        cl_index = _cop_move(DIWSTRT, DIWSTRT_VALUE_288, cl_index);
+        if (display_info.is_pal) {
+            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_PAL_288, cl_index);
+        } else {
+            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_NTSC_288, cl_index);
+        }
     } else {
-        cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_NTSC, cl_index);
+        PRINT_DEBUG("320 DDFSTRT");
+        cl_index = _cop_move(DDFSTRT, DDFSTRT_VALUE_320, cl_index);
+        cl_index = _cop_move(DDFSTOP, DDFSTOP_VALUE_320, cl_index);
+        if (display_info.is_pal) {
+            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_PAL_320, cl_index);
+        } else {
+            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_NTSC_320, cl_index);
+        }
     }
 
     // 1. BPLCONx (8 bytes)
@@ -285,6 +315,7 @@ static void build_copper_list()
 
     // Just for diagnostics
     copperlist_size = cl_index;
+
     set_display_surface(&display_surface[ratr0_amiga_front_buffer]);
 }
 
@@ -337,9 +368,12 @@ void _uninstall_interrupts(void)
     RemIntServer(INTB_VERTB, &vbint);
 }
 
+#define COPPERLIST_SIZE_BYTES (260)
+
 void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0RenderingSystem *rendering_system,
                                  struct Ratr0DisplayInfo *init_data)
 {
+    PRINT_DEBUG("AMIGA_DISPLAY_STARTUP");
     engine = eng;
     frames_elapsed = 0;
 
@@ -361,13 +395,13 @@ void ratr0_amiga_display_startup(Ratr0Engine *eng, struct Ratr0RenderingSystem *
     display_info.num_buffers = init_data->num_buffers;
     display_info.is_pal = (((struct GfxBase *) GfxBase)->DisplayFlags & PAL) == PAL;
 
-    int cl_num_bytes = 260;
-    h_copper_list = engine->memory_system->allocate_block(RATR0_MEM_CHIP, cl_num_bytes);
+    h_copper_list = engine->memory_system->allocate_block(RATR0_MEM_CHIP, COPPERLIST_SIZE_BYTES);
     copper_list = engine->memory_system->block_address(h_copper_list);
 
     // Build the display buffer
     build_display_buffer(&display_info);
-    build_copper_list();
+    build_copper_list(&display_info);
+    set_display_mode(init_data->vp_width, init_data->depth);
     custom.cop1lc = (ULONG) copper_list;
 
     _install_interrupts();
@@ -396,10 +430,10 @@ void ratr0_amiga_display_shutdown(void)
     RethinkDisplay();
 }
 
-void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors)
+void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset)
 {
     for (int i = 0; i < num_colors; i++) {
-        copper_list[color00_idx + i * 2] = colors[i];
+        copper_list[color00_idx + (i + offset) * 2] = colors[i];
     }
 }
 

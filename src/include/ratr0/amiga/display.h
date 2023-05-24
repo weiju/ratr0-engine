@@ -105,12 +105,13 @@ extern void ratr0_amiga_display_update(void);
 //
 
 /**
- * Sets the display palette.
+ * Sets the display palette. Allows to set the colors at an offset within the palette.
  *
  * @param colors array of colors
  * @param num_colors length of array
+ * @param offset set the colors starting at this offset of the palette
  */
-extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors);
+extern void ratr0_amiga_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset);
 
 /**
  * Points the specified sprite to the image data.

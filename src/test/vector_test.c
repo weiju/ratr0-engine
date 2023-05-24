@@ -34,6 +34,7 @@ void vectortest_setup(void *userdata)
 }
 
 void vectortest_teardown(void *userdata) {
+    ratr0_vector_shutdown();
     for (int i = 0; i < num_mem_entries; i++) {
         if (mock_mem[i]) {
             free(mock_mem[i]);
@@ -84,6 +85,17 @@ CHIBI_TEST(TestAppendAndResize)
     chibi_assert(vec->elements[2] == &bbox3);
 }
 
+CHIBI_TEST(TestAppendAndClear)
+{
+    struct Ratr0Vector *vec = ratr0_new_vector(10, 4);
+    struct Ratr0BoundingBox bbox = { 0, 0, 1, 12};
+    ratr0_vector_append(vec, &bbox);
+    chibi_assert_eq_int(1, vec->num_elements);
+    chibi_assert(vec->elements[0] == &bbox);
+    ratr0_vector_clear(vec);
+    chibi_assert_eq_int(0, vec->num_elements);
+}
+
 /*
  * SUITE DEFINITION
  */
@@ -95,6 +107,7 @@ chibi_suite *CoreSuite(void)
     chibi_suite_add_test(suite, TestNewVector);
     chibi_suite_add_test(suite, TestAppendElement);
     chibi_suite_add_test(suite, TestAppendAndResize);
+    chibi_suite_add_test(suite, TestAppendAndClear);
 
     return suite;
 }

@@ -50,3 +50,8 @@ void ratr0_vector_append(struct Ratr0Vector *vec, void *elem)
     }
     vec->elements[vec->num_elements++] = elem;
 }
+
+void ratr0_vector_clear(struct Ratr0Vector *vec)
+{
+    vec->num_elements = 0;
+}

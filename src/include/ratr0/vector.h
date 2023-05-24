@@ -62,4 +62,11 @@ extern struct Ratr0Vector *ratr0_new_vector(UINT16 initial_capacity, UINT16 resi
  */
 extern void ratr0_vector_append(struct Ratr0Vector *vec, void *elem);
 
+/**
+ * Removes all the elements from the vector.
+ *
+ * @param vec the vector to clear
+ */
+extern void ratr0_vector_clear(struct Ratr0Vector *vec);
+
 #endif /* __RATR0_VECTOR_H__ */

@@ -1,4 +1,4 @@
-/** @file main.c */
+/** @file invaders.c - a demo space invaders  */
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
@@ -6,7 +6,7 @@
 #include <ratr0/input.h>
 #include <ratr0/memory.h>
 #include <ratr0/rendering.h>
-#include "main_scene.h"
+#include "inv_main_stage.h"
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mMAIN\033[0m", __VA_ARGS__)
 
@@ -16,9 +16,9 @@ RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 int main(int argc, char **argv)
 {
     struct Ratr0DisplayInfo display_init = {
-        320, 256,  // viewport
-        320, 256,  // display buffer
-        3, 2       // 8 colors, double buffer
+        288, 256,  // viewport
+        288, 256,  // display buffer
+        2, 2       // 4 colors, double buffer
     };
     struct Ratr0MemoryConfig mem_config = {
         8192, 20,   // 8k general purpose memory with max 20 mem blocks

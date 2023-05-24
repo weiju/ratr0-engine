@@ -184,16 +184,32 @@ struct Ratr0Translate2D {
 /**
  * The base data structure for animated objects. It is assumed that each such object
  * describes its boundary box, a collision box, a translation object and animation frames.
+ * The data layout is deliberate, the collision box is the first element so we can
+ * insert sprites into the spatial division data structure  and access the object
+ * without any indirection.
  */
 struct Ratr0AnimatedSprite {
-    /** \brief Position and dimensions of the sprite, don't set directly !!! */
-    struct Ratr0BoundingBox bounds;
     /** \brief collision boundaries */
     struct Ratr0BoundingBox collision_box;
+    /** \brief Position and dimensions of the sprite, don't set directly !!! */
+    struct Ratr0BoundingBox bounds;
     /** \brief Translation object to describe the next move */
     struct Ratr0Translate2D translate;
     /** \brief animation frames object */
     struct Ratr0AnimationFrames anim_frames;
+};
+
+/**
+ * Base data structure for a static object. Static objects have a position
+ * and can be collided with.
+ * As with sprites, the collision box is the first data element since it
+ * is added to the spatial division data structure.
+ */
+struct Ratr0StaticObject {
+    /** \brief the collision box */
+    struct Ratr0BoundingBox collision_box;
+    /** \brief position and dimensions of the object  */
+    struct Ratr0BoundingBox bounds;
 };
 
 #endif /* __RATR0_DATA_TYPES_H__ */

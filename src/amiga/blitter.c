@@ -77,9 +77,9 @@ void _blit_rect_fast(UINT32 dst_addr, UINT32 src_addr, UINT16 bltsize)
 }
 
 UINT16 ratr0_amiga_blit_rect(struct Ratr0AmigaSurface *dst,
-                           struct Ratr0AmigaSurface *src,
-                           UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                           UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+                             struct Ratr0AmigaSurface *src,
+                             UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                             UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
     UINT16 blit_width_words = blit_width_pixels >> 4;  // blit width in words
     UINT16 src_width_bytes = src->width >> 3;

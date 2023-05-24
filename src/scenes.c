@@ -3,14 +3,19 @@
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
 #include <ratr0/bitset.h>
-#include <ratr0/treeset.h>
+//#include <ratr0/quadtree.h>
 #include <ratr0/scenes.h>
 
 #ifdef AMIGA
+#include <hardware/custom.h>
+#include <hardware/dmabits.h>
 #include <clib/graphics_protos.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/blitter.h>
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSCENES\033[0m", __VA_ARGS__)
+
+extern struct Custom custom;
+
 #else
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34mSCENES\033[0m", __VA_ARGS__)
 #endif
@@ -25,11 +30,8 @@ static struct Ratr0NodeFactory node_factory;
 static Ratr0Engine *engine;
 static struct Ratr0Scene *current_scene;
 static struct Ratr0Backdrop *backdrop;
-struct Ratr0TreeSets *tree_sets;
-/**
- * Queue of changed BOBs, one for each buffer
- */
-static struct Ratr0TreeSet *bob_queue[2];
+
+//static struct Ratr0QuadTreeNode *quadtree;
 
 static void ratr0_scenes_shutdown(void);
 static void ratr0_scenes_update(UINT8);
@@ -55,6 +57,7 @@ static UINT16 next_scene = 0;
 
 struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
+//struct Ratr0Vector *overlapped_bobs;
 
 static struct Ratr0NodeFactory *ratr0_scenes_get_node_factory(void) { return &node_factory; }
 
@@ -96,11 +99,12 @@ struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng)
     scenes_system.get_node_factory = &ratr0_scenes_get_node_factory;
 
     // Rendering system
-    tree_sets = ratr0_init_tree_sets(eng);
+    //ratr0_vector_startup(eng);
+    //ratr0_init_quadtrees(eng);
 
-    // data structures for efficient rendering
-    bob_queue[ratr0_amiga_front_buffer] = tree_sets->get_tree_set();
-    bob_queue[ratr0_amiga_back_buffer] = tree_sets->get_tree_set();
+    // TODO: configure dimensions from the world size
+    //quadtree = ratr0_new_quad_tree(0, 0, 320, 256);
+    //overlapped_bobs = ratr0_new_vector(10, 10);
 
     PRINT_DEBUG("Startup finished.");
     return &scenes_system;
@@ -108,6 +112,8 @@ struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng)
 
 static void ratr0_scenes_shutdown(void)
 {
+    //ratr0_shutdown_quadtrees();
+    //ratr0_vector_shutdown();
     PRINT_DEBUG("Shutdown finished.");
 }
 
@@ -129,8 +135,10 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
         front_buffer = ratr0_amiga_get_front_buffer();
         back_buffer = ratr0_amiga_get_back_buffer();
         OwnBlitter();
-        ratr0_amiga_blit_rect(front_buffer, &backdrop->surface, 0, 0, 0, 0, 320, 256);
-        ratr0_amiga_blit_rect(back_buffer, &backdrop->surface, 0, 0, 0, 0, 320, 256);
+        ratr0_amiga_blit_rect(front_buffer, &backdrop->surface, 0, 0, 0, 0,
+                              backdrop->surface.width, backdrop->surface.height);
+        ratr0_amiga_blit_rect(back_buffer, &backdrop->surface, 0, 0, 0, 0,
+                              backdrop->surface.width, backdrop->surface.height);
         DisownBlitter();
     }
     if (current_scene && current_scene->on_enter) {
@@ -234,19 +242,6 @@ void move_bob(struct Ratr0AnimatedAmigaBob *bob)
     bob->base_obj.translate.y = 0;
 }
 
-BOOL ptr_lt(void *a, void *b) { return a < b; }
-BOOL ptr_eq(void *a, void *b) { return a == b; }
-
-void blit_bob(struct Ratr0TreeSetNode *node, void *data)
-{
-    struct Ratr0AnimatedAmigaBob *bob = (struct Ratr0AnimatedAmigaBob *) node->value;
-    ratr0_amiga_blit_object_il(back_buffer, bob->tilesheet,
-                               0,
-                               bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],
-                               bob->base_obj.bounds.x,
-                               bob->base_obj.bounds.y);
-}
-
 /**
  * Process all nodes in the scene tree.
  */
@@ -262,6 +257,7 @@ static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *s
 static void ratr0_scenes_update(UINT8 frames_elapsed)
 {
     if (current_scene) {
+        //ratr0_vector_clear(overlapped_bobs);
         // update the scene
         if (current_scene->update) {
             current_scene->update(current_scene, frames_elapsed);
@@ -271,29 +267,53 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         // process all the BOBS
         back_buffer = ratr0_amiga_get_back_buffer();
 
-        // Simulate updating a changed BOB
-        // enqueue dirties
+        /*
+        // put all collision boxes into the quad tree
+        for (int i = 0; i < current_scene->num_bobs; i++) {
+            ratr0_quadtree_insert(quadtree,
+                                  (struct Ratr0BoundingBox *) &current_scene->bobs[i]->base_obj.collision_box);
+                                  }*/
+
         struct Ratr0AnimatedAmigaBob *bob;
         for (int i = 0; i < current_scene->num_bobs; i++) {
             bob = current_scene->bobs[i];
             if (update_bob(bob)) {
+                // enqueue dirties
                 add_restore_tiles_for_bob(bob);
                 move_bob(bob);
-                // Add the BOB to the blit set for this and the next frame
-                ratr0_tree_set_insert(bob_queue[ratr0_amiga_back_buffer], bob, ptr_lt, ptr_eq);
-                ratr0_tree_set_insert(bob_queue[ratr0_amiga_front_buffer], bob, ptr_lt, ptr_eq);
+
+                /*
+                // check collisions
+                ratr0_quadtree_overlapping(quadtree,
+                                           (struct Ratr0BoundingBox *) &bob->base_obj.collision_box,
+                                           overlapped_bobs);
+                for (int j = 0; j < overlapped_bobs->num_elements; j++) {
+                    // TODO: handle collisions
+                    }*/
             }
         }
 
         OwnBlitter();
+        // Enable blitter nasty
+        custom.dmacon = DMAF_SETCLR | DMAF_BLITHOG;
 
         process_dirty_rectangles(process_dirty_rect);
         // reset bltsize since it's used to determine the first blit of the chain
         dirty_bltsize = 0;
 
         // 2. Blit updated objects
-        ratr0_tree_set_iterate(bob_queue[ratr0_amiga_back_buffer], blit_bob, NULL);
-        ratr0_tree_set_clear(bob_queue[ratr0_amiga_back_buffer]);
+        for (int i = 0; i < current_scene->num_bobs; i++) {
+            bob = current_scene->bobs[i];
+            ratr0_amiga_blit_object_il(back_buffer, bob->tilesheet,
+                                       0,
+                                       bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],
+                                       bob->base_obj.bounds.x,
+                                       bob->base_obj.bounds.y);
+        }
+        // Disable blitter nasty
+        custom.dmacon = DMAF_BLITHOG;
         DisownBlitter();
+        // cleanup the quadtree
+        //ratr0_quadtree_clear();
     }
 }

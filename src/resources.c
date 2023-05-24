@@ -26,9 +26,14 @@ static UINT32 byteswap32(UINT32 value)
 void ratr0_resources_shutdown(void);
 UINT32 ratr0_read_tilesheet(const char *filename, struct Ratr0TileSheet *sheet);
 void ratr0_free_tilesheet_data(struct Ratr0TileSheet *sheet);
+UINT32 ratr0_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *sheet);
+void ratr0_free_spritesheet_data(struct Ratr0SpriteSheet *sheet);
 
 static struct Ratr0ResourceSystem resource_system;
 static Ratr0Engine *engine;
+#define MAX_INFO_WORDS (40)
+UINT16 info_words[MAX_INFO_WORDS];
+int num_info_words;
 
 struct Ratr0ResourceSystem *ratr0_resources_startup(Ratr0Engine *eng)
 {
@@ -36,6 +41,11 @@ struct Ratr0ResourceSystem *ratr0_resources_startup(Ratr0Engine *eng)
     resource_system.shutdown = &ratr0_resources_shutdown;
     resource_system.read_tilesheet = &ratr0_read_tilesheet;
     resource_system.free_tilesheet_data = &ratr0_free_tilesheet_data;
+    resource_system.read_spritesheet = &ratr0_read_spritesheet;
+    resource_system.free_spritesheet_data = &ratr0_free_spritesheet_data;
+
+    num_info_words = 0;
+
     PRINT_DEBUG("Startup finished.");
     return &resource_system;
 }
@@ -81,6 +91,61 @@ UINT32 ratr0_read_tilesheet(const char *filename, struct Ratr0TileSheet *sheet)
  * Frees the memory that was allocated for the specified RATR0 tile sheet.
  */
 void ratr0_free_tilesheet_data(struct Ratr0TileSheet *sheet)
+{
+    if (sheet && sheet->h_imgdata) engine->memory_system->free_block(sheet->h_imgdata);
+}
+
+UINT32 ratr0_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *sheet)
+{
+    int elems_read;
+    UINT32 retval = 0;
+
+    FILE *fp = fopen(filename, "rb");
+
+    if (fp) {
+        int num_img_bytes;
+        elems_read = fread(&sheet->header, sizeof(struct Ratr0SpriteSheetHeader), 1, fp);
+        // Palette size is in big endian, twizzle to little endian on Intel
+        UINT8 palette_size = sheet->header.num_colors;
+#ifdef AMIGA
+        UINT32 imgdata_size = sheet->header.imgdata_size;
+#else
+        UINT32 imgdata_size = byteswap32(sheet->header.imgdata_size);
+#endif
+        printf("palette size: %d imgdata_size: %d\n", (int) palette_size, (int) imgdata_size);
+        // TODO: 0. reserve info chunk memory for offsets and colors
+        sheet->sprite_offsets = &info_words[num_info_words];
+        num_info_words += sheet->header.num_sprites;
+        sheet->colors = &info_words[num_info_words];
+        num_info_words += palette_size;
+
+        // 1. Read offsets
+        elems_read = fread(sheet->sprite_offsets, sizeof(UINT16),
+                           sheet->header.num_sprites, fp);
+        // 2. read sprite colors
+        elems_read = fread(sheet->colors, sizeof(UINT16), palette_size, fp);
+        for (int i = 0; i < sheet->header.num_sprites; i++) {
+            printf("offset[%d]: %d\n", i, sheet->sprite_offsets[i]);
+        }
+
+        // 3. read image data
+        Ratr0MemHandle handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
+                                                                      imgdata_size);
+        sheet->h_imgdata = handle;
+        UINT8 *imgdata = engine->memory_system->block_address(handle);
+        elems_read = fread(imgdata, sizeof(unsigned char), imgdata_size, fp);
+        fclose(fp);
+        return 1;
+    } else {
+        printf("ratr0_read_spritesheet() error: file '%s' not found\n", filename);
+        return 0;
+    }
+}
+
+/**
+ * Frees the memory that was allocated for the specified RATR0 sprite sheet.
+ */
+void ratr0_free_spritesheet_data(struct Ratr0SpriteSheet *sheet)
 {
     if (sheet && sheet->h_imgdata) engine->memory_system->free_block(sheet->h_imgdata);
 }

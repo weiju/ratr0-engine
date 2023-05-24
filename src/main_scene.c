@@ -2,7 +2,7 @@
 #include <ratr0/engine.h>
 #include <ratr0/amiga/engine.h>
 #include <ratr0/input.h>
-#include <ratr0/main_scene.h>
+#include "main_scene.h"
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;

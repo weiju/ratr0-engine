@@ -71,6 +71,21 @@ CHIBI_TEST(TestInsertElementSimple)
     chibi_assert(&elem == node->elems[0]);
 }
 
+CHIBI_TEST(TestInsertClearInsert)
+{
+    struct Ratr0QuadTreeNode *node = ratr0_new_quad_tree(0, 0, 320, 256);
+    struct Ratr0BoundingBox elem = {10, 10, 20, 20};
+    ratr0_quadtree_insert(node, &elem);
+    chibi_assert_eq_int(1, node->num_elems);
+    chibi_assert(&elem == node->elems[0]);
+    ratr0_quadtree_clear();
+    chibi_assert_eq_int(0, node->num_elems);
+    chibi_assert(node->is_leaf);
+    ratr0_quadtree_insert(node, &elem);
+    chibi_assert_eq_int(1, node->num_elems);
+    chibi_assert(&elem == node->elems[0]);
+}
+
 CHIBI_TEST(TestBoundingBoxOverlap)
 {
     struct Ratr0BoundingBox r1 = {0, 0, 2, 2};
@@ -93,6 +108,18 @@ CHIBI_TEST(TestFindOverlappingSimple)
     ratr0_quadtree_overlapping(node, &r2, result);
     chibi_assert_eq_int(1, result->num_elements);
     chibi_assert(&r1 == result->elements[0]);
+}
+
+CHIBI_TEST(TestFindOverlappingBob)
+{
+    struct Ratr0BoundingBox r1 = {50, 16, 20, 23};
+    struct Ratr0BoundingBox r2 = {83, 32, 20, 23};
+    struct Ratr0QuadTreeNode *node = ratr0_new_quad_tree(0, 0, 320, 256);
+    struct Ratr0Vector *result = ratr0_new_vector(10, 4);
+
+    ratr0_quadtree_insert(node, &r1);
+    ratr0_quadtree_overlapping(node, &r2, result);
+    chibi_assert_eq_int(0, result->num_elements);
 }
 
 CHIBI_TEST(TestSplitNode)
@@ -214,10 +241,12 @@ chibi_suite *CoreSuite(void)
     chibi_suite_add_test(suite, TestInsertElementSimple);
     chibi_suite_add_test(suite, TestBoundingBoxOverlap);
     chibi_suite_add_test(suite, TestFindOverlappingSimple);
+    chibi_suite_add_test(suite, TestFindOverlappingBob);
     chibi_suite_add_test(suite, TestFindQuadrants);
     chibi_suite_add_test(suite, TestSplitNode);
     chibi_suite_add_test(suite, TestInsertElementOverlapping);
     chibi_suite_add_test(suite, TestInsertElementsWithSplit);
+    chibi_suite_add_test(suite, TestInsertClearInsert);
 
     return suite;
 }

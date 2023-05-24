@@ -16,7 +16,7 @@ LDFLAGS=-L/opt/homebrew/lib -lsdl2 -lsdl2_image
 TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 
-EXES=main
+EXES=main invaders
 PERF_PRGS=set_perf
 TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test
 
@@ -24,8 +24,12 @@ TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 	test/bitset_test.o test/treeset_test.o test/quadtree_test.o \
 	test/vector_test.o ../chibi_test/chibi.o
 
-ENGINE_OBJECTS=main.o engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	resources.o scenes.o bitset.o treeset.o quadtree.o vector.o main_scene.o $(SYS_OBJECTS)
+ENGINE_OBJECTS=engine.o timers.o events.o memory.o audio.o rendering.o input.o \
+	resources.o scenes.o bitset.o hash_grid.o quadtree.o vector.o $(SYS_OBJECTS)
+
+MAIN_OBJECTS=main.o main_scene.o
+
+INVADERS_OBJECTS=invaders.o inv_main_stage.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -37,7 +41,9 @@ check: $(TEST_PRGS)
 perf: $(PERF_PRGS)
 
 clean:
-	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_OBJECTS) $(PERF_PRGS)
+	rm -f $(ENGINE_OBJECTS) $(SYS_OBJECTS) $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) \
+		$(MAIN_OBJECTS) $(INVADERS_OBJECTS) \
+		$(PERF_OBJECTS) $(PERF_PRGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -45,7 +51,10 @@ clean:
 .asm.o:
 	$(ASM) $^ -o $@
 
-main: $(ENGINE_OBJECTS)
+main: $(ENGINE_OBJECTS) $(MAIN_OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+invaders: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 #

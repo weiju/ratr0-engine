@@ -24,7 +24,8 @@
 static Ratr0Engine engine;
 void ratr0_engine_shutdown(void);
 
-Ratr0Engine *ratr0_engine_startup(void)
+Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
+                                  struct Ratr0DisplayInfo *display_info)
 {
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
@@ -34,20 +35,13 @@ Ratr0Engine *ratr0_engine_startup(void)
     ratr0_sdl_engine_startup(&engine);
 #endif
 
-    /* Just an example for a configuration, should come from a config file */
-    struct Ratr0DisplayInfo display_init = { 320, 256, 320, 256, 3, 2 };
-    struct Ratr0MemoryConfig mem_config = {
-        8192, 20,   // 8k general purpose memory with max 20 mem blocks
-        65536, 20  // 64k chip memory with max 20 mem blocks
-    };
-
     PRINT_DEBUG("Start up...");
 
-    engine.memory_system = ratr0_memory_startup(&engine, &mem_config);
+    engine.memory_system = ratr0_memory_startup(&engine, memory_config);
     engine.event_system = ratr0_events_startup(&engine);
     engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
     engine.input_system = ratr0_input_startup(&engine);
-    engine.rendering_system = ratr0_rendering_startup(&engine, &display_init);
+    engine.rendering_system = ratr0_rendering_startup(&engine, display_info);
     engine.audio_system = ratr0_audio_startup(&engine);
     engine.resource_system = ratr0_resources_startup(&engine);
     engine.scenes_system = ratr0_scenes_startup(&engine);

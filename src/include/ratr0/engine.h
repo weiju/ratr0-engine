@@ -50,8 +50,11 @@ typedef struct {
 /**
  * Startup the engine and all its subsystems.
  *
+ * @param memory_config memory configuration
+ * @param display_info display configuration
  * @return pointer to the initialized engine system
  */
-extern Ratr0Engine *ratr0_engine_startup(void);
+extern Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
+                                         struct Ratr0DisplayInfo *display_info);
 
 #endif /* __RATR0_ENGINE_H__ */

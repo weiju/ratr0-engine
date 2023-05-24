@@ -74,6 +74,39 @@ struct Ratr0TileSheet {
     Ratr0MemHandle h_imgdata;
 };
 
+
+struct Ratr0SpriteSheetHeader {
+    /** \brief file identifier */
+    UINT8 id[FILE_ID_LEN];
+    /** \brief file format version */
+    UINT8 version;
+    /** \brief file flags */
+    UINT8 flags;
+    /** \brief reserved byte, don't use */
+    UINT8 reserved1;
+    /** \brief number of palette entries */
+    UINT8 num_colors;
+    /** \brief number of sprites */
+    UINT16 num_sprites;
+    /** \brief size of image data in bytes */
+    UINT32 imgdata_size;
+    /** \brief checksum */
+    UINT16 checksum;
+};
+
+struct Ratr0SpriteSheet {
+    /** \brief tile sheet information header */
+    struct Ratr0SpriteSheetHeader header;
+    /** \brief num_sprites 16-bit words of offsets and palette_size 16 bit words of
+     *   color data
+     */
+    UINT16 *sprite_offsets;
+    UINT16 *colors;
+
+    /** \brief handle to image data */
+    Ratr0MemHandle h_imgdata;
+};
+
 /**
  * Interface to resource subsystem.
  */
@@ -93,6 +126,22 @@ struct Ratr0ResourceSystem {
      * @param sheet pointer to an initialized tilesheet
      */
     void (*free_tilesheet_data)(struct Ratr0TileSheet *sheet);
+
+    /**
+     * Reads a sprite sheet from the file system.
+     *
+     * @param filename the path to the sprite sheet file
+     * @param sheet pointer to an unitialized sprite sheet structure
+     * @return 0 if error, 1 if success
+     */
+    UINT32 (*read_spritesheet)(const char *filename, struct Ratr0SpriteSheet *sheet);
+
+    /**
+     * Frees the data in a sprite sheet and returns it to the memory system.
+     *
+     * @param sheet pointer to an initialized sprite sheet
+     */
+    void (*free_spritesheet_data)(struct Ratr0SpriteSheet *sheet);
 
     /**
      * Shuts down the resources subsystem.

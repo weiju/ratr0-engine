@@ -38,6 +38,6 @@ extern UINT16 *ratr0_amiga_make_sprite_data(struct Ratr0TileSheet *tilesheet,
  * @param vstart sprite vstart
  * @param vstop sprite vstop
  */
-extern void set_sprite_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UINT16 vstop);
+extern void ratr0_amiga_sprites_set_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UINT16 vstop);
 
 #endif /* __RATR0_AMIGA_SPRITES_H__ */

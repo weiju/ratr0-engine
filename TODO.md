@@ -2,9 +2,9 @@
 
 ## Roadmap
 
-  * collisions, overlaps, quadtree
+  * Tilesheet: rename palette to colors
+  * sprite multiplexing
   * grid-based movement
-  * look into making world system serializable / persistent
   * add a way to easily implement state pattern
     * have a "active" BOB list
     * if a BOB changes from active to inactive, add its covered rectangles to dirty
@@ -12,6 +12,7 @@
       BOBs becoming active/inactive
   * tilemaps
   * add palette interpolation
+  * look into making world system serializable / persistent
 
 ### Editor
 
@@ -19,17 +20,17 @@
 
 ### Collision system
 
-  * implement collision detection
+  * implement collision detection with quad tree
   * alternative: spatial hashing
 
-### World
-  * child nodes
-    * spatial child nodes that affect the positions of their children so we
-      can have hierarchical positioning
+### Scenes
   * State pattern support
   * object spawning / destruction
   * sub-pixel movement: this happens naturally by using procedural movement
   * add invisible objects that can have collision boxes (e.g. for invisible walls)
+  * Hierarchical geometry: calculate parent-child positioning
+    * how to unify that with quadtree-collision system
+    * can it be done efficiently ????
 
 ### Rendering
 

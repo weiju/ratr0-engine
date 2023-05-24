@@ -27,7 +27,7 @@ void  ratr0_amiga_sprites_shutdown(void)
 {
 }
 
-void set_sprite_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UINT16 vstop)
+void ratr0_amiga_sprites_set_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UINT16 vstop)
 {
     sprite_data[0] = ((vstart & 0xff) << 8) | ((hstart >> 1) & 0xff);
     // vstop + high bit of vstart + low bit of hstart
