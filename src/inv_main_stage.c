@@ -51,7 +51,7 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 
 void copy_sprite(UINT16 *dst, UINT16 *src, UINT16 spr_height)
 {
-    int idx = NUM_SPRITE_CONTROL_WORDS;
+    int idx = 0;
     for (int j = 0; j < spr_height; j++) {
         // 2 words per line
         dst[idx] = src[idx];
@@ -84,15 +84,9 @@ void copy_spritesheet_to_sprite()
     int dst_idx = 2, src_idx = 2;
     printf("SPRITE HEIGHT: %d\n", spr_height);
     for (int i = 0; i < NUM_SPRITES; i++) {
-        for (int j = 0; j < spr_height; j++) {
-            // 2 words per line
-            new_sprite[dst_idx] = sprdata[src_idx];
-            new_sprite[dst_idx + 1] = sprdata[src_idx + 1];
-            src_idx += SPRITE_DATA_WORDS_PER_ROW;
-            dst_idx += SPRITE_DATA_WORDS_PER_ROW;
-        }
-        dst_idx += NUM_SPRITE_CONTROL_WORDS;  // skip 2 control 2 words for multiplexed sprite
-        src_idx += NUM_SPRITE_CONTROL_WORDS * 2;  // skip 4 control words for individual sprites
+        copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
+        dst_idx += 18;  // 16 words height + 2 words control
+        src_idx += 20;  // 16 words height + 4 words control
     }
 
     UINT16 *new_sprite2 = &(new_sprite[NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
