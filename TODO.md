@@ -4,6 +4,7 @@
 
   * Tilesheet: rename palette to colors
   * sprite multiplexing
+  * single plane interleaved blit to support lots of BOBs in Space invaders
   * grid-based movement
   * add a way to easily implement state pattern
     * have a "active" BOB list

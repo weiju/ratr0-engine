@@ -46,7 +46,7 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 
 #define NUM_SPRITE_CONTROL_WORDS (2)
 #define SPRITE_DATA_WORDS_PER_ROW (2)
-#define NUM_SPRITES (2)
+#define NUM_SPRITES (3)
 #define SPR0_COLOR00_IDX (16)
 
 void copy_sprite(UINT16 *dst, UINT16 *src, UINT16 spr_height)
@@ -61,6 +61,9 @@ void copy_sprite(UINT16 *dst, UINT16 *src, UINT16 spr_height)
 }
 
 
+/**
+ * We need to copy the alien sheet to a long strip of aliens
+ */
 void copy_spritesheet_to_sprite()
 {
     // copy sprite sheet to test sprite
@@ -82,20 +85,23 @@ void copy_spritesheet_to_sprite()
     UINT16 *new_sprite = engine->memory_system->block_address(h_newsprite);
 
     int dst_idx = 2, src_idx = 2;
-    printf("SPRITE HEIGHT: %d\n", spr_height);
-    for (int i = 0; i < NUM_SPRITES; i++) {
-        copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
-        dst_idx += 18;  // 16 words height + 2 words control
-        src_idx += 20;  // 16 words height + 4 words control
-    }
+    copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
+    dst_idx += 18;  // 16 words height + 2 words control
+    src_idx += 40;  // 16 words height + 4 words control
+    copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
+    dst_idx += 18;  // 16 words height + 2 words control
+    src_idx += 40;  // 16 words height + 4 words control
+    copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
 
     UINT16 *new_sprite2 = &(new_sprite[NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
+    UINT16 *new_sprite3 = &(new_sprite2[NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
 
     ratr0_amiga_set_palette(sprite_sheet.colors, sprite_sheet.header.num_colors, SPR0_COLOR00_IDX);
     // set to copper list
     ratr0_amiga_sprites_set_pos(new_sprite, 160,  100, 100 + spr_height);
     // reused sprite is at base + 4 + sprite_height * 4
     ratr0_amiga_sprites_set_pos(new_sprite2, 160,  110, 110 + spr_height);
+    ratr0_amiga_sprites_set_pos(new_sprite3, 160,  120, 120 + spr_height);
     ratr0_amiga_display_set_sprite(0, new_sprite);
 }
 
