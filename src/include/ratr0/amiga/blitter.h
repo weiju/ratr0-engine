@@ -102,4 +102,23 @@ extern UINT16 ratr0_amiga_blit_8x8(struct Ratr0AmigaSurface *dst,
                                    char c,
                                    UINT8 plane_num);
 
+
+/**
+ * Special case of ratr0_amiga_blit_rect. This can blit the specified tile from the source sheet
+ * into the destination surface at the specified position. This is useful when we only want to
+ * blit single planes and in rectangular shape, without a mask but with a shift. This can significantly
+ * speed up blits of BOBs that only have a single color (like in Space invaders)
+ *
+ * @param dst destination surface
+ * @param bobs the source tile sheet
+ * @param tilex the x position of the tile
+ * @param tiley the y position of the tile
+ * @param dstx the x position in the destination surface
+ * @param dsty the y position in the destination surface
+ */
+void ratr0_amiga_blit_rect_1plane(struct Ratr0AmigaSurface *dst,
+                                  struct Ratr0TileSheet *bobs,
+                                  int tilex, int tiley,
+                                  int dstx, int dsty);
+
 #endif /* __RATR0_AMIGA_BLITTER_H__ */

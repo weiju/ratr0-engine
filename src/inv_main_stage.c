@@ -16,6 +16,20 @@ extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 
 #define NUM_BOBS (10)
 struct Ratr0AnimatedAmigaBob *bobs[NUM_BOBS];
+// Resources
+#define BOBS_PATH ("sinvaders/alien001_12x8x2.ts")
+#define BOBS2_PATH ("sinvaders/alien001_12x8x1.ts")
+#define GRID_PATH ("sinvaders/basegrid_288x256x2.ts")
+#define SPRITES_PATH ("sinvaders/all-aliens.spr")
+struct Ratr0TileSheet bobs_sheet, bobs2_sheet, grid_sheet;
+struct Ratr0SpriteSheet sprite_sheet;
+UINT8 bob_frames[2] = {0, 1};
+extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
+
+#define NUM_SPRITE_CONTROL_WORDS (2)
+#define SPRITE_DATA_WORDS_PER_ROW (2)
+#define NUM_SPRITES (3)
+#define SPR0_COLOR00_IDX (16)
 
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
@@ -33,21 +47,13 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             bobs[i]->base_obj.translate.x++;
         }
     }
+
+    // TEST: blit
+    OwnBlitter();
+    struct Ratr0AmigaSurface *back_buffer = ratr0_amiga_get_back_buffer();
+    ratr0_amiga_blit_rect_1plane(back_buffer, bobs2_sheet, 0, 0, 0, 0);
+    DisownBlitter();
 }
-
-// Resources
-#define BOBS_PATH ("sinvaders/alien001_12x8x2.ts")
-#define GRID_PATH ("sinvaders/basegrid_288x256x2.ts")
-#define SPRITES_PATH ("sinvaders/all-aliens.spr")
-struct Ratr0TileSheet bobs_sheet, grid_sheet;
-struct Ratr0SpriteSheet sprite_sheet;
-UINT8 bob_frames[2] = {0, 1};
-extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
-
-#define NUM_SPRITE_CONTROL_WORDS (2)
-#define SPRITE_DATA_WORDS_PER_ROW (2)
-#define NUM_SPRITES (3)
-#define SPR0_COLOR00_IDX (16)
 
 void copy_sprite(UINT16 *dst, UINT16 *src, UINT16 spr_height)
 {
@@ -117,6 +123,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     ratr0_amiga_set_palette(grid_sheet.palette, 4, 0);
 
     engine->resource_system->read_tilesheet(BOBS_PATH, &bobs_sheet);
+    engine->resource_system->read_tilesheet(BOBS2_PATH, &bobs2_sheet);
     engine->resource_system->read_spritesheet(SPRITES_PATH, &sprite_sheet);
 
     copy_spritesheet_to_sprite();

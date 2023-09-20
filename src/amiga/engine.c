@@ -46,10 +46,10 @@ void ratr0_amiga_engine_game_loop(void)
 {
     while (game_state != GAMESTATE_QUIT) {
         WaitTOF();
-        *custom_color00 = 0xf00;
+        //*custom_color00 = 0xf00;
         // comment in for visual timing the loop iteration
         engine->scenes_system->update(frames_elapsed);
-        *custom_color00 = 0x000;
+        //*custom_color00 = 0x000;
         // we are done with the back buffer. now swap it to the front
         ratr0_amiga_display_swap_buffers();
         frames_elapsed = 0;  // Reset the update frame counter
