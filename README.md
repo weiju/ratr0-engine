@@ -1,5 +1,7 @@
 # RATR0 Game Development Framework
 
+![Build Status](https://github.com/weiju/ratr0-engine/actions/workflows/c-cpp.yml/badge.svg)
+
 ## Description
 
 A game development framework written in C for creating retro style 2D games.
