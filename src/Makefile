@@ -37,6 +37,12 @@ INVADERS_OBJECTS=invaders.o inv_main_stage.o
 all: main
 
 check: $(TEST_PRGS)
+	./timer_test
+	./fixed_point_test
+	./bitset_test
+	./treeset_test
+	./quadtree_test
+	./vector_test
 
 perf: $(PERF_PRGS)
 
