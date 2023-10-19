@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+defaults:
+  run:
+    working-directory: ./src
 jobs:
   build:
 
@@ -13,8 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: change to C source directory
-      run: cd src
     - name: make
       run: make
     - name: make check
