@@ -5,7 +5,7 @@
 #include "main_scene.h"
 
 static Ratr0Engine *engine;
-extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
+extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right, action_exit;
 struct Ratr0AnimatedAmigaBob *bobs[2];
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
@@ -19,6 +19,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         bobs[0]->base_obj.translate.x--;
     } else if (engine->input_system->was_action_pressed(action_move_right)) {
         bobs[0]->base_obj.translate.x++;
+    }
+    if (engine->input_system->was_action_pressed(action_exit)) {
+        ratr0_amiga_engine_exit();
     }
 }
 
@@ -38,7 +41,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     main_scene->update = main_scene_update;
 
     engine->resource_system->read_tilesheet(GRID_PATH, &grid);
-    ratr0_amiga_set_palette(grid.palette, 8);
+    ratr0_amiga_set_palette(grid.palette, 8, 0);
 
     engine->resource_system->read_tilesheet(BOBS_PATH_IL, &bobs_il);
     bobs[0] = (struct Ratr0AnimatedAmigaBob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 5, FALSE);

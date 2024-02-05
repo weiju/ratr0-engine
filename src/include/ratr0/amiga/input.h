@@ -38,4 +38,6 @@ extern void ratr0_amiga_input_shutdown(void);
  */
 extern UINT16 ratr0_amiga_get_joystick_state(UINT8 device_num);
 
+extern UINT16 ratr0_amiga_get_keyboard_state(void);
+
 #endif /* __RATR0_AMIGA_INPUT_H__ */

@@ -38,7 +38,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
     PRINT_DEBUG("Start up...");
 
     engine.memory_system = ratr0_memory_startup(&engine, memory_config);
-    engine.event_system = ratr0_events_startup(&engine);
+    //engine.event_system = ratr0_events_startup(&engine);
     engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
     engine.input_system = ratr0_input_startup(&engine);
     engine.rendering_system = ratr0_rendering_startup(&engine, display_info);
@@ -58,7 +58,7 @@ void ratr0_engine_shutdown(void)
     engine.rendering_system->shutdown();
     engine.input_system->shutdown();
     engine.timer_system->shutdown();
-    engine.event_system->shutdown();
+    //engine.event_system->shutdown();
     engine.memory_system->shutdown();
 #ifdef USE_SDL2
     ratr0_sdl_engine_shutdown();

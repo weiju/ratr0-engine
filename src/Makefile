@@ -24,8 +24,13 @@ TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 	test/bitset_test.o test/treeset_test.o test/quadtree_test.o \
 	test/vector_test.o ../chibi_test/chibi.o
 
-ENGINE_OBJECTS=engine.o timers.o events.o memory.o audio.o rendering.o input.o \
-	resources.o scenes.o bitset.o hash_grid.o quadtree.o vector.o $(SYS_OBJECTS)
+# everything
+#ENGINE_OBJECTS=engine.o timers.o events.o memory.o audio.o rendering.o input.o \
+#	resources.o scenes.o bitset.o hash_grid.o quadtree.o vector.o $(SYS_OBJECTS)
+
+# only what we need
+ENGINE_OBJECTS=engine.o timers.o memory.o audio.o rendering.o input.o \
+	resources.o scenes.o bitset.o $(SYS_OBJECTS)
 
 MAIN_OBJECTS=main.o main_scene.o
 

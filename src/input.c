@@ -134,6 +134,14 @@ void poll_amiga_joystick(UINT8 device_num)
     }
 }
 
+void poll_amiga_keyboard(void)
+{
+    UINT16 keystate = ratr0_amiga_get_keyboard_state();
+    if (keystate == RATR0_KEY_ESCAPE) {
+        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_ESCAPE);
+    }
+}
+
 /**
  * Called in every frame.
  */
@@ -141,4 +149,5 @@ void ratr0_input_update(void)
 {
     clear_action_occurrences();
     poll_amiga_joystick(1);
+    poll_amiga_keyboard();
 }

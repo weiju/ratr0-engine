@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
-#include <ratr0/bitset.h>
-//#include <ratr0/quadtree.h>
 #include <ratr0/scenes.h>
 
 #ifdef AMIGA
@@ -31,8 +29,6 @@ static Ratr0Engine *engine;
 static struct Ratr0Scene *current_scene;
 static struct Ratr0Backdrop *backdrop;
 
-//static struct Ratr0QuadTreeNode *quadtree;
-
 static void ratr0_scenes_shutdown(void);
 static void ratr0_scenes_update(UINT8);
 static void ratr0_scenes_set_current_scene(struct Ratr0Scene *);
@@ -51,13 +47,12 @@ void ratr0_scenes_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
  * Node factory
  */
 // *do not* make the arrays static !!!! Otherwise bad things happen when you
-// try accessing thim outside of the module
+// try accessing them outside of the module
 struct Ratr0Scene _scenes[10];
 static UINT16 next_scene = 0;
 
 struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
-//struct Ratr0Vector *overlapped_bobs;
 
 static struct Ratr0NodeFactory *ratr0_scenes_get_node_factory(void) { return &node_factory; }
 
@@ -98,22 +93,12 @@ struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng)
     node_factory.create_backdrop = &ratr0_nf_create_backdrop;
     scenes_system.get_node_factory = &ratr0_scenes_get_node_factory;
 
-    // Rendering system
-    //ratr0_vector_startup(eng);
-    //ratr0_init_quadtrees(eng);
-
-    // TODO: configure dimensions from the world size
-    //quadtree = ratr0_new_quad_tree(0, 0, 320, 256);
-    //overlapped_bobs = ratr0_new_vector(10, 10);
-
     PRINT_DEBUG("Startup finished.");
     return &scenes_system;
 }
 
 static void ratr0_scenes_shutdown(void)
 {
-    //ratr0_shutdown_quadtrees();
-    //ratr0_vector_shutdown();
     PRINT_DEBUG("Shutdown finished.");
 }
 
@@ -257,7 +242,6 @@ static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *s
 static void ratr0_scenes_update(UINT8 frames_elapsed)
 {
     if (current_scene) {
-        //ratr0_vector_clear(overlapped_bobs);
         // update the scene
         if (current_scene->update) {
             current_scene->update(current_scene, frames_elapsed);
@@ -267,13 +251,6 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         // process all the BOBS
         back_buffer = ratr0_amiga_get_back_buffer();
 
-        /*
-        // put all collision boxes into the quad tree
-        for (int i = 0; i < current_scene->num_bobs; i++) {
-            ratr0_quadtree_insert(quadtree,
-                                  (struct Ratr0BoundingBox *) &current_scene->bobs[i]->base_obj.collision_box);
-                                  }*/
-
         struct Ratr0AnimatedAmigaBob *bob;
         for (int i = 0; i < current_scene->num_bobs; i++) {
             bob = current_scene->bobs[i];
@@ -282,14 +259,7 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
                 add_restore_tiles_for_bob(bob);
                 move_bob(bob);
 
-                /*
-                // check collisions
-                ratr0_quadtree_overlapping(quadtree,
-                                           (struct Ratr0BoundingBox *) &bob->base_obj.collision_box,
-                                           overlapped_bobs);
-                for (int j = 0; j < overlapped_bobs->num_elements; j++) {
-                    // TODO: handle collisions
-                    }*/
+                // TODO: check/handle collisions
             }
         }
 
@@ -313,7 +283,5 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         // Disable blitter nasty
         custom.dmacon = DMAF_BLITHOG;
         DisownBlitter();
-        // cleanup the quadtree
-        //ratr0_quadtree_clear();
     }
 }

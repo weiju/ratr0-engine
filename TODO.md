@@ -87,3 +87,7 @@
     * support mouse
     * sprites for score and effects
     * blitter for board
+  * First person dungeon crawler
+    * blit walls
+    * support dialog
+    * UI

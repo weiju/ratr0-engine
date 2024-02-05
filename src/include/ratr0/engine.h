@@ -14,7 +14,7 @@ typedef struct {
     /** \brief memory subsystem */
     struct Ratr0MemorySystem *memory_system;
     /** \brief event subsystem */
-    struct Ratr0EventSystem *event_system;
+    //struct Ratr0EventSystem *event_system;
     /** \brief timer subsystem */
     struct Ratr0TimerSystem *timer_system;
     /** \brief input subsystem */
@@ -25,8 +25,6 @@ typedef struct {
     struct Ratr0AudioSystem *audio_system;
     /** \brief resource subsystem */
     struct Ratr0ResourceSystem *resource_system;
-    /** \brief physics subsystem */
-    struct Ratr0PhysicsSystem *physics_system;
     /** \brief scene subsystem */
     struct Ratr0ScenesSystem *scenes_system;
 

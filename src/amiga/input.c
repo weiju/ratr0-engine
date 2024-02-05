@@ -39,9 +39,10 @@ static UBYTE *kb_matrix;
 #define MATRIX_SIZE (16L)
 
 // Joystick / mouse registers
+/*
 static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
 static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
-
+*/
 /*
   Example for reading the mouse
     UINT16 mousepos = *custom_joy0dat;
@@ -90,12 +91,19 @@ static int is_keydown(BYTE keycode) {
     return kb_matrix[keycode / 8] & (1 << (keycode % 8));
 }
 
-BOOL handle_input(void)
+/**
+ * This might look as if we are stuck, but it is actually
+ * the CLI that has echoed the characters and is waiting for
+ * input. While we are debugging in the CLI, just hit the backspace key
+ * a few times to remove the echoed characters to proceed
+ */
+UINT16 ratr0_amiga_get_keyboard_state(void)
 {
-    // now check the keyboard status
     read_keyboard();
-    if (is_keydown(RAW_KEY_ESCAPE)) return TRUE;
-    return FALSE;
+    if (is_keydown(RAW_KEY_ESCAPE)) {
+        return 1;
+    }
+    return 0;
 }
 
 void ratr0_amiga_input_startup(void)
@@ -118,9 +126,11 @@ static volatile UINT8 *ciaa_pra = (volatile UINT8 *) 0xbfe001;
 #define JOY0FIR0_PRESSED (!(*ciaa_pra & PRA_FIR0_BIT))
 #define JOY1FIR0_PRESSED (!(*ciaa_pra & PRA_FIR1_BIT))
 
+extern UINT16 *joy0dat, *joy1dat;
+/*
 volatile UINT16 *joy0dat = (volatile UINT16 *) 0xdff00a;
 volatile UINT16 *joy1dat = (volatile UINT16 *) 0xdff00c;
-
+*/
 UINT16 ratr0_amiga_get_joystick_state(UINT8 device_num)
 {
     UINT16 result = 0;
