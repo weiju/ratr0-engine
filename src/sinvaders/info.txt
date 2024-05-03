@@ -1,0 +1,14 @@
+Asset info:
+
+Screen is 288x192, 4 colors
+
+alien-001: 12x8
+alien-002: 11x8
+alien-003: 8x8
+spaceship: 11x8
+shot: 1x8
+
+all-aliens.spr
+
+96x8 sheet
+6 sprites, which is 3 aliens with 2 states each

@@ -5,7 +5,7 @@
 #include <ratr0/engine.h>
 #include <ratr0/input.h>
 
-#include <ratr0/amiga/engine.h>
+#include <ratr0/engine.h>
 #include <ratr0/amiga/display.h>
 #include <ratr0/amiga/sprites.h>
 
@@ -17,10 +17,10 @@ extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 #define NUM_BOBS (10)
 struct Ratr0AnimatedAmigaBob *bobs[NUM_BOBS];
 // Resources
-#define BOBS_PATH ("sinvaders/alien001_12x8x2.ts")
-#define BOBS2_PATH ("sinvaders/alien001_12x8x1.ts")
-#define GRID_PATH ("sinvaders/basegrid_288x256x2.ts")
-#define SPRITES_PATH ("sinvaders/all-aliens.spr")
+#define BOBS_PATH ("sinvaders/assets/alien001_12x8x2.ts")
+#define BOBS2_PATH ("sinvaders/assets/alien001_12x8x1.ts")
+#define GRID_PATH ("sinvaders/assets/basegrid_288x256x2.ts")
+#define SPRITES_PATH ("sinvaders/assets/all-aliens.spr")
 struct Ratr0TileSheet bobs_sheet, bobs2_sheet, grid_sheet;
 struct Ratr0SpriteSheet sprite_sheet;
 UINT8 bob_frames[2] = {0, 1};
@@ -36,7 +36,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_fire)) {
-        ratr0_amiga_engine_exit();
+        ratr0_engine_exit();
     }
     if (engine->input_system->was_action_pressed(action_move_left)) {
         for (int i = 0; i < NUM_BOBS; i++) {

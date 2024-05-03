@@ -13,27 +13,53 @@
 #include <ratr0/scenes.h>
 
 #define MAX_TIMERS (10)
-#ifdef AMIGA
-#include <ratr0/amiga/engine.h>
-#else
-#include <ratr0/SDL/engine.h>
-#endif
+#define TASK_PRIORITY (20)
+
+#include <clib/exec_protos.h>
+#include <clib/graphics_protos.h>
+
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
 
+enum { GAMESTATE_QUIT, GAMESTATE_RUNNING };
+static int game_state = GAMESTATE_RUNNING;
+
+void ratr0_engine_exit(void)
+{
+    game_state = GAMESTATE_QUIT;
+}
+
 static Ratr0Engine engine;
 void ratr0_engine_shutdown(void);
+
+static volatile UWORD *custom_color00 = (volatile UWORD *) 0xdff180;
+void ratr0_engine_game_loop(void)
+{
+    while (game_state != GAMESTATE_QUIT) {
+        WaitTOF();
+        *custom_color00 = 0xf00;
+        // comment in for visual timing the loop iteration
+        engine.scenes_system->update(frames_elapsed);
+        *custom_color00 = 0x000;
+        // we are done with the back buffer. now swap it to the front
+        ratr0_amiga_display_swap_buffers();
+        frames_elapsed = 0;  // Reset the update frame counter
+    }
+}
 
 Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
                                   struct Ratr0DisplayInfo *display_info)
 {
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
-#ifdef AMIGA
-    ratr0_amiga_engine_startup(&engine);
-#else
-    ratr0_sdl_engine_startup(&engine);
-#endif
+
+    // Amiga specific startup code
+    engine.game_loop = &ratr0_engine_game_loop;
+    engine.exit = &ratr0_engine_exit;
+
+    // set high task priority so multitasking does not
+    // grab too much CPU
+    SetTaskPri(FindTask(NULL), TASK_PRIORITY);
 
     PRINT_DEBUG("Start up...");
 
@@ -60,9 +86,6 @@ void ratr0_engine_shutdown(void)
     engine.timer_system->shutdown();
     //engine.event_system->shutdown();
     engine.memory_system->shutdown();
-#ifdef USE_SDL2
-    ratr0_sdl_engine_shutdown();
-#endif /* USE_SDL2 */
 
     PRINT_DEBUG("Shutdown finished.");
 }

@@ -112,6 +112,7 @@ void clear_action_occurrences(void)
 
 /**
  * Polls the Amiga joystick with the specified number (0 or 1).
+ * @param device_num device number, 0 is mouse port, 1 is joystick port
  */
 void poll_amiga_joystick(UINT8 device_num)
 {
@@ -134,6 +135,9 @@ void poll_amiga_joystick(UINT8 device_num)
     }
 }
 
+/**
+ * Poll the keyboard and map keys to engine input actions.
+ */
 void poll_amiga_keyboard(void)
 {
     UINT16 keystate = ratr0_amiga_get_keyboard_state();
@@ -143,7 +147,7 @@ void poll_amiga_keyboard(void)
 }
 
 /**
- * Called in every frame.
+ * Poll the input systems. Called in every frame.
  */
 void ratr0_input_update(void)
 {

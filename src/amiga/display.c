@@ -15,7 +15,7 @@
 #include <ratr0/input.h>
 #include <ratr0/rendering.h>
 #include <ratr0/memory.h>
-#include <ratr0/bitset.h>
+#include <ratr0/datastructs/bitset.h>
 #include <ratr0/resources.h>
 
 #include <ratr0/amiga/hw_registers.h>

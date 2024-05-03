@@ -36,7 +36,7 @@ int main(int argc, char **argv)
                                               RATR0_INPUT_JS_LEFT);
     engine->input_system->map_input_to_action(action_move_right, RATR0_IC_JS1,
                                               RATR0_INPUT_JS_RIGHT);
-    engine->input_system->map_input_to_action(action_fire, RATR0_IC_JS1, RATR0_INPUT_JS_BUTTON0);
+    engine->input_system->map_input_to_action(action_exit, RATR0_IC_JS1, RATR0_INPUT_JS_BUTTON0);
     engine->input_system->map_input_to_action(action_exit, RATR0_IC_KB, RATR0_KEY_ESCAPE);
 
     struct Ratr0Scene *main_scene = setup_main_scene(engine);

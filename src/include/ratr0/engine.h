@@ -7,6 +7,10 @@
 #ifndef __RATR0_ENGINE_H__
 #define __RATR0_ENGINE_H__
 
+struct Ratr0MemorySystem;
+struct Ratr0MemoryConfig;
+struct Ratr0DisplayInfo;
+
 /**
  * Engine interface.
  */
@@ -54,5 +58,10 @@ typedef struct {
  */
 extern Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
                                          struct Ratr0DisplayInfo *display_info);
+
+/**
+ * Call this to shutdown the engine.
+ */
+extern void ratr0_engine_exit(void);
 
 #endif /* __RATR0_ENGINE_H__ */

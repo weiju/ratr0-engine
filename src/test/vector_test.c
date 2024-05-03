@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ratr0/memory.h>
-#include <ratr0/vector.h>
+#include <ratr0/datastructs/vector.h>
 #include "../../chibi_test/chibi.h"
 
 static Ratr0Engine mock_engine;

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ratr0/bitset.h>
+#include <ratr0/datastructs/bitset.h>
 #include "../../chibi_test/chibi.h"
 
 void bitset_test_setup(void *userdata) { }
