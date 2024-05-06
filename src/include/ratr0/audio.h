@@ -1,11 +1,10 @@
 /** @file audio.h
  *
- * Audio subsystem
+ * Amiga audio subsystem
  */
 #pragma once
 #ifndef __RATR0_AUDIO_H__
 #define __RATR0_AUDIO_H__
-#include <ratr0/engine.h>
 
 /**
  * Audio system interface.
@@ -18,11 +17,12 @@ struct Ratr0AudioSystem {
 };
 
 /**
- * Start up the audio subsystem.
- *
- * @param engine pointer to Ratr0Engine instance
- * @return pointer to initialized Ratr0AudioSystem instance
+ * Starts up the Amiga audio system.
  */
-extern struct Ratr0AudioSystem *ratr0_audio_startup(Ratr0Engine *engine);
+extern struct Ratr0AudioSystem *ratr0_audio_startup(void);
+/**
+ * Shuts down the Amiga audio system.
+ */
+extern void ratr0_audio_shutdown(void);
 
 #endif /* __RATR0_AUDIO_H__ */

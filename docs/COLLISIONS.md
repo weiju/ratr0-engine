@@ -2,7 +2,7 @@
 
 ## AABB
 
-The RATR0 collision detection system is designed aound aAxis aligned bounding boxes
+The RATR0 collision detection system is designed around axis aligned bounding boxes
 (AABB), which has are both simple and efficient to implement.
 
 ## Quad Trees

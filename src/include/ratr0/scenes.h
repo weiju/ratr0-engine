@@ -8,9 +8,7 @@
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
-#ifdef AMIGA
-#include <ratr0/amiga/display.h>
-#endif
+#include <ratr0/display.h>
 
 /**
  * A scene is a component of a game. It contains the movable and static game objects
@@ -51,12 +49,12 @@ struct Ratr0Scene {
     // so we won't need any type checks.
     //
     /** \brief list of active BOBs in the scene */
-    struct Ratr0AnimatedAmigaBob *bobs[10];
+    struct Ratr0AnimatedBob *bobs[10];
 
     /** \brief number of bobs in the array */
     int num_bobs;
     /** \brief list of active hardware sprites in the scene */
-    struct Ratr0AnimatedAmigaSprite *sprites[10];
+    struct Ratr0AnimatedHWSprite *sprites[10];
 
     /**
      * User provided function that is called when this scene is set to the current scene.

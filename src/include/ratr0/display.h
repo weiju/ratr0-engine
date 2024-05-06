@@ -1,0 +1,240 @@
+/** @file display.h
+ *
+ * Amiga Display subsystem
+ */
+#pragma once
+#ifndef __RATR0_DISPLAY_H__
+#define __RATR0_DISPLAY_H__
+#include <ratr0/data_types.h>
+#include <ratr0/engine.h>
+
+
+/**
+ * Amiga specific information about the display, used both for
+ * initialization and query information. This includes aspects of the
+ * playfield hardware, sprites and the blitter.
+ */
+struct Ratr0DisplayInfo {
+    /**
+     * \brief viewport width
+     *
+     * Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
+     * 256 for PAL. Smaller values will typically result in less memory consumption and faster
+     * refresh times.
+     * Sensible values for width can be { 320, 288 }
+     * Sensible values for height can be { 192, 208, 224, 240 }
+     */
+    UINT16 vp_width;
+    /** \brief viewport height */
+    UINT16 vp_height;
+    /** \brief display buffer width */
+    UINT16 buffer_width;
+    /** \brief display buffer height */
+    UINT16 buffer_height;
+
+    /** \brief display depth, can be a value between 1 and 5 */
+    UINT8 depth;
+
+    /** \brief number of display buffers (always 2) */
+    UINT8 num_buffers;
+
+    /**
+     * \brief number of frames to switch buffers
+     *
+     * How many frames to update the backbuffer ? For now, this
+     * should only be either 1 or 2. More than that heavily impacts
+     * gameplay experience. Currently it is always 1
+     */
+    UINT8 update_frames;
+
+    /** \brief if PAL, this is TRUE, if NTSC, this is FALSE */
+    BOOL is_pal;
+};
+
+
+/**
+ * Surface is a rendering target, it is an abstract thing.
+ */
+struct Ratr0Surface;
+
+/**
+ * Interface to the rendering subsystem.
+ */
+struct Ratr0RenderingSystem {
+    /**
+     * Shuts down the rendering subsystem.
+     */
+    void (*shutdown)(void);
+};
+
+/**
+ * Start up the display subsystem.
+ *
+ * @param engine pointer to engine instance
+ * @param display_info configuration informatino for the display.
+ * @return pointer to rendering subsystem object
+ */
+struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
+                                                   struct Ratr0DisplayInfo *init_data);
+
+
+/**
+ * Information about the current display in this object.
+ * We can use this for both playfield hardware setup and blitter setup.
+ * In the future we can use this for backbuffer and/or dual playfield
+ * information.
+ */
+struct Ratr0Surface {
+    /** \brief surface width */
+    UINT16 width;
+    /** \brief surface height */
+    UINT16 height;
+    /** \brief surface bitplane number */
+    UINT16 depth;
+    /** \brief TRUE if the data is interleaved */
+    BOOL is_interleaved;
+    /** \brief image data */
+    void *buffer;
+};
+
+/**
+ * Shut down the display subsystem.
+ */
+extern void ratr0_display_shutdown(void);
+
+/**
+ * Swap back buffer with the front buffer.
+ */
+extern void ratr0_display_swap_buffers(void);
+
+//
+// Quick access functions to the copper list.
+//
+
+/**
+ * Sets the display palette. Allows to set the colors at an offset within the palette.
+ *
+ * @param colors array of colors
+ * @param num_colors length of array
+ * @param offset set the colors starting at this offset of the palette
+ */
+extern void ratr0_display_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset);
+
+/**
+ * Points the specified sprite to the image data.
+ *
+ * @param sprite_num sprite number
+ * @param data pointer to sprite data structure
+ */
+extern void ratr0_display_set_sprite(int sprite_num, UINT16 *data);
+
+/**
+ * Returns a pointer to the current front buffer.
+ *
+ * @return pointer to the current front buffer
+ */
+extern struct Ratr0Surface *ratr0_get_front_buffer(void);
+
+/**
+ * Returns a pointer to the current back buffer.
+ *
+ * @return pointer to the current back buffer
+ */
+extern struct Ratr0Surface *ratr0_get_back_buffer(void);
+
+//
+// Current front and back buffer numbers, these are made global for efficiency,
+// never write directly and use with caution !
+//
+/** \brief index of the current back buffer */
+extern UINT16 ratr0_back_buffer;
+/** \brief index of the current front buffer */
+extern UINT16 ratr0_front_buffer;
+
+/**
+ * Adds a dirty rectangle to the list at the specified position. The coordinates
+ * are based on 16 pixel tiles rather than individual pixels.
+ *
+ * @param x coordinate of the dirty tile
+ * @param y coordinate of the dirty tile
+ */
+extern void add_dirty_rectangle(UINT16 x, UINT16 y);
+
+/**
+ * Processes the dirty rectangle list of the current back buffer.
+ *
+ * @param process_dirty_rect a function that is called for every dirty rectangle
+ */
+extern void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y));
+
+/**
+ * \brief frame counter to show how many frames have elapsed since the last reset
+ */
+extern UINT8 frames_elapsed;
+
+//
+// Display Objects
+//
+
+/**
+ * This is the background of the game. Backdrops are drawn to the display buffer in
+ * their entirety the first time. After that, they serve as the source for restore
+ * operations.
+ */
+struct Ratr0Backdrop {
+    /** \brief surface object containing the image data  */
+    struct Ratr0Surface surface;
+    /** \brief flag to indicate whether the backdrop was drawn */
+    BOOL was_drawn;
+};
+
+/**
+ * Sprites have different specifications than
+ * Blitter object, as they have a special data structure, we need
+ * to have a representation that accomodates for that.
+ */
+struct Ratr0AnimatedHWSprite {
+    /** \brief base node data */
+    struct Ratr0AnimatedSprite base_obj;
+    /** \brief sprite image data in Amiga sprite format */
+    UINT16 *sprite_data;
+};
+
+/**
+ * Representation of a BOB.
+ */
+struct Ratr0AnimatedBob {
+    /** \brief base node data */
+    struct Ratr0AnimatedSprite base_obj;
+    /** \brief BOB image data, stored in a tile sheet */
+    struct Ratr0TileSheet *tilesheet;
+};
+
+/**
+ * Create an Amiga hardware sprite object from a tilesheet.
+ *
+ * @param tilesheet pointer to tilesheet containing the image data
+ * @param frames array containing the frames of the animation
+ * @param num_frames length of the frames array
+ * @param speed animation speed in frames
+ * @return pointer to an initialized sprite data structure
+ */
+extern struct Ratr0AnimatedHWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
+                                                         UINT8 frames[], UINT8 num_frames,
+                                                         UINT8 speed);
+
+/**
+ * Create a blitter object from a tile sheet.
+ *
+ * @param tilesheet pointer to tilesheet containing the image data
+ * @param frames array containing the frames of the animation
+ * @param num_frames length of the frames array
+ * @param speed animation speed in frames
+ * @return pointer to an initialized BOB data structure
+ */
+extern struct Ratr0AnimatedBob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
+                                                 UINT8 frames[], UINT8 num_frames,
+                                                 UINT8 speed);
+
+
+#endif /* __RATR0_DISPLAY_H__ */

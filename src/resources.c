@@ -125,7 +125,7 @@ UINT32 ratr0_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *she
         // 2. read sprite colors
         elems_read = fread(sheet->colors, sizeof(UINT16), palette_size, fp);
         for (int i = 0; i < sheet->header.num_sprites; i++) {
-            printf("offset[%d]: %d\n", i, sheet->sprite_offsets[i]);
+            printf("offset[%d]: %d\n", i, (int) sheet->sprite_offsets[i]);
         }
 
         // 3. read image data

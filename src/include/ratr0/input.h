@@ -8,6 +8,19 @@
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 
+// 32 bit flags for joystick/mouse state
+
+/** \brief fire 0 button on joystick */
+#define JOY_FIRE0   (1)
+/** \brief digital joystick left */
+#define JOY_D_LEFT  (2)
+/** \brief digital joystick right */
+#define JOY_D_RIGHT (4)
+/** \brief digital joystick up */
+#define JOY_D_UP    (8)
+/** \brief digital joystick down */
+#define JOY_D_DOWN  (16)
+
 /**
  * \var typedef INT16 RATR0_ACTION_ID
  * \brief A type definition for input action ids.

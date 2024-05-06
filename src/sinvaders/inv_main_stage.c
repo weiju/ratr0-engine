@@ -2,20 +2,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <ratr0/engine.h>
-#include <ratr0/input.h>
-
-#include <ratr0/engine.h>
-#include <ratr0/amiga/display.h>
-#include <ratr0/amiga/sprites.h>
-
+#include <ratr0/ratr0.h>
+#include <clib/graphics_protos.h>
 #include "inv_main_stage.h"
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 
 #define NUM_BOBS (10)
-struct Ratr0AnimatedAmigaBob *bobs[NUM_BOBS];
+struct Ratr0AnimatedBob *bobs[NUM_BOBS];
 // Resources
 #define BOBS_PATH ("sinvaders/assets/alien001_12x8x2.ts")
 #define BOBS2_PATH ("sinvaders/assets/alien001_12x8x1.ts")
@@ -50,8 +45,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // TEST: blit
     OwnBlitter();
-    struct Ratr0AmigaSurface *back_buffer = ratr0_amiga_get_back_buffer();
-    ratr0_amiga_blit_rect_1plane(back_buffer, bobs2_sheet, 0, 0, 0, 0);
+    struct Ratr0Surface *back_buffer = ratr0_get_back_buffer();
+    ratr0_blit_rect_1plane(back_buffer, &bobs2_sheet, 0, 0, 0, 0);
     DisownBlitter();
 }
 
@@ -88,27 +83,30 @@ void copy_spritesheet_to_sprite()
                                                                        sprite_block_words * sizeof(UINT16) *
                                                                        NUM_SPRITES +
                                                                        NUM_SPRITE_CONTROL_WORDS * sizeof(UINT16));
-    UINT16 *new_sprite = engine->memory_system->block_address(h_newsprite);
+
+    UINT16 *new_sprite[3];
+    UINT16 sprite_pos[3][2] = { {160, 100}, {160, 110}, {160, 120} };
+    new_sprite[0] = engine->memory_system->block_address(h_newsprite);
 
     int dst_idx = 2, src_idx = 2;
-    copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
+    copy_sprite(&new_sprite[0][dst_idx], &sprdata[src_idx], spr_height);
     dst_idx += 18;  // 16 words height + 2 words control
     src_idx += 40;  // 16 words height + 4 words control
-    copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
+    copy_sprite(&new_sprite[0][dst_idx], &sprdata[src_idx], spr_height);
     dst_idx += 18;  // 16 words height + 2 words control
     src_idx += 40;  // 16 words height + 4 words control
-    copy_sprite(&new_sprite[dst_idx], &sprdata[src_idx], spr_height);
+    copy_sprite(&new_sprite[0][dst_idx], &sprdata[src_idx], spr_height);
 
-    UINT16 *new_sprite2 = &(new_sprite[NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
-    UINT16 *new_sprite3 = &(new_sprite2[NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
+    new_sprite[1] = &(new_sprite[0][NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
+    new_sprite[2] = &(new_sprite[1][NUM_SPRITE_CONTROL_WORDS + spr_height * SPRITE_DATA_WORDS_PER_ROW]);
 
-    ratr0_amiga_set_palette(sprite_sheet.colors, sprite_sheet.header.num_colors, SPR0_COLOR00_IDX);
-    // set to copper list
-    ratr0_amiga_sprites_set_pos(new_sprite, 160,  100, 100 + spr_height);
-    // reused sprite is at base + 4 + sprite_height * 4
-    ratr0_amiga_sprites_set_pos(new_sprite2, 160,  110, 110 + spr_height);
-    ratr0_amiga_sprites_set_pos(new_sprite3, 160,  120, 120 + spr_height);
-    ratr0_amiga_display_set_sprite(0, new_sprite);
+    ratr0_display_set_palette(sprite_sheet.colors, sprite_sheet.header.num_colors, SPR0_COLOR00_IDX);
+
+    // set position to copper list
+    for (int i = 0; i < 3; i++) {
+        ratr0_sprites_set_pos(new_sprite[i], sprite_pos[i][0], sprite_pos[i][1], sprite_pos[i][1] + spr_height);
+    }
+    ratr0_display_set_sprite(0, new_sprite[0]);
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -120,7 +118,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     main_scene->update = main_scene_update;
 
     engine->resource_system->read_tilesheet(GRID_PATH, &grid_sheet);
-    ratr0_amiga_set_palette(grid_sheet.palette, 4, 0);
+    ratr0_display_set_palette(grid_sheet.palette, 4, 0);
 
     engine->resource_system->read_tilesheet(BOBS_PATH, &bobs_sheet);
     engine->resource_system->read_tilesheet(BOBS2_PATH, &bobs2_sheet);
@@ -131,7 +129,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     int bobx = 50;
     int boby = 16;
     for (int i = 0; i < NUM_BOBS; i++) {
-        bobs[i] = (struct Ratr0AnimatedAmigaBob *) node_factory->create_sprite(&bobs_sheet, bob_frames, 2, 5, FALSE);
+        bobs[i] = (struct Ratr0AnimatedBob *) node_factory->create_sprite(&bobs_sheet, bob_frames, 2, 5, FALSE);
         bobs[i]->base_obj.bounds.x = bobx;
         bobs[i]->base_obj.bounds.y = boby;
         bobx += 16;
@@ -139,11 +137,13 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     }
     main_scene->num_bobs = NUM_BOBS;
 
-    struct Ratr0AmigaSurface *back_buffer, *front_buffer;
-    front_buffer = ratr0_amiga_get_front_buffer();
-    back_buffer = ratr0_amiga_get_back_buffer();
+    struct Ratr0Surface *back_buffer, *front_buffer;
+    front_buffer = ratr0_get_front_buffer();
+    back_buffer = ratr0_get_back_buffer();
     main_scene->backdrop = node_factory->create_backdrop(&grid_sheet);
-    printf("BACKDROP WIDTH: %d fb width: %d bb width: %d\n", main_scene->backdrop->surface.width,
-           front_buffer->width, back_buffer->width);
+    printf("BACKDROP WIDTH: %d fb width: %d bb width: %d\n",\
+           (int) main_scene->backdrop->surface.width,
+           (int) front_buffer->width,
+           (int) back_buffer->width);
     return main_scene;
 }

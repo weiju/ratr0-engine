@@ -79,20 +79,9 @@ system's hardware features. Go [here](docs/RENDERING.md) for more information.
 
 TODO
 
-#### BOBS
+#### Sprites
 
-BOB animation are stored as tile sets that are layed out in a specific format.
-To keep things simple and consistent, animation frames are stored in a single
-column, and the right side is padded so there are at least 16 pixels of space
-at the right side.
-Each frame is aligned to the left side and the image width is a multiple of
-16 pixels. This format is in accordance to the operation of the Amiga Blitter.
-
-#### Hardware Sprites
-
-Hardware sprite data is stored different from BOB data - while the frames
-are still layed out as a column, the image is always 16 pixels wide and
-2 frames are separated through a pair of 16 bit words.
+Go [here](docs/SPRITES.md) for more information
 
 ### Event subsystem
 
@@ -136,6 +125,9 @@ to communicate up or across the hierarchy.
 
 $ make
 
-### Building for Amiga
+### Testing
 
-$ make AMIGA=1
+The unit tests are setup in a way that they can be run without
+an Amiga system.
+
+$ make TESTONLY=1 check

@@ -1,35 +1,30 @@
 /** @file audio.c */
-#include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/audio.h>
-#include <ratr0/amiga/audio.h>
+#include <graphics/gfxbase.h>
+#include <hardware/custom.h>
+#include "../../ptplayer/ptplayer.h"
 
-#ifdef AMIGA
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mAUDIO\033[0m", __VA_ARGS__)
-#else
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34mAUDIO\033[0m", __VA_ARGS__)
-#endif
+
+extern struct Custom custom;
+extern struct GfxBase *GfxBase;
 
 static struct Ratr0AudioSystem audio_system;
 void ratr0_audio_shutdown(void);
-static Ratr0Engine *engine;
 
-struct Ratr0AudioSystem *ratr0_audio_startup(Ratr0Engine *eng)
+struct Ratr0AudioSystem *ratr0_audio_startup(void)
 {
-    engine = eng;
-#ifdef AMIGA
-    audio_system.shutdown = &ratr0_amiga_audio_shutdown;
-    ratr0_amiga_audio_startup();
-#else
     audio_system.shutdown = &ratr0_audio_shutdown;
-#endif
+
+    BOOL is_pal = (((struct GfxBase *) GfxBase)->DisplayFlags & PAL) == PAL;
+    mt_install_cia(&custom, NULL, is_pal);
     PRINT_DEBUG("Startup finished.");
     return &audio_system;
 }
 
-#ifndef AMIGA
 void ratr0_audio_shutdown(void)
 {
+    mt_remove_cia(&custom);
     PRINT_DEBUG("Shutdown finished.");
 }
-#endif

@@ -4,19 +4,14 @@
 #include <ratr0/engine.h>
 #include <ratr0/scenes.h>
 
-#ifdef AMIGA
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
 #include <clib/graphics_protos.h>
-#include <ratr0/amiga/display.h>
-#include <ratr0/amiga/blitter.h>
+#include <ratr0/display.h>
+#include <ratr0/blitter.h>
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSCENES\033[0m", __VA_ARGS__)
 
 extern struct Custom custom;
-
-#else
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34mSCENES\033[0m", __VA_ARGS__)
-#endif
 
 /*
  * The scenes system is where games are implemented on a high level and tied together.
@@ -116,14 +111,14 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
         // Make this the new backdrop for efficiency this is module global
         backdrop = current_scene->backdrop;
         // Blit the backdrop once if it exists
-        struct Ratr0AmigaSurface *back_buffer, *front_buffer;
-        front_buffer = ratr0_amiga_get_front_buffer();
-        back_buffer = ratr0_amiga_get_back_buffer();
+        struct Ratr0Surface *back_buffer, *front_buffer;
+        front_buffer = ratr0_get_front_buffer();
+        back_buffer = ratr0_get_back_buffer();
         OwnBlitter();
-        ratr0_amiga_blit_rect(front_buffer, &backdrop->surface, 0, 0, 0, 0,
-                              backdrop->surface.width, backdrop->surface.height);
-        ratr0_amiga_blit_rect(back_buffer, &backdrop->surface, 0, 0, 0, 0,
-                              backdrop->surface.width, backdrop->surface.height);
+        ratr0_blit_rect(front_buffer, &backdrop->surface, 0, 0, 0, 0,
+                        backdrop->surface.width, backdrop->surface.height);
+        ratr0_blit_rect(back_buffer, &backdrop->surface, 0, 0, 0, 0,
+                        backdrop->surface.width, backdrop->surface.height);
         DisownBlitter();
     }
     if (current_scene && current_scene->on_enter) {
@@ -137,9 +132,9 @@ static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet 
 {
 #ifdef AMIGA
     if (is_hw) {
-        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_sprite(tilesheet, frames, num_frames, speed);
+        return (struct Ratr0AnimatedSprite *) ratr0_create_sprite(tilesheet, frames, num_frames, speed);
     } else {
-        return (struct Ratr0AnimatedSprite *) ratr0_create_amiga_bob(tilesheet, frames, num_frames, speed);
+        return (struct Ratr0AnimatedSprite *) ratr0_create_bob(tilesheet, frames, num_frames, speed);
     }
 #else
     // TODO
@@ -168,19 +163,19 @@ struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
  * Restore dirty rectangles from backdrop image
  */
 static UINT16 dirty_bltsize = 0;
-struct Ratr0AmigaSurface *back_buffer;
+struct Ratr0Surface *back_buffer;
 void process_dirty_rect(UINT16 x, UINT16 y)
 {
     if (!dirty_bltsize) {
-        dirty_bltsize = ratr0_amiga_blit_rect(back_buffer, &backdrop->surface,
+        dirty_bltsize = ratr0_blit_rect(back_buffer, &backdrop->surface,
                                               x, y, x, y, 16, 16);
     } else {
-        ratr0_amiga_blit_rect_fast(back_buffer, &backdrop->surface, x, y, x, y, dirty_bltsize);
+        ratr0_blit_rect_fast(back_buffer, &backdrop->surface, x, y, x, y, dirty_bltsize);
     }
 }
 
 
-void add_restore_tiles_for_bob(struct Ratr0AnimatedAmigaBob *bob)
+void add_restore_tiles_for_bob(struct Ratr0AnimatedBob *bob)
 {
     // Compute dirty rectangles for the BOB
     // determine first and last horizontal tile positions horizontal and vertical
@@ -200,7 +195,7 @@ void add_restore_tiles_for_bob(struct Ratr0AnimatedAmigaBob *bob)
  * just fake animation for now until we know it works
  */
 static int anim_frames = 0;
-BOOL update_bob(struct Ratr0AnimatedAmigaBob *bob)
+BOOL update_bob(struct Ratr0AnimatedBob *bob)
 {
     BOOL result = FALSE;
     // if there is translation, it means, we need to change the BOB position, but not
@@ -219,7 +214,7 @@ BOOL update_bob(struct Ratr0AnimatedAmigaBob *bob)
     return result;
 }
 
-void move_bob(struct Ratr0AnimatedAmigaBob *bob)
+void move_bob(struct Ratr0AnimatedBob *bob)
 {
     bob->base_obj.bounds.x += bob->base_obj.translate.x;
     bob->base_obj.bounds.y += bob->base_obj.translate.y;
@@ -249,9 +244,9 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
             ratr0_update_scene_node(current_scene->children, current_scene);
         }
         // process all the BOBS
-        back_buffer = ratr0_amiga_get_back_buffer();
+        back_buffer = ratr0_get_back_buffer();
 
-        struct Ratr0AnimatedAmigaBob *bob;
+        struct Ratr0AnimatedBob *bob;
         for (int i = 0; i < current_scene->num_bobs; i++) {
             bob = current_scene->bobs[i];
             if (update_bob(bob)) {
@@ -274,11 +269,11 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         // 2. Blit updated objects
         for (int i = 0; i < current_scene->num_bobs; i++) {
             bob = current_scene->bobs[i];
-            ratr0_amiga_blit_object_il(back_buffer, bob->tilesheet,
-                                       0,
-                                       bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],
-                                       bob->base_obj.bounds.x,
-                                       bob->base_obj.bounds.y);
+            ratr0_blit_object_il(back_buffer, bob->tilesheet,
+                                 0,
+                                 bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],
+                                 bob->base_obj.bounds.x,
+                                 bob->base_obj.bounds.y);
         }
         // Disable blitter nasty
         custom.dmacon = DMAF_BLITHOG;

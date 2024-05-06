@@ -73,6 +73,7 @@
   * add timer events
   * integrate event system into world
   * Engine as library
+  * mirroring background by setting negative modulos (a la Stardust)
 
 ### Games projects
 

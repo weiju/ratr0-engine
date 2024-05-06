@@ -10,8 +10,7 @@ else
 CC=vc +kick13
 ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
 
-HW_OBJECTS=amiga/display.o amiga/sprites.o amiga/blitter.o amiga/audio.o
-OS_OBJECTS=amiga/input.o amiga/memory.o
+HW_OBJECTS=display.o sprites.o blitter.o audio.o
 EXT_OBJECTS=../ptplayer/ptplayer.o
 
 CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
@@ -35,13 +34,15 @@ TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 # data structures and algorithms
 DATA_OBJECTS=datastructs/bitset.o
 
-ENGINE_OBJECTS=engine.o timers.o memory.o audio.o rendering.o input.o \
-	resources.o scenes.o $(DATA_OBJECTS) $(HW_OBJECTS) $(OS_OBJECTS) $(EXT_OBJECTS)
+ENGINE_OBJECTS=engine.o timers.o memory.o input.o \
+	resources.o scenes.o $(DATA_OBJECTS) $(HW_OBJECTS) $(EXT_OBJECTS)
 
 # game objects
 MAIN_OBJECTS=example-01/main.o example-01/main_scene.o
 
 INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
+
+CENTIPEDE_OBJECTS=centipede/centipede.o centipede/main_stage.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -59,7 +60,7 @@ check: $(TEST_PRGS)
 perf: $(PERF_PRGS)
 
 clean:
-	rm -f *.o datastructs/*.o amiga/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS)
+	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -73,6 +74,9 @@ main: $(ENGINE_OBJECTS) $(MAIN_OBJECTS)
 invaders: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
+
+centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $^
 #
 # TESTS
 #
