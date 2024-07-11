@@ -123,15 +123,17 @@ static volatile UINT8 *ciaa_pra = (volatile UINT8 *) 0xbfe001;
 #define JOY0FIR0_PRESSED (!(*ciaa_pra & PRA_FIR0_BIT))
 #define JOY1FIR0_PRESSED (!(*ciaa_pra & PRA_FIR1_BIT))
 
-extern UINT16 *joy0dat, *joy1dat;
+// in amiga.lib, don't use !!! I don't think they are volatile
+//extern UINT16 *joy0dat, *joy1dat;
+
+// Make sure we are reading from a volatile place
 /*
-volatile UINT16 *joy0dat = (volatile UINT16 *) 0xdff00a;
-volatile UINT16 *joy1dat = (volatile UINT16 *) 0xdff00c;
-*/
+static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
+static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
 UINT16 ratr0_get_joystick_state(UINT8 device_num)
 {
     UINT16 result = 0;
-    UINT16 tmp = (device_num == 0) ? *joy0dat : *joy1dat;
+    UINT16 tmp = (device_num == 0) ? *custom_joy0dat : *custom_joy1dat;
     BOOL fire_button = device_num == 0 ? JOY0FIR0_PRESSED : JOY1FIR0_PRESSED;
 
     // This code is not really efficient, but it works, optimize if
@@ -143,7 +145,8 @@ UINT16 ratr0_get_joystick_state(UINT8 device_num)
     UINT16 down  = right ^ bit0;
     UINT16 up = left ^ bit8;
 
-    // currently only the mouse port is supported
+    // convert to an easy interpretable bit mask, we could skip this
+    // translation
     if (left) result |= JOY_D_LEFT;
     if (right) result |= JOY_D_RIGHT;
     if (up) result |= JOY_D_UP;
@@ -151,6 +154,7 @@ UINT16 ratr0_get_joystick_state(UINT8 device_num)
     if (fire_button) result |= JOY_FIRE0;
     return result;
 }
+*/
 
 /** Mapping system */
 // The map lookup needs to find
@@ -256,24 +260,35 @@ void clear_action_occurrences(void)
  * Polls the Amiga joystick with the specified number (0 or 1).
  * @param device_num device number, 0 is mouse port, 1 is joystick port
  */
+static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
+static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
 void poll_joystick(UINT8 device_num)
 {
-    UINT16 joystate = ratr0_get_joystick_state(device_num);
+    UINT16 tmp = (device_num == 0) ? *custom_joy0dat : *custom_joy1dat;
+    BOOL fire_button = device_num == 0 ? JOY0FIR0_PRESSED : JOY1FIR0_PRESSED;
+
+    // This code is not super efficient, but it works, optimize if
+    // it becomes an issue
+    UINT16 bit0  =  tmp & 0x01;
+    UINT16 right = (tmp >> 1) & 0x01;
+    UINT16 bit8  = (tmp >> 8) & 0x01;
+    UINT16 left  = (tmp >> 9) & 0x01;
+    UINT16 down  = right ^ bit0;
+    UINT16 up = left ^ bit8;
+
     UINT8 inp_class = device_num == 0 ? RATR0_IC_JS0 : RATR0_IC_JS1;
-    if (joystate != 0) {
-        if ((joystate & JOY_FIRE0) == JOY_FIRE0) {
-            REGISTER_ACTION(inp_class, RATR0_INPUT_JS_BUTTON0);
-        }
-        if ((joystate & JOY_D_LEFT) == JOY_D_LEFT) {
-            REGISTER_ACTION(inp_class, RATR0_INPUT_JS_LEFT);
-        } else if ((joystate & JOY_D_RIGHT) == JOY_D_RIGHT) {
-            REGISTER_ACTION(inp_class, RATR0_INPUT_JS_RIGHT);
-        }
-        if ((joystate & JOY_D_UP) == JOY_D_UP) {
-            REGISTER_ACTION(inp_class, RATR0_INPUT_JS_UP);
-        } else if ((joystate & JOY_D_DOWN) == JOY_D_DOWN) {
-            REGISTER_ACTION(inp_class, RATR0_INPUT_JS_DOWN);
-        }
+    if (fire_button) {
+        REGISTER_ACTION(inp_class, RATR0_INPUT_JS_BUTTON0);
+    }
+    if (left) {
+        REGISTER_ACTION(inp_class, RATR0_INPUT_JS_LEFT);
+    } else if (right) {
+        REGISTER_ACTION(inp_class, RATR0_INPUT_JS_RIGHT);
+    }
+    if (up) {
+        REGISTER_ACTION(inp_class, RATR0_INPUT_JS_UP);
+    } else if (down) {
+        REGISTER_ACTION(inp_class, RATR0_INPUT_JS_DOWN);
     }
 }
 
