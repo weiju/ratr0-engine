@@ -128,33 +128,6 @@ static struct Ratr0DisplayInfo display_info;
 static Ratr0MemHandle h_copper_list;
 static UINT16 *copper_list;
 
-// DDFSTRT (lores) = DIWSTRT_h / 2 - 8.5
-// so $81 -> $38
-// DDFSTRT = DDFSTOP-(8*(word count-1))for low resolution
-// DDFSTOP = DDFSTRT + (8 * (word count - 1))
-// Data fetch for a 320 pixel wide image: DDFSTRT = 0x38, DDFSTOP = 0xd0
-// Data fetch for a 288 pixel wide image: DDFSTRT = 0x46, DDFSTOP = 0xce
-#define DDFSTRT_VALUE_320      0x0038
-#define DDFSTOP_VALUE_320      0x00d0
-
-// 1. 40/c8
-#define DDFSTRT_VALUE_288      0x0040
-#define DDFSTOP_VALUE_288      0x00c8
-
-// Display window
-#define DIWSTRT_VALUE_320      0x2c81
-#define DIWSTOP_VALUE_PAL_320  0x2cc1
-#define DIWSTOP_VALUE_NTSC_320 0xf4c1
-
-// DDFSTRT = DIWSTRT / 2 - 8.5
-// DIWSTRT = (DDFSTRT + 8.5) * 2
-// DIWSTRT_h = (DDFSTRT_h + 8.5) * 2
-// 288 horizontal centered
-#define DIWSTRT_VALUE_288      0x2c91
-#define DIWSTOP_VALUE_PAL_288  0x2cb1
-#define DIWSTOP_VALUE_NTSC_288 0xf4b1
-
-
 /* This is a bit of a trick: I pre-allocate dummy sprite data */
 UINT16 __chip NULL_SPRITE_DATA[] = {
     0x0000, 0x0000,
@@ -174,7 +147,6 @@ UINT16 _cop_wait_end(UINT16 index)
     return index;
 }
 
-#define MAX_BITPLANES (6)
 static int copperlist_size = 0;
 
 // The principal copper list indexes to build the display elements
