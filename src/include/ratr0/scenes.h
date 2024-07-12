@@ -13,12 +13,20 @@
 /**
  * A scene is a component of a game. It contains the movable and static game objects
  * and the assets. The game can also provide functions for transitions and scene specific
- * updates
+ * updates.
+ *
+ * TODO: We should strongly consider having a copper list per scene
  */
 struct Ratr0Scene {
 
     /** \brief pointer to engine instance */
     Ratr0Engine *engine;
+
+    /** \brief memory handle to this scene's copper list */
+    Ratr0MemHandle h_copper_list;
+
+    /** \brief quick pointer to this scene's copper list */
+    UINT16 *copper_list;
 
     /**
      * \brief child nodes of the scene
@@ -53,8 +61,19 @@ struct Ratr0Scene {
 
     /** \brief number of bobs in the array */
     int num_bobs;
+
     /** \brief list of active hardware sprites in the scene */
-    struct Ratr0AnimatedHWSprite *sprites[10];
+    struct Ratr0AnimatedHWSprite *sprites[8];
+
+    /**
+     * Set the specified hardware sprite to the scene.
+     *
+     * @param this_scene pointer to this scene
+     * @param sprite the sprite pointer
+     * @param num the sprite number
+     */
+    void (*set_sprite_at)(struct Ratr0Scene *this_scene,
+                          struct Ratr0AnimatedHWSprite *sprite, int num);
 
     /**
      * User provided function that is called when this scene is set to the current scene.

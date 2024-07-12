@@ -16,12 +16,6 @@ struct Ratr0TileSheet grid_sheet, centi_head_lr_sheet;
 struct Ratr0SpriteSheet sprite_sheet;
 UINT8 centi_head_lr_frames[] = {0, 1, 2, 3, 4};
 
-#define NUM_SPRITE_CONTROL_WORDS (2)
-#define SPRITE_DATA_WORDS_PER_ROW (2)
-#define NUM_SPRITES (3)
-#define SPR0_COLOR00_IDX (16)
-
-
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
@@ -49,10 +43,15 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // can we do this in one step ?
     engine->resource_system->read_tilesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
-    struct Ratr0AnimatedSprite *anim_sprite = node_factory->create_sprite(&centi_head_lr_sheet,
-                                                                          centi_head_lr_frames, 5, 1, TRUE);
+    struct Ratr0AnimatedHWSprite *anim_sprite = (struct Ratr0AnimatedHWSprite *)
+        node_factory->create_sprite(&centi_head_lr_sheet,
+                                    centi_head_lr_frames, 5, 1, TRUE);
+    main_scene->set_sprite_at(main_scene, anim_sprite, 0);
 
-    struct Ratr0AmigaSurface *back_buffer, *front_buffer;
+    anim_sprite->base_obj.bounds.x = 0;
+    anim_sprite->base_obj.bounds.y = 10;
+
+    struct Ratr0Surface *back_buffer, *front_buffer;
     front_buffer = ratr0_get_front_buffer();
     back_buffer = ratr0_get_back_buffer();
     return main_scene;

@@ -3,6 +3,7 @@
 ## Roadmap
 
   * Tilesheet: rename palette to colors
+  * copper list should be part of the scene
   * sprite multiplexing
   * single plane interleaved blit to support lots of BOBs in Space invaders
   * grid-based movement

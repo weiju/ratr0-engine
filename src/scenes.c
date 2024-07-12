@@ -60,10 +60,30 @@ void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid)
     node->children = node->next = NULL;
 }
 
+static void ratr0_scene_set_sprite_at(struct Ratr0Scene *this_scene,
+                                      struct Ratr0AnimatedHWSprite *sprite,
+                                      int num)
+{
+    this_scene->sprites[num] = sprite;
+    // TODO set pointer to the copper list
+    //ratr0_display_set_sprite(num, sprite_data;
+}
+
+#define COPPERLIST_SIZE_BYTES (260)
+
 static struct Ratr0Scene *ratr0_scenes_create_scene(void)
 {
     struct Ratr0Scene *result = &_scenes[next_scene++];
     result->engine = engine;
+    result->set_sprite_at = &ratr0_scene_set_sprite_at;
+
+    // TODO: build a copper list, we need information about the
+    // display so we can copy it here, e.g. the display
+    // buffers and the display info
+    result->h_copper_list = engine->memory_system->allocate_block(RATR0_MEM_CHIP, COPPERLIST_SIZE_BYTES);
+    result->copper_list = engine->memory_system->block_address(result->h_copper_list);
+
+
     return result;
 }
 
@@ -278,5 +298,11 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         // Disable blitter nasty
         custom.dmacon = DMAF_BLITHOG;
         DisownBlitter();
+
+        // TODO: update the sprites
+        for (int i = 0; i < 8; i++) {
+            // TODO: update frame animation
+            // TODO: move sprite
+        }
     }
 }
