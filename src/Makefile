@@ -19,7 +19,7 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 
 endif  # ifdef AMIGA
 
-EXES=main invaders
+EXES=main invaders centi
 TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test
 
 # programs for benchmarks
@@ -35,7 +35,7 @@ TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 DATA_OBJECTS=datastructs/bitset.o
 
 ENGINE_OBJECTS=engine.o timers.o memory.o input.o \
-	resources.o scenes.o $(DATA_OBJECTS) $(HW_OBJECTS) $(EXT_OBJECTS)
+	resources.o scenes.o default_copper.o $(DATA_OBJECTS) $(HW_OBJECTS) $(EXT_OBJECTS)
 
 # game objects
 MAIN_OBJECTS=example-01/main.o example-01/main_scene.o
@@ -60,7 +60,8 @@ check: $(TEST_PRGS)
 perf: $(PERF_PRGS)
 
 clean:
-	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS)
+	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS) \
+		centipede/*.o default_copper.*
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -77,6 +78,9 @@ invaders: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
 
 centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
+
+default_copper.c: default.copper
+	ratr0-makecoplist default.copper default_copper.c
 #
 # TESTS
 #
