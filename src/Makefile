@@ -19,7 +19,7 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 
 endif  # ifdef AMIGA
 
-EXES=main invaders
+EXES=main invaders centi
 TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test
 
 # programs for benchmarks
@@ -60,7 +60,8 @@ check: $(TEST_PRGS)
 perf: $(PERF_PRGS)
 
 clean:
-	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS)
+	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS) \
+		centipede/*.o default_copper.*
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@

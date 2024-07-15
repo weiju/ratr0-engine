@@ -266,4 +266,7 @@ extern struct Ratr0AnimatedBob *ratr0_create_bob(struct Ratr0TileSheet *tileshee
                                                  UINT8 speed);
 
 
+
+extern void ratr0_dump_copperlist(UINT16 *copperlist, int len, const char *path);
+
 #endif /* __RATR0_DISPLAY_H__ */
