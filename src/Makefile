@@ -79,7 +79,7 @@ centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 default_copper.c: default.copper
-	./compile_clist.py default.copper default_copper.c
+	ratr0-makecoplist default.copper default_copper.c
 #
 # TESTS
 #
