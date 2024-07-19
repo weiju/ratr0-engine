@@ -42,7 +42,7 @@ MAIN_OBJECTS=example-01/main.o example-01/main_scene.o
 
 INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
 
-CENTIPEDE_OBJECTS=centipede/centipede.o centipede/main_stage.o
+CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/main_stage.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -61,7 +61,7 @@ perf: $(PERF_PRGS)
 
 clean:
 	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS) \
-		centipede/*.o default_copper.*
+		centipede/*.o centipede/centipede_copper.* default_copper.*
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -81,6 +81,9 @@ centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
 
 default_copper.c: default.copper
 	ratr0-makecoplist default.copper default_copper.c
+
+centipede/centipede_copper.c: centipede/centipede.copper
+	ratr0-makecoplist --listname centi_copper centipede/centipede.copper centipede/centipede_copper.c
 #
 # TESTS
 #

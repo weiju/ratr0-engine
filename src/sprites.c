@@ -40,7 +40,7 @@ void ratr0_sprites_set_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UI
 
 /**
  * This function extracts the specified frames from a Ratr0TileSheet and arranges it
- * into a sprite data structure.
+ * into a sprite data structure. PROTOTYPE !!!
  */
 UINT16 *ratr0_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
                                      UINT8 num_frames)
@@ -50,7 +50,8 @@ UINT16 *ratr0_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
     int imgdata_words = (tilesheet->header.width / 8) * (tilesheet->header.bmdepth / 2) *
         tilesheet->header.height;
     int words_to_reserve = imgdata_words + 4;
-    PRINT_DEBUG("WORDS TO RESERVE: %d", words_to_reserve);
+    PRINT_DEBUG("# frames: %d, WORDS TO RESERVE: %d",
+                num_frames, words_to_reserve);
     UINT16 *imgdata = (UINT16 *) engine->memory_system->block_address(tilesheet->h_imgdata);
 
     Ratr0MemHandle sprite_handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
@@ -63,7 +64,7 @@ UINT16 *ratr0_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
     // These are the 0 positions of sprites given our display settings
     UINT16 hstart = 128;
     UINT16 vstart = 44;
-    UINT16 vstop = vstart + 16;  // TODO: height can be anything
+    UINT16 vstop = vstart + tilesheet->header.height;
 
     sprite_data[0] = ((vstart & 0xff) << 8) | ((hstart >> 1) & 0xff);
     // vstop + high bit of vstart + low bit of hstart

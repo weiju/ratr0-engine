@@ -15,7 +15,7 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right, action_exit;
-struct Ratr0AnimatedBob *bobs[NUM_BOBS];
+struct Ratr0Bob *bobs[NUM_BOBS];
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
@@ -47,19 +47,19 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     ratr0_display_set_palette(grid.palette, 8, 0);
 
     engine->resource_system->read_tilesheet(BOBS_PATH_IL, &bobs_il);
-    bobs[0] = (struct Ratr0AnimatedBob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 5, FALSE);
+    bobs[0] = (struct Ratr0Bob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 5, FALSE);
     bobs[0]->base_obj.bounds.x = 50;
     bobs[0]->base_obj.bounds.y = 16;
 
-    bobs[1] = (struct Ratr0AnimatedBob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 10, FALSE);
+    bobs[1] = (struct Ratr0Bob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 10, FALSE);
     bobs[1]->base_obj.bounds.x = 83;
     bobs[1]->base_obj.bounds.y = 32;
 
-    bobs[2] = (struct Ratr0AnimatedBob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 10, FALSE);
+    bobs[2] = (struct Ratr0Bob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 10, FALSE);
     bobs[2]->base_obj.bounds.x = 120;
     bobs[2]->base_obj.bounds.y = 50;
 
-    bobs[3] = (struct Ratr0AnimatedBob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 10, FALSE);
+    bobs[3] = (struct Ratr0Bob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 10, FALSE);
     bobs[3]->base_obj.bounds.x = 140;
     bobs[3]->base_obj.bounds.y = 63;
 

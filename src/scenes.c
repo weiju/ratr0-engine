@@ -8,6 +8,7 @@
 #include <hardware/dmabits.h>
 #include <clib/graphics_protos.h>
 #include <ratr0/display.h>
+#include <ratr0/sprites.h>
 #include <ratr0/blitter.h>
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSCENES\033[0m", __VA_ARGS__)
 
@@ -60,22 +61,14 @@ void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid)
     node->children = node->next = NULL;
 }
 
-static void ratr0_scene_set_sprite_at(struct Ratr0Scene *this_scene,
-                                      struct Ratr0AnimatedHWSprite *sprite,
-                                      int num)
-{
-    this_scene->sprites[num] = sprite;
-    // TODO set pointer to the copper list
-    //ratr0_display_set_sprite(num, sprite_data;
-}
-
 #define COPPERLIST_SIZE_BYTES (260)
 
 static struct Ratr0Scene *ratr0_scenes_create_scene(void)
 {
     struct Ratr0Scene *result = &_scenes[next_scene++];
     result->engine = engine;
-    result->set_sprite_at = &ratr0_scene_set_sprite_at;
+    result->num_bobs = 0;
+    result->num_sprites = 0;
 
     // TODO: build a copper list, we need information about the
     // display so we can copy it here, e.g. the display
@@ -87,8 +80,8 @@ static struct Ratr0Scene *ratr0_scenes_create_scene(void)
     return result;
 }
 
-static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *,
-                                                          UINT8[], UINT8, UINT8, BOOL);
+static struct Ratr0Sprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *,
+                                                  UINT8[], UINT8, UINT8, BOOL);
 
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet);
 
@@ -146,20 +139,15 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
     }
 }
 
-static struct Ratr0AnimatedSprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *tilesheet,
-                                                          UINT8 frames[], UINT8 num_frames,
-                                                          UINT8 speed, BOOL is_hw)
+static struct Ratr0Sprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *tilesheet,
+                                                  UINT8 frames[], UINT8 num_frames,
+                                                  UINT8 speed, BOOL is_hw)
 {
-#ifdef AMIGA
     if (is_hw) {
-        return (struct Ratr0AnimatedSprite *) ratr0_create_sprite(tilesheet, frames, num_frames, speed);
+        return (struct Ratr0Sprite *) ratr0_create_sprite(tilesheet, frames, num_frames, speed);
     } else {
-        return (struct Ratr0AnimatedSprite *) ratr0_create_bob(tilesheet, frames, num_frames, speed);
+        return (struct Ratr0Sprite *) ratr0_create_bob(tilesheet, frames, num_frames, speed);
     }
-#else
-    // TODO
-    return NULL;
-#endif
 }
 
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
@@ -195,7 +183,7 @@ void process_dirty_rect(UINT16 x, UINT16 y)
 }
 
 
-void add_restore_tiles_for_bob(struct Ratr0AnimatedBob *bob)
+void add_restore_tiles_for_bob(struct Ratr0Bob *bob)
 {
     // Compute dirty rectangles for the BOB
     // determine first and last horizontal tile positions horizontal and vertical
@@ -215,7 +203,7 @@ void add_restore_tiles_for_bob(struct Ratr0AnimatedBob *bob)
  * just fake animation for now until we know it works
  */
 static int anim_frames = 0;
-BOOL update_bob(struct Ratr0AnimatedBob *bob)
+BOOL update_bob(struct Ratr0Bob *bob)
 {
     BOOL result = FALSE;
     // if there is translation, it means, we need to change the BOB position, but not
@@ -234,7 +222,7 @@ BOOL update_bob(struct Ratr0AnimatedBob *bob)
     return result;
 }
 
-void move_bob(struct Ratr0AnimatedBob *bob)
+void move_bob(struct Ratr0Bob *bob)
 {
     bob->base_obj.bounds.x += bob->base_obj.translate.x;
     bob->base_obj.bounds.y += bob->base_obj.translate.y;
@@ -266,7 +254,7 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         // process all the BOBS
         back_buffer = ratr0_get_back_buffer();
 
-        struct Ratr0AnimatedBob *bob;
+        struct Ratr0Bob *bob;
         for (int i = 0; i < current_scene->num_bobs; i++) {
             bob = current_scene->bobs[i];
             if (update_bob(bob)) {
@@ -300,9 +288,16 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         DisownBlitter();
 
         // TODO: update the sprites
-        for (int i = 0; i < 8; i++) {
+        UINT16 hstart, vstart, vstop;
+        for (int i = 0; i < 1; i++) {
             // TODO: update frame animation
             // TODO: move sprite
+            struct Ratr0HWSprite *sprite = current_scene->sprites[i];
+            hstart = sprite->base_obj.bounds.x + 160;
+            vstart = sprite->base_obj.bounds.y + 90;
+            vstop = vstart + sprite->base_obj.bounds.height;
+            ratr0_sprites_set_pos(sprite->sprite_data,
+                                  hstart, vstart, vstop);
         }
     }
 }

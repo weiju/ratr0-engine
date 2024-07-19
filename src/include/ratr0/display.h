@@ -1,12 +1,19 @@
 /** @file display.h
  *
- * Amiga Display subsystem
+ * Amiga Display subsystem. Captures the basic aspects of the display
+ * system and serves as the top level display API for the RATR0 engine:
+ *
+ *   - Playfields
+ *   - Copper lists
+ *   - Sprites
+ *   - Blitter related things (BOBs, tiles, ...)
  */
 #pragma once
 #ifndef __RATR0_DISPLAY_H__
 #define __RATR0_DISPLAY_H__
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
+
 
 // DDFSTRT (lores) = DIWSTRT_h / 2 - 8.5
 // so $81 -> $38
@@ -80,6 +87,7 @@ struct Ratr0DisplayInfo {
     BOOL is_pal;
 };
 
+extern struct Ratr0DisplayInfo display_info;
 
 /**
  * Surface is a rendering target, it is an abstract thing.
@@ -149,13 +157,28 @@ extern void ratr0_display_swap_buffers(void);
  */
 extern void ratr0_display_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset);
 
+struct Ratr0CopperListInfo {
+    int ddfstrt_index, ddfstop_index, diwstrt_index, diwstop_index;
+    int bplcon0_index, bpl1mod_index;
+    int bpl1pth_index, spr0pth_index, color00_index;
+};
+extern struct Ratr0CopperListInfo DEFAULT_COPPER_INFO;
+
 /**
  * Points the specified sprite to the image data.
  *
  * @param sprite_num sprite number
+ * @param coplist pointer to copper list
+ * @param size copper list size
+ * @param info copper list index info
  * @param data pointer to sprite data structure
  */
-extern void ratr0_display_set_sprite(int sprite_num, UINT16 *data);
+extern void ratr0_display_set_sprite(UWORD *coplist, int size,
+                                     struct Ratr0CopperListInfo *info,
+                                     int sprite_num, UINT16 *data);
+
+extern void ratr0_display_init_copper_list(UWORD coplist[], int num_words,
+                                           struct Ratr0CopperListInfo *info);
 
 /**
  * Returns a pointer to the current front buffer.
@@ -222,9 +245,9 @@ struct Ratr0Backdrop {
  * Blitter object, as they have a special data structure, we need
  * to have a representation that accomodates for that.
  */
-struct Ratr0AnimatedHWSprite {
+struct Ratr0HWSprite {
     /** \brief base node data */
-    struct Ratr0AnimatedSprite base_obj;
+    struct Ratr0Sprite base_obj;
     /** \brief sprite image data in Amiga sprite format */
     UINT16 *sprite_data;
 };
@@ -232,9 +255,9 @@ struct Ratr0AnimatedHWSprite {
 /**
  * Representation of a BOB.
  */
-struct Ratr0AnimatedBob {
+struct Ratr0Bob {
     /** \brief base node data */
-    struct Ratr0AnimatedSprite base_obj;
+    struct Ratr0Sprite base_obj;
     /** \brief BOB image data, stored in a tile sheet */
     struct Ratr0TileSheet *tilesheet;
 };
@@ -248,9 +271,9 @@ struct Ratr0AnimatedBob {
  * @param speed animation speed in frames
  * @return pointer to an initialized sprite data structure
  */
-extern struct Ratr0AnimatedHWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
-                                                         UINT8 frames[], UINT8 num_frames,
-                                                         UINT8 speed);
+extern struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
+                                                 UINT8 frames[], UINT8 num_frames,
+                                                 UINT8 speed);
 
 /**
  * Create a blitter object from a tile sheet.
@@ -261,12 +284,27 @@ extern struct Ratr0AnimatedHWSprite *ratr0_create_sprite(struct Ratr0TileSheet *
  * @param speed animation speed in frames
  * @return pointer to an initialized BOB data structure
  */
-extern struct Ratr0AnimatedBob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
-                                                 UINT8 frames[], UINT8 num_frames,
-                                                 UINT8 speed);
+extern struct Ratr0Bob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
+                                         UINT8 frames[], UINT8 num_frames,
+                                         UINT8 speed);
 
-
-
+/**
+ * Debug helper function to write a copper list to a C source file.
+ *
+ * @param copperlist the copperlist to write
+ * @param len number of words in the copper list
+ * @param path path to the output file
+ */
 extern void ratr0_dump_copperlist(UINT16 *copperlist, int len, const char *path);
+
+/**
+ * Sets a new copper list to the display.
+ *
+ * @param copperlist pointer to new copper list
+ * @param size number of words in the copper list
+ * @param info description of the copper list
+ */
+extern void ratr0_display_set_copperlist(UINT16 *copperlist, int size,
+                                         struct Ratr0CopperListInfo *info);
 
 #endif /* __RATR0_DISPLAY_H__ */

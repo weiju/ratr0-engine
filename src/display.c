@@ -25,6 +25,14 @@
 
 #include "default_copper.h"
 
+/** \brief default copper list indexes */
+struct Ratr0CopperListInfo DEFAULT_COPPER_INFO = {
+    3, 5, 7, 9,
+    DEFAULT_COPPER_BPLCON0_INDEX, DEFAULT_COPPER_BPL1MOD_INDEX,
+    DEFAULT_COPPER_BPL1PTH_INDEX,
+    DEFAULT_COPPER_SPR0PTH_INDEX, DEFAULT_COPPER_COLOR00_INDEX
+};
+
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
 
 static struct Ratr0RenderingSystem rendering_system;
@@ -44,9 +52,19 @@ extern struct GfxBase *GfxBase;
 extern struct Custom custom;
 static Ratr0Engine *engine;
 
+/**
+ * current active copper list
+ */
+static struct Ratr0CopperListInfo *current_copper_info;
+static UWORD *current_coplist;
+static int current_coplist_size;
+
 // Double buffer management
 #define MAX_BUFFERS (2)
-static void set_display_surface(struct Ratr0Surface *s);
+static void set_display_surface(UWORD coplist[], int num_words,
+                                struct Ratr0CopperListInfo *info,
+                                struct Ratr0Surface *s);
+
 static struct Ratr0Surface display_surface[MAX_BUFFERS];
 UINT16 ratr0_back_buffer = 1;
 UINT16 ratr0_front_buffer = 0;
@@ -72,9 +90,9 @@ UINT8 frames_elapsed;
 UINT32 bitset_arr[2][BITSET_SIZE];
 
 // Sprite and bob tables can be in Fastmem
-struct Ratr0AnimatedHWSprite hw_sprite_table[20];
+struct Ratr0HWSprite hw_sprite_table[20];
 UINT16 next_hw_sprite = 0;
-struct Ratr0AnimatedBob bob_table[20];
+struct Ratr0Bob bob_table[20];
 UINT16 next_bob = 0;
 
 void add_dirty_rectangle(UINT16 x, UINT16 y)
@@ -110,7 +128,9 @@ void ratr0_display_swap_buffers(void)
     ratr0_front_buffer = ratr0_back_buffer;
     ratr0_back_buffer = tmp;
     // 2. set new front buffer to copper list
-    set_display_surface(&display_surface[ratr0_front_buffer]);
+    set_display_surface(current_coplist, current_coplist_size,
+                        current_copper_info,
+                        &display_surface[ratr0_front_buffer]);
 }
 
 // Our vertical blank server only implements a simple frame counter
@@ -126,7 +146,7 @@ void VertBServer()
     set_zero_flag();
 }
 
-static struct Ratr0DisplayInfo display_info;
+struct Ratr0DisplayInfo display_info;
 
 /* This is a bit of a trick: I pre-allocate dummy sprite data */
 UINT16 __chip NULL_SPRITE_DATA[] = {
@@ -134,20 +154,15 @@ UINT16 __chip NULL_SPRITE_DATA[] = {
     0x0000, 0x0000
 };
 
-UINT16 _cop_move(UINT16 addr, UINT16 value, UINT16 index)
-{
-    default_copper[index++] = addr;
-    default_copper[index++] = value;
-    return index;
-}
-
 /**
  * We need to adjust the BPLCONx and BPLxMOD values after changing the
  * display mode.
  * Note: bplmod is currently the same for BPL1MOD and BPL2MOD, so no
  * dual playfield as for now
  */
-static void set_display_mode(UINT16 width, UINT8 num_bitplanes)
+static void set_display_mode(UINT16 coplist[],
+                             struct Ratr0CopperListInfo *info,
+                             UINT16 width, UINT8 num_bitplanes)
 {
     // width *needs* to be a multiple of 16 because Amiga playfield hardware operates
     // on word boundaries
@@ -156,9 +171,9 @@ static void set_display_mode(UINT16 width, UINT8 num_bitplanes)
     UINT16 bplcon0_value = (num_bitplanes << 12) | 0x200;
     PRINT_DEBUG("screenrow_bytes: %d bpl1mod: %d num_bitplanes: %d bplcon0: %04x",
                 (int) screenrow_bytes, (int) bplmod, (int) num_bitplanes, (int) bplcon0_value);
-    default_copper[BPLCON0_INDEX] = bplcon0_value;
-    default_copper[BPL1MOD_INDEX] = bplmod;
-    default_copper[BPL1MOD_INDEX + 2] = bplmod;
+    coplist[info->bplcon0_index] = bplcon0_value;
+    coplist[info->bpl1mod_index] = bplmod;
+    coplist[info->bpl1mod_index + 2] = bplmod;
 }
 
 /**
@@ -177,15 +192,17 @@ struct Ratr0Surface *ratr0_get_back_buffer(void)
 /**
  * Private function to apply the render context to the copper list
  */
-static void set_display_surface(struct Ratr0Surface *s)
+static void set_display_surface(UWORD coplist[], int num_words,
+                                struct Ratr0CopperListInfo *info,
+                                struct Ratr0Surface *s)
 {
     UINT16 screenrow_bytes = s->width / 8;
     UINT32 plane = (UINT32) s->buffer;
-    UINT32 clidx = BPL1PTH_INDEX;
+    UINT32 clidx = info->bpl1pth_index;
 
     for (int i = 0; i < s->depth; i++) {
-        default_copper[clidx] = (plane >> 16) & 0xffff;
-        default_copper[clidx + 2] = plane & 0xffff;
+        coplist[clidx] = (plane >> 16) & 0xffff;
+        coplist[clidx + 2] = plane & 0xffff;
         plane += screenrow_bytes;
         clidx += 4;
     }
@@ -196,38 +213,44 @@ static void set_display_surface(struct Ratr0Surface *s)
  * For now, this is very basic and simple. Going forward, we absolutely need
  * a copper list compiler, to allow for complex sprite multiplexing and color management
  */
-static void build_copper_list(struct Ratr0DisplayInfo *init_data)
+void ratr0_display_init_copper_list(UWORD coplist[], int num_words,
+                                    struct Ratr0CopperListInfo *info)
 {
     // set up the display and DMA windows (16 bytes)
     // 1. look at the viewport size to build display window and DMA start
     // We support a width of 288 and a width of 320
-    int cl_index = 2;
-    if (init_data->vp_width == 288) {
+    if (display_info.vp_width == 288) {
         PRINT_DEBUG("288 DDFSTRT");
-        cl_index = _cop_move(DDFSTRT, DDFSTRT_VALUE_288, cl_index);
-        cl_index = _cop_move(DDFSTOP, DDFSTOP_VALUE_288, cl_index);
-        cl_index = _cop_move(DIWSTRT, DIWSTRT_VALUE_288, cl_index);
+        coplist[info->ddfstrt_index] = DDFSTRT_VALUE_288;
+        coplist[info->ddfstop_index] = DDFSTOP_VALUE_288;
+        coplist[info->diwstrt_index] = DIWSTRT_VALUE_288;
         if (display_info.is_pal) {
-            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_PAL_288, cl_index);
+            coplist[info->diwstop_index] = DIWSTOP_VALUE_PAL_288;
         } else {
-            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_NTSC_288, cl_index);
+            coplist[info->diwstop_index] = DIWSTOP_VALUE_NTSC_288;
         }
     } else {
         PRINT_DEBUG("320 DDFSTRT");
-        cl_index = _cop_move(DDFSTRT, DDFSTRT_VALUE_320, cl_index);
-        cl_index = _cop_move(DDFSTOP, DDFSTOP_VALUE_320, cl_index);
+        coplist[info->ddfstrt_index] = DDFSTRT_VALUE_320;
+        coplist[info->ddfstop_index] = DDFSTOP_VALUE_320;
         if (display_info.is_pal) {
-            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_PAL_320, cl_index);
+            coplist[info->diwstop_index] = DIWSTOP_VALUE_PAL_320;
         } else {
-            cl_index = _cop_move(DIWSTOP, DIWSTOP_VALUE_NTSC_320, cl_index);
+            coplist[info->diwstop_index] = DIWSTOP_VALUE_NTSC_320;
         }
     }
 
+    // establish the display mode
+    set_display_mode(coplist, info,
+                     display_info.vp_width, display_info.depth);
+
     // 2. Initialize the sprites with the NULL address (8x8 = 64 bytes)
     for (int i = 0; i < 8; i++) {
-        ratr0_display_set_sprite(i, NULL_SPRITE_DATA);
+        ratr0_display_set_sprite(coplist, num_words, info,
+                                 i, NULL_SPRITE_DATA);
     }
-    set_display_surface(&display_surface[ratr0_front_buffer]);
+    set_display_surface(coplist, num_words,
+                        info, &display_surface[ratr0_front_buffer]);
 }
 
 static int display_buffer_size;
@@ -279,8 +302,6 @@ void _uninstall_interrupts(void)
     RemIntServer(INTB_VERTB, &vbint);
 }
 
-//#define COPPERLIST_SIZE_BYTES (260)
-
 struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
                                                    struct Ratr0DisplayInfo *init_data)
 {
@@ -309,8 +330,13 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
 
     // Build the display buffer
     build_display_buffer(&display_info);
-    build_copper_list(&display_info);
-    set_display_mode(init_data->vp_width, init_data->depth);
+    ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
+                                   &DEFAULT_COPPER_INFO);
+
+    current_coplist = default_copper;
+    current_copper_info = &DEFAULT_COPPER_INFO;
+    current_coplist_size = DEFAULT_COPPER_SIZE_WORDS;
+
     custom.cop1lc = (ULONG) default_copper;
 
     _install_interrupts();
@@ -322,6 +348,16 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
     // Object management initialization
     next_hw_sprite = next_bob = 0;
     return &rendering_system;
+}
+
+void ratr0_display_set_copperlist(UINT16 *copperlist, int size,
+                                  struct Ratr0CopperListInfo *info)
+{
+    WaitTOF();
+    current_coplist = copperlist;
+    current_copper_info = info;
+    current_coplist_size = size;
+    custom.cop1lc = (ULONG) copperlist;
 }
 
 void ratr0_display_shutdown(void)
@@ -341,41 +377,43 @@ void ratr0_display_shutdown(void)
 void ratr0_display_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset)
 {
     for (int i = 0; i < num_colors; i++) {
-        default_copper[COLOR00_INDEX + (i + offset) * 2] = colors[i];
+        current_coplist[current_copper_info->color00_index + (i + offset) * 2] = colors[i];
     }
 }
 
-void ratr0_display_set_sprite(int sprite_num, UINT16 *data)
+void ratr0_display_set_sprite(UWORD *coplist, int size,
+                              struct Ratr0CopperListInfo *copinfo,
+                              int sprite_num, UINT16 *data)
 {
-    int spr_idx = SPR0PTH_INDEX + 4 * sprite_num;
-    default_copper[spr_idx] = ((UINT32) data >> 16) & 0xffff;
-    default_copper[spr_idx + 2] = (UINT32) data & 0xffff;
+    int spr_idx = copinfo->spr0pth_index + 4 * sprite_num;
+    coplist[spr_idx] = ((UINT32) data >> 16) & 0xffff;
+    coplist[spr_idx + 2] = (UINT32) data & 0xffff;
 }
 
 // OBJECT MANAGEMENT
-struct Ratr0AnimatedHWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
-                                                  UINT8 frames[], UINT8 num_frames, UINT8 speed)
+struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
+                                          UINT8 frames[], UINT8 num_frames, UINT8 speed)
 {
     // Note we can only work within the Amiga hardware sprite limitations
     // 1. Reserve memory from engine
     // 2. Convert into sprite data structure and store into allocated memory
     // 3. Return the initialized object
     UINT16 *sprite_data = ratr0_make_sprite_data(tilesheet, frames, num_frames);
-    struct Ratr0AnimatedHWSprite *result = &hw_sprite_table[next_hw_sprite++];
+    struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
     result->sprite_data = sprite_data;
     // store sprite information
     return result;
 }
 
-struct Ratr0AnimatedBob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
-                                          UINT8 frames[], UINT8 num_frames,
-                                          UINT8 speed)
+struct Ratr0Bob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
+                                  UINT8 frames[], UINT8 num_frames,
+                                  UINT8 speed)
 {
     if (num_frames > RATR0_MAX_ANIM_FRAMES) {
         PRINT_DEBUG("Can't create BOB with more than %d animation frames !", RATR0_MAX_ANIM_FRAMES);
         return NULL;
     }
-    struct Ratr0AnimatedBob *result = &bob_table[next_bob++];
+    struct Ratr0Bob *result = &bob_table[next_bob++];
     result->tilesheet = tilesheet;
 
     result->base_obj.anim_frames.num_frames = num_frames;

@@ -11,6 +11,40 @@ and 8 bit machines.
 On modern systems, RATR0 will build on top of SDL, while on retro systems
 it will be direct hardware abstraction.
 
+## Why did I create RATR0 ?
+
+RATR0 is all about learning: learning to understand the Amiga hardware
+as it concerns game development, learning what goes on in a game engine
+all the while creating fun, fast on the Amiga.
+
+I wanted to create a way to facilitate game development for myself,
+and enable me to work the way I want, which would be typically on a
+modern Mac or Linux laptop.
+
+I just enjoy programming for fun while I am outside in a coffee shop
+or in the backyard.
+
+## Why I chose C over assembly and C++
+
+C for me represents an acceptable compromise as an implementation language.
+It is high level enough to create maintainable systems, and also has
+great compilers that support modern C language standards.
+While there exist a modern GCC version for the Amiga, my main target platform
+is Amiga OS 1.3, which is not necessarily easy to develop for with
+GCC, so I decided that C++ on Amiga is not for me.
+I used to write a lot of assembly code in my teens, but nowadays I try to
+avoid using it. It allows for a great amount of control for sure, but
+it invites the introduction of a lot of hard to find errors, and typically
+it results in much more, much harder to understand code.
+
+## Why a library ?
+
+RATR0 is designed as a C library for the main reason that it is simple.
+I tried to avoid making it too much of a framework, because it's hard
+to predict what kind of games are supposed to be developed with it.
+So this will start as a small library and the idea is that genre specific
+enhancements can be built on top of it.
+
 ## Restrictions
 
 Since the plan is to target legacy architectures, at the core almost all

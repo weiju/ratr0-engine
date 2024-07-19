@@ -57,23 +57,25 @@ struct Ratr0Scene {
     // so we won't need any type checks.
     //
     /** \brief list of active BOBs in the scene */
-    struct Ratr0AnimatedBob *bobs[10];
+    struct Ratr0Bob *bobs[10];
 
     /** \brief number of bobs in the array */
     int num_bobs;
 
     /** \brief list of active hardware sprites in the scene */
-    struct Ratr0AnimatedHWSprite *sprites[8];
+    struct Ratr0HWSprite *sprites[8];
+
+    /** \brief number of sprites in the array */
+    int num_sprites;
 
     /**
-     * Set the specified hardware sprite to the scene.
+     * Adds a bob to the scene.
      *
      * @param this_scene pointer to this scene
-     * @param sprite the sprite pointer
-     * @param num the sprite number
+     * @param bob the BOB to add to the scene
      */
-    void (*set_sprite_at)(struct Ratr0Scene *this_scene,
-                          struct Ratr0AnimatedHWSprite *sprite, int num);
+    void (*add_bob)(struct Ratr0Scene *this_scene, struct Ratr0Bob *bob);
+
 
     /**
      * User provided function that is called when this scene is set to the current scene.
@@ -97,6 +99,7 @@ struct Ratr0Scene {
      * @param frames_elapsed the number of elapsed frames since the last call of update
      */
     void (*update)(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
+
 };
 
 /**
@@ -120,9 +123,9 @@ struct Ratr0NodeFactory {
      * @param is_hw if TRUE, a hardware sprite is created, otherwise a BOB
      * @return pointer to an initialized sprite
      */
-    struct Ratr0AnimatedSprite *(*create_sprite)(struct Ratr0TileSheet *tilesheet,
-                                                 UINT8 frames[], UINT8 num_frames,
-                                                 UINT8 speed, BOOL is_hw);
+    struct Ratr0Sprite *(*create_sprite)(struct Ratr0TileSheet *tilesheet,
+                                         UINT8 frames[], UINT8 num_frames,
+                                         UINT8 speed, BOOL is_hw);
 
     /**
      * Creates a new backdrop.

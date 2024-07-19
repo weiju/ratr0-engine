@@ -188,7 +188,7 @@ struct Ratr0Translate2D {
  * insert sprites into the spatial division data structure  and access the object
  * without any indirection.
  */
-struct Ratr0AnimatedSprite {
+struct Ratr0Sprite {
     /** \brief collision boundaries */
     struct Ratr0BoundingBox collision_box;
     /** \brief Position and dimensions of the sprite, don't set directly !!! */

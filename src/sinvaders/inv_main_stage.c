@@ -4,13 +4,14 @@
 
 #include <ratr0/ratr0.h>
 #include <clib/graphics_protos.h>
+#include "../default_copper.h"
 #include "inv_main_stage.h"
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 
 #define NUM_BOBS (10)
-struct Ratr0AnimatedBob *bobs[NUM_BOBS];
+struct Ratr0Bob *bobs[NUM_BOBS];
 // Resources
 #define BOBS_PATH ("sinvaders/assets/alien001_12x8x2.ts")
 #define BOBS2_PATH ("sinvaders/assets/alien001_12x8x1.ts")
@@ -106,7 +107,10 @@ void copy_spritesheet_to_sprite()
     for (int i = 0; i < 3; i++) {
         ratr0_sprites_set_pos(new_sprite[i], sprite_pos[i][0], sprite_pos[i][1], sprite_pos[i][1] + spr_height);
     }
-    ratr0_display_set_sprite(0, new_sprite[0]);
+    // TODO: Point to default copper list
+    ratr0_display_set_sprite(default_copper, DEFAULT_COPPER_SIZE_WORDS,
+                             &DEFAULT_COPPER_INFO,
+                             0, new_sprite[0]);
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -129,7 +133,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     int bobx = 50;
     int boby = 16;
     for (int i = 0; i < NUM_BOBS; i++) {
-        bobs[i] = (struct Ratr0AnimatedBob *) node_factory->create_sprite(&bobs_sheet, bob_frames, 2, 5, FALSE);
+        bobs[i] = (struct Ratr0Bob *) node_factory->create_sprite(&bobs_sheet, bob_frames, 2, 5, FALSE);
         bobs[i]->base_obj.bounds.x = bobx;
         bobs[i]->base_obj.bounds.y = boby;
         bobx += 16;

@@ -1,6 +1,8 @@
 /** @file blitter.h
  *
- * Amiga Blitter functionality module.
+ * Amiga Blitter functionality module. These are low-level functions that
+ * are private to the display system. Don't use any of these functions
+ * from user code.
  */
 #pragma once
 #ifndef __RATR0_BLITTER_H__
