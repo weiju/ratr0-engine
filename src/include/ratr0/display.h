@@ -229,6 +229,91 @@ extern UINT8 frames_elapsed;
 //
 
 /**
+ * Collision box.
+ * Collisions should usually be based on bounding shapes
+ * that are tweaked for playability.
+ */
+struct Ratr0BoundingBox {
+    /** \brief x-coordinate of origin */
+    UINT16 x;
+    /** \brief y-coordinate of origin */
+    UINT16 y;
+    /** \brief width of bounding box */
+    UINT16 width;
+    /** \brief height of bounding box */
+    UINT16 height;
+};
+
+/** \brief maximum number of animation frames in a Ratr0AnimationFrames object */
+#define RATR0_MAX_ANIM_FRAMES (8)
+
+/**
+ * Visual component of an animated object. We keep it simple.
+ *   - an animated sprite only represents a single animation state, if
+ *     want more, group them, e.g. into a state pattern.
+ *   - has an animation speed
+ */
+struct Ratr0AnimationFrames {
+    /** \brief speed in frames */
+    UINT8 speed;
+    /** \brief frame numbers of the animation */
+    UINT8 frames[RATR0_MAX_ANIM_FRAMES];
+    /** \brief length of the frames array */
+    UINT8 num_frames;
+    /** \brief current animation frame index displayed */
+    UINT8 current_frame_idx;
+    /** \brief current tick, will reset to speed after reaching 0 */
+    UINT8 current_tick;
+    /** \brief indicates whether this is a looping animation */
+    BOOL  is_looping;
+};
+
+/**
+ * A translation object. Movement of objects
+ * is implemented through this data structure. Never modify
+ * an object's position by directly setting the bounds
+ * object variables !!! The dirty rects algorithm relies on being
+ * able to track position changes
+ */
+struct Ratr0Translate2D {
+    /** \brief x translation */
+    INT16 x;
+    /** \brief y translation */
+    INT16 y;
+};
+
+/**
+ * The base data structure for animated objects. It is assumed that each such object
+ * describes its boundary box, a collision box, a translation object and animation frames.
+ * The data layout is deliberate, the collision box is the first element so we can
+ * insert sprites into the spatial division data structure  and access the object
+ * without any indirection.
+ */
+struct Ratr0Sprite {
+    /** \brief collision boundaries */
+    struct Ratr0BoundingBox collision_box;
+    /** \brief Position and dimensions of the sprite, don't set directly !!! */
+    struct Ratr0BoundingBox bounds;
+    /** \brief Translation object to describe the next move */
+    struct Ratr0Translate2D translate;
+    /** \brief animation frames object */
+    struct Ratr0AnimationFrames anim_frames;
+};
+
+/**
+ * Base data structure for a static object. Static objects have a position
+ * and can be collided with.
+ * As with sprites, the collision box is the first data element since it
+ * is added to the spatial division data structure.
+ */
+struct Ratr0StaticObject {
+    /** \brief the collision box */
+    struct Ratr0BoundingBox collision_box;
+    /** \brief position and dimensions of the object  */
+    struct Ratr0BoundingBox bounds;
+};
+
+/**
  * This is the background of the game. Backdrops are drawn to the display buffer in
  * their entirety the first time. After that, they serve as the source for restore
  * operations.

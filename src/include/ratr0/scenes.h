@@ -10,6 +10,50 @@
 #include <ratr0/resources.h>
 #include <ratr0/display.h>
 
+
+// just to make the compiler happy
+struct Ratr0Scene;
+
+/**
+ * Nodes are the base object of the system
+ * Top level node that is the base of a node. The node system is inspired by
+ * the Godot design, but will be much simpler to accomodate to the target systems
+ * that are very memory constrained.
+ * In general, nodes can call methods on nodes that are below them in the scene tree,
+ * while signal are used to communicate up and across the hierarchy.
+ */
+struct Ratr0Node {
+    /**
+     * \brief node class identifier
+     *
+     * Identifying information. We don't support subclassing. It's rather a way to find the
+     * appropriate handlers
+     */
+    UINT16 class_id;
+
+    /** \brief next sibling node */
+    struct Ratr0Node *next;
+    /** \brief first child node */
+    struct Ratr0Node *children;
+
+    /**
+     * The node's update function. This is a way to customize system behavior
+     * It is optional, if the update function set to a non-null, value, it
+     * will be executed on each iteration of the game loop.
+     *
+     * @param scene the scene that contains this node
+     * @param this_node the node to run the update function on
+     */
+    void (*update)(struct Ratr0Scene *scene, struct Ratr0Node *this_node);
+};
+
+/**
+ * \brief Built-in node types in the RATR0 engine.
+ */
+enum Ratr0NodeTypes {
+    BACKGROUND
+};
+
 /**
  * A scene is a component of a game. It contains the movable and static game objects
  * and the assets. The game can also provide functions for transitions and scene specific
