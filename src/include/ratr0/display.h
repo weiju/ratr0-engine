@@ -361,6 +361,15 @@ extern struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tileshee
                                                  UINT8 speed);
 
 /**
+ * Create a HW sprite object from a sprite sheet.
+ *
+ * @param sheet sprite sheet pointer
+ * @param speed animation speed
+ */
+extern struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSheet *sheet,
+                                                                   UINT8 speed);
+
+/**
  * Create a blitter object from a tile sheet.
  *
  * @param tilesheet pointer to tilesheet containing the image data

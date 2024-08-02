@@ -405,6 +405,24 @@ struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
     return result;
 }
 
+struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSheet *sheet,
+                                                            UINT8 speed)
+{
+    struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
+    result->sprite_data = (UWORD *) engine->memory_system->block_address(sheet->h_imgdata);
+    result->base_obj.anim_frames.num_frames = sheet->header.num_sprites;
+    result->base_obj.anim_frames.current_frame_idx = 0;
+    result->base_obj.anim_frames.current_tick = 0;
+    result->base_obj.anim_frames.speed = speed;
+    // Copy frames
+    for (int i = 0; i < sheet->header.num_sprites; i++) {
+        result->base_obj.anim_frames.frames[i] = i;
+    }
+    // loop style and speed should be part of the sprite sheet
+    result->base_obj.anim_frames.is_looping = TRUE;
+    return result;
+}
+
 struct Ratr0Bob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
                                   UINT8 frames[], UINT8 num_frames,
                                   UINT8 speed)

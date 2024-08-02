@@ -61,8 +61,6 @@ void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid)
     node->children = node->next = NULL;
 }
 
-#define COPPERLIST_SIZE_BYTES (260)
-
 static struct Ratr0Scene *ratr0_scenes_create_scene(void)
 {
     struct Ratr0Scene *result = &_scenes[next_scene++];
@@ -70,13 +68,7 @@ static struct Ratr0Scene *ratr0_scenes_create_scene(void)
     result->num_bobs = 0;
     result->num_sprites = 0;
 
-    // TODO: build a copper list, we need information about the
-    // display so we can copy it here, e.g. the display
-    // buffers and the display info
-    result->h_copper_list = engine->memory_system->allocate_block(RATR0_MEM_CHIP, COPPERLIST_SIZE_BYTES);
-    result->copper_list = engine->memory_system->block_address(result->h_copper_list);
-
-
+    // TODO: we might want to accept a custom copper list and store it here
     return result;
 }
 

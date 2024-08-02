@@ -43,7 +43,7 @@ void ratr0_sprites_set_pos(UINT16 *sprite_data, UINT16 hstart, UINT16 vstart, UI
  * into a sprite data structure. PROTOTYPE !!!
  */
 UINT16 *ratr0_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
-                                     UINT8 num_frames)
+                               UINT8 num_frames)
 {
     // for now I assume the sprite data is arranged in 16 pixel width and being 2 bits deep
     // we only support 2 or 4 bits
