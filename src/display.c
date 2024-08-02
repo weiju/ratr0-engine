@@ -56,12 +56,12 @@ static Ratr0Engine *engine;
  * current active copper list
  */
 static struct Ratr0CopperListInfo *current_copper_info;
-static UWORD *current_coplist;
+static UINT16 *current_coplist;
 static int current_coplist_size;
 
 // Double buffer management
 #define MAX_BUFFERS (2)
-static void set_display_surface(UWORD coplist[], int num_words,
+static void set_display_surface(UINT16 coplist[], int num_words,
                                 struct Ratr0CopperListInfo *info,
                                 struct Ratr0Surface *s);
 
@@ -192,7 +192,7 @@ struct Ratr0Surface *ratr0_get_back_buffer(void)
 /**
  * Private function to apply the render context to the copper list
  */
-static void set_display_surface(UWORD coplist[], int num_words,
+static void set_display_surface(UINT16 coplist[], int num_words,
                                 struct Ratr0CopperListInfo *info,
                                 struct Ratr0Surface *s)
 {
@@ -213,7 +213,7 @@ static void set_display_surface(UWORD coplist[], int num_words,
  * For now, this is very basic and simple. Going forward, we absolutely need
  * a copper list compiler, to allow for complex sprite multiplexing and color management
  */
-void ratr0_display_init_copper_list(UWORD coplist[], int num_words,
+void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
                                     struct Ratr0CopperListInfo *info)
 {
     // set up the display and DMA windows (16 bytes)
@@ -381,7 +381,7 @@ void ratr0_display_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset)
     }
 }
 
-void ratr0_display_set_sprite(UWORD *coplist, int size,
+void ratr0_display_set_sprite(UINT16 *coplist, int size,
                               struct Ratr0CopperListInfo *copinfo,
                               int sprite_num, UINT16 *data)
 {
@@ -409,7 +409,7 @@ struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSh
                                                             UINT8 speed)
 {
     struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
-    result->sprite_data = (UWORD *) engine->memory_system->block_address(sheet->h_imgdata);
+    result->sprite_data = (UINT16 *) engine->memory_system->block_address(sheet->h_imgdata);
     result->base_obj.anim_frames.num_frames = sheet->header.num_sprites;
     result->base_obj.anim_frames.current_frame_idx = 0;
     result->base_obj.anim_frames.current_tick = 0;

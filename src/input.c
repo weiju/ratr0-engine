@@ -47,8 +47,8 @@ static UBYTE *kb_matrix;
 
 // Joystick / mouse registers
 /*
-static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
-static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
+static volatile UINT16 *custom_joy0dat = (volatile UINT16 *) 0xdff00a;
+static volatile UINT16 *custom_joy1dat = (volatile UINT16 *) 0xdff00c;
 */
 /*
   Example for reading the mouse
@@ -128,8 +128,8 @@ static volatile UINT8 *ciaa_pra = (volatile UINT8 *) 0xbfe001;
 
 // Make sure we are reading from a volatile place
 /*
-static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
-static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
+static volatile UINT16 *custom_joy0dat = (volatile UINT16 *) 0xdff00a;
+static volatile UINT16 *custom_joy1dat = (volatile UINT16 *) 0xdff00c;
 UINT16 ratr0_get_joystick_state(UINT8 device_num)
 {
     UINT16 result = 0;
@@ -260,8 +260,8 @@ void clear_action_occurrences(void)
  * Polls the Amiga joystick with the specified number (0 or 1).
  * @param device_num device number, 0 is mouse port, 1 is joystick port
  */
-static volatile UWORD *custom_joy0dat = (volatile UWORD *) 0xdff00a;
-static volatile UWORD *custom_joy1dat = (volatile UWORD *) 0xdff00c;
+static volatile UINT16 *custom_joy0dat = (volatile UINT16 *) 0xdff00a;
+static volatile UINT16 *custom_joy1dat = (volatile UINT16 *) 0xdff00c;
 void poll_joystick(UINT8 device_num)
 {
     UINT16 tmp = (device_num == 0) ? *custom_joy0dat : *custom_joy1dat;

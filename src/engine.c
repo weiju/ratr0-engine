@@ -32,7 +32,7 @@ void ratr0_engine_exit(void)
 static Ratr0Engine engine;
 void ratr0_engine_shutdown(void);
 
-static volatile UWORD *custom_color00 = (volatile UWORD *) 0xdff180;
+static volatile UINT16 *custom_color00 = (volatile UINT16 *) 0xdff180;
 void ratr0_engine_game_loop(void)
 {
     while (game_state != GAMESTATE_QUIT) {

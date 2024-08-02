@@ -2,7 +2,7 @@ ifdef TESTONLY
 
 CC=gcc
 CFLAGS=-I/opt/homebrew/include -Iinclude -DDEBUG
-LDFLAGS=-L/opt/homebrew/lib -lsdl2 -lsdl2_image
+LDFLAGS=
 TEST_CFLAGS=-Iinclude -I../chibi_test
 
 else
@@ -88,7 +88,7 @@ centipede/centipede_copper.c: centipede/centipede.copper
 # TESTS
 #
 timer_test: test/timer_test.o timers.o ../chibi_test/chibi.o
-	$(CC) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 fixed_point_test: test/fixed_point_test.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^

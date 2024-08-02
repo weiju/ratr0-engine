@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ratr0/memory.h>
+#include <ratr0/display.h>
 #include <ratr0/datastructs/quadtree.h>
 #include <ratr0/datastructs/vector.h>
 #include "../../chibi_test/chibi.h"

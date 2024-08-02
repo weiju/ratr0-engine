@@ -43,7 +43,9 @@
 
 #define MAX_BITPLANES (6)
 
+#ifdef AMIGA
 extern UINT16 __chip NULL_SPRITE_DATA[];
+#endif
 
 /**
  * Amiga specific information about the display, used both for
@@ -173,11 +175,11 @@ extern struct Ratr0CopperListInfo DEFAULT_COPPER_INFO;
  * @param info copper list index info
  * @param data pointer to sprite data structure
  */
-extern void ratr0_display_set_sprite(UWORD *coplist, int size,
+extern void ratr0_display_set_sprite(UINT16 *coplist, int size,
                                      struct Ratr0CopperListInfo *info,
                                      int sprite_num, UINT16 *data);
 
-extern void ratr0_display_init_copper_list(UWORD coplist[], int num_words,
+extern void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
                                            struct Ratr0CopperListInfo *info);
 
 /**

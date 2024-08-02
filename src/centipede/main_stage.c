@@ -48,10 +48,10 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // 1. Read animated sprites from sprite sheet
     engine->resource_system->read_spritesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
-    UWORD *sprite_data = (UWORD *) engine->memory_system->block_address(centi_head_lr_sheet.h_imgdata);
+    UINT16 *sprite_data = (UINT16 *) engine->memory_system->block_address(centi_head_lr_sheet.h_imgdata);
     sprite_data += centi_head_lr_sheet.sprite_offsets[1];
 
-    UWORD spr0_x = 150, spr0_y = 0x5c, spr0_height = 8;
+    UINT16 spr0_x = 150, spr0_y = 0x5c, spr0_height = 8;
     ratr0_sprites_set_pos(sprite_data, spr0_x, spr0_y, spr0_y + spr0_height);
     // All sprites are pointed to null sprite, so now we can set the sprite pointer
     ratr0_display_set_sprite(centi_copper, CENTI_COPPER_SIZE_WORDS,

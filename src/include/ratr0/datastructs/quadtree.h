@@ -13,6 +13,7 @@
 
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
+#include <ratr0/display.h>
 #include <ratr0/datastructs/vector.h>
 
 /** \brief maximum number of elements that can be stored in a quad tree left node */
