@@ -20,4 +20,4 @@ jobs:
         submodules: recursive
 
     - name: make check
-      run: make check
+      run: make TESTONLY=1 check
