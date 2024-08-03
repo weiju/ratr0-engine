@@ -5,6 +5,7 @@
 // Resources
 #define BOBS_PATH_IL ("example-01/assets/fox_run_20x23x3.ts")
 #define GRID_PATH ("example-01/assets/basegrid_320x256x3.ts")
+#define SPRITES_PATH ("example-01/assets/fox-run_00.spr")
 #define NUM_BOBS (4)
 
 struct Ratr0TileSheet bobs_il, grid;
@@ -16,6 +17,10 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right, action_exit;
 struct Ratr0Bob *bobs[NUM_BOBS];
+
+struct Ratr0SpriteSheet fox_sprite_sheet;
+UINT8 fox_frames[] = {0, 1, 2, 3, 4};
+struct Ratr0HWSprite *fox;
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
@@ -68,5 +73,13 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     }
     main_scene->num_bobs = NUM_BOBS;
     main_scene->backdrop = node_factory->create_backdrop(&grid);
+
+    // 1. Read animated sprites from sprite sheet
+    engine->resource_system->read_spritesheet(SPRITES_PATH, &fox_sprite_sheet);
+    fox = ratr0_create_sprite_from_sprite_sheet(&fox_sprite_sheet, (UINT8) 6, RATR0_ANIM_LOOP_TYPE_NONE);
+    main_scene->sprites[main_scene->num_sprites++] = fox;
+    fox->base_obj.bounds.x = 0;
+    fox->base_obj.bounds.y = 40;
+
     return main_scene;
 }

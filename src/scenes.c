@@ -234,6 +234,79 @@ static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *s
     }
 }
 
+static void _update_sprite(struct Ratr0HWSprite *sprite)
+{
+    UINT16 hstart, vstart, vstop;
+    sprite->base_obj.anim_frames.current_tick++;
+    // update frame animation
+    if (sprite->base_obj.anim_frames.current_tick >= sprite->base_obj.anim_frames.speed) {
+        if (sprite->base_obj.anim_frames.loop_type == RATR0_ANIM_LOOP_TYPE_LOOP) {
+            sprite->base_obj.anim_frames.current_frame_idx = (sprite->base_obj.anim_frames.current_frame_idx + 1) % sprite->base_obj.anim_frames.num_frames;
+        } else if (sprite->base_obj.anim_frames.loop_type == RATR0_ANIM_LOOP_TYPE_PINGPONG) {
+            if (sprite->base_obj.anim_frames.loop_dir > 0) {
+                sprite->base_obj.anim_frames.current_frame_idx++;
+                if (sprite->base_obj.anim_frames.current_frame_idx == (sprite->base_obj.anim_frames.num_frames - 1)) {
+                    sprite->base_obj.anim_frames.loop_dir = -1;
+                }
+            } else {
+                sprite->base_obj.anim_frames.current_frame_idx--;
+                if (sprite->base_obj.anim_frames.current_frame_idx == 0) {
+                    sprite->base_obj.anim_frames.loop_dir = 1;
+                }
+            }
+        } else {
+            // NONE DEBUG
+            sprite->base_obj.anim_frames.current_frame_idx = 0;
+        }
+        sprite->base_obj.anim_frames.current_tick = 0;
+    }
+
+    // Set the sprite data to the sprite channel. If it is a an attached
+    // sprite, set 2 channels that are at the same position
+    UINT16 *sprite_data0 = sprite->sprite_data;
+    UINT16 *sprite_data1;
+
+    // set pointer to the frame
+    // number of frame words is the height + 2 control words +
+    // 2 zero stop words
+    int frame_words = (sprite->base_obj.bounds.height + 2) * 2;
+    int frames_per_sprite = sprite->is_attached ? 2 : 1;
+    sprite_data0 += sprite->base_obj.anim_frames.current_frame_idx * frames_per_sprite * frame_words;
+    // The second half of the attached sprite is always on the next frame
+    sprite_data1 = sprite_data0 + frame_words;
+
+    // update and set sprite position
+    // bounds are dependent on window start !!!!
+
+    // TODO: this is actually not completely correct, because this
+    // assumes a fixed DIWSTRT
+    hstart = sprite->base_obj.bounds.x + 160;
+    vstart = sprite->base_obj.bounds.y + 90;
+    vstop = vstart + sprite->base_obj.bounds.height;
+
+    // If not attached, this is enough
+    ratr0_sprites_set_pos(sprite_data1,
+                          hstart, vstart, vstop);
+    ratr0_display_set_sprite(current_coplist, current_coplist_size,
+                             current_copper_info,
+                             1, sprite_data1);
+    if (sprite->is_attached) {
+        ratr0_sprites_set_pos(sprite_data0,
+                              hstart, vstart, vstop);
+        ratr0_display_set_sprite(current_coplist, current_coplist_size,
+                                 current_copper_info,
+                                 0, sprite_data0);
+                                 }
+}
+
+static void _update_sprites(void)
+{
+    // update sprites
+    for (int i = 0; i < current_scene->num_sprites; i++) {
+        _update_sprite(current_scene->sprites[i]);
+    }
+}
+
 static void ratr0_scenes_update(UINT8 frames_elapsed)
 {
     if (current_scene) {
@@ -279,17 +352,6 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         custom.dmacon = DMAF_BLITHOG;
         DisownBlitter();
 
-        // TODO: update the sprites
-        UINT16 hstart, vstart, vstop;
-        for (int i = 0; i < 1; i++) {
-            // TODO: update frame animation
-            // TODO: move sprite
-            struct Ratr0HWSprite *sprite = current_scene->sprites[i];
-            hstart = sprite->base_obj.bounds.x + 160;
-            vstart = sprite->base_obj.bounds.y + 90;
-            vstop = vstart + sprite->base_obj.bounds.height;
-            ratr0_sprites_set_pos(sprite->sprite_data,
-                                  hstart, vstart, vstop);
-        }
+        _update_sprites();
     }
 }

@@ -44,6 +44,8 @@ INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
 
 CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/main_stage.o
 
+TETRIS_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o
+
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
 
@@ -61,7 +63,8 @@ perf: $(PERF_PRGS)
 
 clean:
 	rm -f *.o datastructs/*.o sinvaders/*.o example-01/*.o $(EXES) $(TEST_OBJECTS) $(TEST_PRGS) $(PERF_PRGS) \
-		centipede/*.o centipede/centipede_copper.* default_copper.*
+		centipede/*.o centipede/centipede_copper.* default_copper.* \
+		tetris/*.o tetris/tetris_copper.*
 
 .c.o:
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -75,8 +78,10 @@ main: $(ENGINE_OBJECTS) $(MAIN_OBJECTS)
 invaders: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-
 centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+tetris_game: $(ENGINE_OBJECTS) $(TETRIS_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 default_copper.c: default.copper
@@ -84,6 +89,10 @@ default_copper.c: default.copper
 
 centipede/centipede_copper.c: centipede/centipede.copper
 	ratr0-makecoplist --listname centi_copper centipede/centipede.copper centipede/centipede_copper.c
+
+tetris/tetris_copper.c: tetris/tetris.copper
+	ratr0-makecoplist --listname tetris_copper tetris/tetris.copper tetris/tetris_copper.c
+
 #
 # TESTS
 #

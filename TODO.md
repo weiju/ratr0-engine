@@ -1,10 +1,12 @@
 # TODO list
 
+## Known Bugs
+
+  * Background in 32 colors does not work properly
+
 ## Roadmap
 
   * Tilesheet: rename palette to colors
-  * copper list: make a copper list compiler and a file format
-  * copper list should be part of the scene
   * sprite multiplexing
   * single plane interleaved blit to support lots of BOBs in Space invaders
   * grid-based movement

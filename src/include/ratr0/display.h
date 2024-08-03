@@ -205,6 +205,10 @@ extern UINT16 ratr0_back_buffer;
 /** \brief index of the current front buffer */
 extern UINT16 ratr0_front_buffer;
 
+extern struct Ratr0CopperListInfo *current_copper_info;
+extern UINT16 *current_coplist;
+extern int current_coplist_size;
+
 /**
  * Adds a dirty rectangle to the list at the specified position. The coordinates
  * are based on 16 pixel tiles rather than individual pixels.
@@ -248,6 +252,9 @@ struct Ratr0BoundingBox {
 
 /** \brief maximum number of animation frames in a Ratr0AnimationFrames object */
 #define RATR0_MAX_ANIM_FRAMES (8)
+#define RATR0_ANIM_LOOP_TYPE_NONE (0)
+#define RATR0_ANIM_LOOP_TYPE_LOOP (1)
+#define RATR0_ANIM_LOOP_TYPE_PINGPONG (2)
 
 /**
  * Visual component of an animated object. We keep it simple.
@@ -266,8 +273,10 @@ struct Ratr0AnimationFrames {
     UINT8 current_frame_idx;
     /** \brief current tick, will reset to speed after reaching 0 */
     UINT8 current_tick;
-    /** \brief indicates whether this is a looping animation */
-    BOOL  is_looping;
+    /** \brief indicates the loop type, 0=none, 1=loop, 2=pingpong */
+    UINT8 loop_type;
+    /** \brief indicates the loop direction, which can either be +1 or -1 */
+    INT8 loop_dir;
 };
 
 /**
@@ -331,10 +340,17 @@ struct Ratr0Backdrop {
  * Sprites have different specifications than
  * Blitter object, as they have a special data structure, we need
  * to have a representation that accomodates for that.
+ * This structure also accounts for attached sprites in which case
+ * every second frame in the data is the data for the second sprite
+ * in the attached sprite
  */
 struct Ratr0HWSprite {
     /** \brief base node data */
     struct Ratr0Sprite base_obj;
+
+    /** \brief whether the sprite is attached */
+    BOOL is_attached;
+
     /** \brief sprite image data in Amiga sprite format */
     UINT16 *sprite_data;
 };
@@ -348,6 +364,9 @@ struct Ratr0Bob {
     /** \brief BOB image data, stored in a tile sheet */
     struct Ratr0TileSheet *tilesheet;
 };
+
+struct Ratr0TileSheet;
+struct Ratr0SpriteSheet;
 
 /**
  * Create an Amiga hardware sprite object from a tilesheet.
@@ -367,9 +386,11 @@ extern struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tileshee
  *
  * @param sheet sprite sheet pointer
  * @param speed animation speed
+ * @param loop_type loop type
  */
 extern struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSheet *sheet,
-                                                                   UINT8 speed);
+                                                                   UINT8 speed,
+                                                                   UINT8 loop_type);
 
 /**
  * Create a blitter object from a tile sheet.

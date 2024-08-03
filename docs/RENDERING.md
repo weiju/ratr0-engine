@@ -6,15 +6,25 @@ The rendering system on the Amiga was designed with the restrictions
 of the Amiga hardware in mind. There is a limit on how many blits can
 be performed per frame and it is not very high.
 Since a game needs to also update its game world, we took measurements
-of how much effect dirty rectangle restoration and blit queue would 
+of how much effect dirty rectangle restoration and blit queue would
 take.
 
 On a barebones A500 system, there is surprisingy little time available
-for blitting if the game also needs to update other data structures and 
+for blitting if the game also needs to update other data structures and
 game logic, so it was decided to forego explicit queuing of blits and
 just directly blit objects as they are updated.
 
 ## Central Concepts
+
+On the display level, we only deal with Amiga display primitives in
+a very direct manner, meaning
+
+  * Copper lists
+  * Playfields
+  * Sprites
+  * Blitter operations
+
+### Copper lists
 
 ### Double buffering
 
@@ -33,6 +43,7 @@ We need therefore to have data structures for the following:
 
   * background tiles
   * BOBs
+  * sprites
   * collision boxes
 
 Unfortunately, trees seem to be significantly slower on Amiga than

@@ -55,9 +55,9 @@ static Ratr0Engine *engine;
 /**
  * current active copper list
  */
-static struct Ratr0CopperListInfo *current_copper_info;
-static UINT16 *current_coplist;
-static int current_coplist_size;
+struct Ratr0CopperListInfo *current_copper_info;
+UINT16 *current_coplist;
+int current_coplist_size;
 
 // Double buffer management
 #define MAX_BUFFERS (2)
@@ -169,8 +169,10 @@ static void set_display_mode(UINT16 coplist[],
     UINT16 screenrow_bytes = width / 8;
     UINT16 bplmod = screenrow_bytes * (num_bitplanes - 1);
     UINT16 bplcon0_value = (num_bitplanes << 12) | 0x200;
+    /*
     PRINT_DEBUG("screenrow_bytes: %d bpl1mod: %d num_bitplanes: %d bplcon0: %04x",
                 (int) screenrow_bytes, (int) bplmod, (int) num_bitplanes, (int) bplcon0_value);
+    */
     coplist[info->bplcon0_index] = bplcon0_value;
     coplist[info->bpl1mod_index] = bplmod;
     coplist[info->bpl1mod_index + 2] = bplmod;
@@ -220,7 +222,7 @@ void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
     // 1. look at the viewport size to build display window and DMA start
     // We support a width of 288 and a width of 320
     if (display_info.vp_width == 288) {
-        PRINT_DEBUG("288 DDFSTRT");
+        //PRINT_DEBUG("288 DDFSTRT");
         coplist[info->ddfstrt_index] = DDFSTRT_VALUE_288;
         coplist[info->ddfstop_index] = DDFSTOP_VALUE_288;
         coplist[info->diwstrt_index] = DIWSTRT_VALUE_288;
@@ -230,7 +232,7 @@ void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
             coplist[info->diwstop_index] = DIWSTOP_VALUE_NTSC_288;
         }
     } else {
-        PRINT_DEBUG("320 DDFSTRT");
+        //PRINT_DEBUG("320 DDFSTRT");
         coplist[info->ddfstrt_index] = DDFSTRT_VALUE_320;
         coplist[info->ddfstop_index] = DDFSTOP_VALUE_320;
         if (display_info.is_pal) {
@@ -258,7 +260,7 @@ static void build_display_buffer(struct Ratr0DisplayInfo *init_data)
 {
     display_buffer_size = init_data->buffer_width / 8 * init_data->buffer_height
         * init_data->depth;
-    PRINT_DEBUG("# BUFFERS INITIALIZED: %u", init_data->num_buffers);
+    //PRINT_DEBUG("# BUFFERS INITIALIZED: %u", init_data->num_buffers);
     for (int i = 0; i < init_data->num_buffers; i++) {
         display_surface[i].width = init_data->buffer_width;
         display_surface[i].height = init_data->buffer_height;
@@ -305,7 +307,6 @@ void _uninstall_interrupts(void)
 struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
                                                    struct Ratr0DisplayInfo *init_data)
 {
-    PRINT_DEBUG("DISPLAY_STARTUP");
     engine = eng;
     rendering_system.shutdown = &ratr0_display_shutdown;
     frames_elapsed = 0;
@@ -347,6 +348,7 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
 
     // Object management initialization
     next_hw_sprite = next_bob = 0;
+    PRINT_DEBUG("Startup finished");
     return &rendering_system;
 }
 
@@ -406,20 +408,33 @@ struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tilesheet,
 }
 
 struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSheet *sheet,
-                                                            UINT8 speed)
+                                                            UINT8 speed, UINT8 loop_type)
 {
     struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
+    // Data and frame information
     result->sprite_data = (UINT16 *) engine->memory_system->block_address(sheet->h_imgdata);
+
+    // remember the attachment state here
+    result->is_attached = ((result->sprite_data[1] & 0x80) == 0x80);
+
+    // copy size and color information
+    result->base_obj.bounds.x = 0;
+    result->base_obj.bounds.y = 0;
+    result->base_obj.bounds.width = 16;
+    result->base_obj.bounds.height = (int) result->sprite_data[0];
     result->base_obj.anim_frames.num_frames = sheet->header.num_sprites;
     result->base_obj.anim_frames.current_frame_idx = 0;
     result->base_obj.anim_frames.current_tick = 0;
-    result->base_obj.anim_frames.speed = speed;
+    result->base_obj.translate.x = 0;
+    result->base_obj.translate.y = 0;
     // Copy frames
     for (int i = 0; i < sheet->header.num_sprites; i++) {
         result->base_obj.anim_frames.frames[i] = i;
     }
-    // loop style and speed should be part of the sprite sheet
-    result->base_obj.anim_frames.is_looping = TRUE;
+    // loop type and speed could possibly be part of the sprite sheet
+    result->base_obj.anim_frames.loop_type = loop_type;
+    result->base_obj.anim_frames.speed = speed;
+    result->base_obj.anim_frames.loop_dir = 1;
     return result;
 }
 

@@ -22,6 +22,8 @@ extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 #define CENTI_HEAD_LR_PATH ("centipede/assets/c_head_l2r.spr")
 struct Ratr0SpriteSheet centi_head_lr_sheet;
 UINT8 centi_head_lr_frames[] = {0, 1, 2, 3, 4};
+struct Ratr0HWSprite *centi;
+int centi_dir = 2;
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
@@ -34,6 +36,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     } else if (engine->input_system->was_action_pressed(action_move_right)) {
         //
     }
+    if (centi_dir > 0 && centi->base_obj.bounds.x >= 200) centi_dir = -centi_dir;
+    else if (centi_dir < 0 && centi->base_obj.bounds.x <= 0) centi_dir = -centi_dir;
+    centi->base_obj.bounds.x += centi_dir;
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -48,33 +53,14 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // 1. Read animated sprites from sprite sheet
     engine->resource_system->read_spritesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
-    UINT16 *sprite_data = (UINT16 *) engine->memory_system->block_address(centi_head_lr_sheet.h_imgdata);
-    sprite_data += centi_head_lr_sheet.sprite_offsets[1];
-
-    UINT16 spr0_x = 150, spr0_y = 0x5c, spr0_height = 8;
-    ratr0_sprites_set_pos(sprite_data, spr0_x, spr0_y, spr0_y + spr0_height);
-    // All sprites are pointed to null sprite, so now we can set the sprite pointer
-    ratr0_display_set_sprite(centi_copper, CENTI_COPPER_SIZE_WORDS,
-                             &CENTI_COPPER_INFO,
-                             0, sprite_data);
-
+    centi = ratr0_create_sprite_from_sprite_sheet(&centi_head_lr_sheet, (UINT8) 5, RATR0_ANIM_LOOP_TYPE_PINGPONG);
+    // add this sprite to the scene
+    centi->base_obj.bounds.x = 0;
+    centi->base_obj.bounds.y = 40;
     ratr0_display_set_copperlist(centi_copper, CENTI_COPPER_SIZE_WORDS,
                                  &CENTI_COPPER_INFO);
 
-    // can we do this in one step ?
-    /*
-    engine->resource_system->read_tilesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
-    struct Ratr0HWSprite *anim_sprite = (struct Ratr0HWSprite *)
-        node_factory->create_sprite(&centi_head_lr_sheet,
-                                    centi_head_lr_frames, 5, 1, TRUE);
-    main_scene->sprites[0] = anim_sprite;
-    main_scene->num_sprites = 1;
-
-    anim_sprite->base_obj.bounds.x = 0;
-    anim_sprite->base_obj.bounds.y = 10;
-    */
-
-    //_copperlist_set_sprite(1, sprdata0);
+    main_scene->sprites[main_scene->num_sprites++] = centi;
 
     return main_scene;
 }
