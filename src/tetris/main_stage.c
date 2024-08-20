@@ -20,10 +20,11 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_quit;
 
 // Resources
-#define BG_PATH_PAL  ("tetris/assets/background_320x256x16.ts")
-#define BG_PATH_NTSC ("tetris/assets/background_320x200.ts")
+#define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
+#define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 
-struct Ratr0TileSheet background_ts;
+struct Ratr0TileSheet background_ts, tiles_ts;
+struct Ratr0Surface *backbuffer_surface, tiles_surface;
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
@@ -37,6 +38,12 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         //
     } else if (engine->input_system->was_action_pressed(action_drop)) {
     }
+    // Test blitting a tile
+    backbuffer_surface = ratr0_get_back_buffer();
+    ratr0_blit_rect_simple(backbuffer_surface, &tiles_surface, 48, 16, 0, 0, 16, 8);
+    ratr0_blit_rect_simple(backbuffer_surface, &tiles_surface, 48, 24, 0, 0, 16, 8);
+    // Shift by 8 -> does not work !!!!
+    ratr0_blit_rect(backbuffer_surface, &tiles_surface, 56, 32, 0, 0, 16, 8);
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -48,17 +55,25 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     main_scene->update = main_scene_update;
 
     // set new copper list
-    /*
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
                                    &TETRIS_COPPER_INFO);
 
     ratr0_display_set_copperlist(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
                                  &TETRIS_COPPER_INFO);
-    */
+
+    // Load background
     engine->resource_system->read_tilesheet(BG_PATH_PAL, &background_ts);
     main_scene->backdrop = node_factory->create_backdrop(&background_ts);
     ratr0_display_set_palette(background_ts.palette,
                               32, 0);
+
+    // Load tileset for the blocks
+    engine->resource_system->read_tilesheet(TILES_PATH, &tiles_ts);
+    tiles_surface.width = tiles_ts.header.width;
+    tiles_surface.height = tiles_ts.header.height;
+    tiles_surface.depth = tiles_ts.header.bmdepth;
+    tiles_surface.is_interleaved = TRUE;
+    tiles_surface.buffer = engine->memory_system->block_address(tiles_ts.h_imgdata);
 
     return main_scene;
 }

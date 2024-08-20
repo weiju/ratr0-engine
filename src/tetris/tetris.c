@@ -13,8 +13,10 @@ int main(int argc, char **argv)
     struct Ratr0DisplayInfo display_init = {
         320, 256,  // viewport
         320, 256,  // display buffer
-        //5, 2,      // 32 colors, double buffer
-        4, 2,      // 16 colors, double buffer
+        5, 2,      // 32 colors, double buffer
+        //4, 2,      // 16 colors, double buffer
+        //3, 2,      // 8 colors, double buffer
+        //2, 2,      // 4 colors, double buffer
         1, TRUE    // 1 frame flip, PAL
     };
     struct Ratr0MemoryConfig mem_config = {

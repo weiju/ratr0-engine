@@ -2,7 +2,6 @@
 
 ## Known Bugs
 
-  * Background in 32 colors does not work properly
 
 ## Roadmap
 

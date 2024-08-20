@@ -120,10 +120,10 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
         front_buffer = ratr0_get_front_buffer();
         back_buffer = ratr0_get_back_buffer();
         OwnBlitter();
-        ratr0_blit_rect(front_buffer, &backdrop->surface, 0, 0, 0, 0,
-                        backdrop->surface.width, backdrop->surface.height);
-        ratr0_blit_rect(back_buffer, &backdrop->surface, 0, 0, 0, 0,
-                        backdrop->surface.width, backdrop->surface.height);
+        ratr0_blit_rect_simple(front_buffer, &backdrop->surface, 0, 0, 0, 0,
+                               backdrop->surface.width, backdrop->surface.height);
+        ratr0_blit_rect_simple(back_buffer, &backdrop->surface, 0, 0, 0, 0,
+                               backdrop->surface.width, backdrop->surface.height);
         DisownBlitter();
     }
     if (current_scene && current_scene->on_enter) {
@@ -146,7 +146,7 @@ struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
 {
     struct Ratr0Backdrop *result = &_backdrops[next_backdrop++];
     ratr0_scenes_init_base_node((struct Ratr0Node *) result, BACKGROUND);
-#ifdef AMIGA
+
     // Initialize the backdrop
     result->surface.width = tilesheet->header.width;
     result->surface.height = tilesheet->header.height;
@@ -154,7 +154,7 @@ struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
     result->surface.is_interleaved = tilesheet->header.flags & TSFLAGS_NON_INTERLEAVED == 0;
     result->surface.buffer = engine->memory_system->block_address(tilesheet->h_imgdata);
     result->was_drawn = FALSE;
-#endif
+
     return result;
 }
 
@@ -167,10 +167,10 @@ struct Ratr0Surface *back_buffer;
 void process_dirty_rect(UINT16 x, UINT16 y)
 {
     if (!dirty_bltsize) {
-        dirty_bltsize = ratr0_blit_rect(back_buffer, &backdrop->surface,
-                                              x, y, x, y, 16, 16);
+        dirty_bltsize = ratr0_blit_rect_simple(back_buffer, &backdrop->surface,
+                                               x, y, x, y, 16, 16);
     } else {
-        ratr0_blit_rect_fast(back_buffer, &backdrop->surface, x, y, x, y, dirty_bltsize);
+        ratr0_blit_rect_simple2(back_buffer, &backdrop->surface, x, y, x, y, dirty_bltsize);
     }
 }
 

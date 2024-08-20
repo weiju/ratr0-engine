@@ -38,8 +38,9 @@ void ratr0_blitter_startup(Ratr0Engine *eng)
  *   - dst is aligned on a 16 bit boundary and is larger than the blit width
  *   - both src and dst have the same depth
  */
-UINT16 _blit_rect(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
-                  UINT16 bltsize)
+UINT16 _blit_rect_simple(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod,
+                         UINT16 srcmod,
+                         UINT16 bltsize)
 {
     WaitBlit();
     // D = A => LF = 0xf0, channels A and D turned on => 0x09
@@ -68,7 +69,7 @@ UINT16 _blit_rect(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod
  * destination. In this case we only have to specify the source and
  * and destination address and set the blit size only for starting the blit
  */
-void _blit_rect_fast(UINT32 dst_addr, UINT32 src_addr, UINT16 bltsize)
+void _blit_rect_simple2(UINT32 dst_addr, UINT32 src_addr, UINT16 bltsize)
 {
     WaitBlit();
     custom.bltapt = (UINT8 *) src_addr;
@@ -76,10 +77,10 @@ void _blit_rect_fast(UINT32 dst_addr, UINT32 src_addr, UINT16 bltsize)
     custom.bltsize = bltsize;
 }
 
-UINT16 ratr0_blit_rect(struct Ratr0Surface *dst,
-                       struct Ratr0Surface *src,
-                       UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                       UINT16 blit_width_pixels, UINT16 blit_height_pixels)
+UINT16 ratr0_blit_rect_simple(struct Ratr0Surface *dst,
+                              struct Ratr0Surface *src,
+                              UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                              UINT16 blit_width_pixels, UINT16 blit_height_pixels)
 {
     UINT16 blit_width_words = blit_width_pixels >> 4;  // blit width in words
     UINT16 src_width_bytes = src->width >> 3;
@@ -89,23 +90,119 @@ UINT16 ratr0_blit_rect(struct Ratr0Surface *dst,
     UINT16 dstmod = dst_width_bytes - (blit_width_words << 1);
     UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
-    UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | blit_width_words;
 
-    return _blit_rect(dst_addr, src_addr, dstmod, srcmod, bltsize);
+    int blit_height_total = blit_height_pixels * src->depth;
+    if (blit_height_total > 1024) {
+        // EDGE CASE: since we are supporting OCS blitter, we might run into issues
+        // with the blit size maximums, which is 1024x1024 pixels.
+        // For now, I just assume blits will never exceed 1024 pixels (or 64 16-bit words) in width
+        // 1. check if we exceed 1024 lines, which we can easily run into when blitting
+        // interleaved screens with >= 5 bitplanes depth.
+        // 2. I solve this by performing 2 blits, one of 1024 height, and the rest
+        // 3. I assume that the modulos for both source and destination is 0, which should
+        //    cover the vast majority of use cases
+        int blit_height_rest = blit_height_total - 1024;
+        // first blit
+        UINT16 bltsize = (UINT16) (1024 << 6) | blit_width_words;
+        bltsize = _blit_rect_simple(dst_addr, src_addr, dstmod, srcmod, bltsize);
+
+        // now the second blit, starting after the stuff, we perform a fast blit for the second
+        // blit, since nothing except the blit size and addresses are  changing
+        src_addr += src_width_bytes * 1024;
+        dst_addr += dst_width_bytes * 1024;
+        bltsize = (UINT16) (blit_height_rest << 6) | blit_width_words;
+        _blit_rect_simple2(dst_addr, src_addr, bltsize);
+        return bltsize;
+    } else {
+        UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | blit_width_words;
+        return _blit_rect_simple(dst_addr, src_addr, dstmod, srcmod, bltsize);
+    }
 }
 
-void ratr0_blit_rect_fast(struct Ratr0Surface *dst,
-                          struct Ratr0Surface *src,
-                          UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
-                          UINT16 bltsize)
+void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
+                             struct Ratr0Surface *src,
+                             UINT16 dstx, UINT16 dsty, UINT16 srcx, UINT16 srcy,
+                             UINT16 bltsize)
 {
     UINT16 src_width_bytes = src->width >> 3;
     UINT16 dst_width_bytes = dst->width >> 3;
     UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
-    _blit_rect_fast(dst_addr, src_addr, bltsize);
+    _blit_rect_simple2(dst_addr, src_addr, bltsize);
 }
 
+// Generic D = A blit with shift
+
+UINT16 ratr0_blit_rect(struct Ratr0Surface *dst,
+                       struct Ratr0Surface *src,
+                       UINT16 dstx, UINT16 dsty,
+                       UINT16 srcx, UINT16 srcy,
+                       UINT16 blit_width_pixels,
+                       UINT16 blit_height_pixels)
+{
+    UINT16 blit_width_words = blit_width_pixels >> 4;  // blit width in words
+    if ((blit_width_pixels & 0x0f) != 0) {
+        // It's not evenly dividable by 16 -> add another word
+        blit_width_words++;
+    }
+    UINT16 src_width_bytes = src->width >> 3;
+    UINT16 dst_width_bytes = dst->width >> 3;
+
+    // calculate start addresses in both source and destination
+    UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
+    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
+    int blit_height_total = blit_height_pixels * src->depth;
+
+    // Destination variables
+    // destination x relative to the containing word, this is also the
+    // the shift amount
+    INT8 dst_shift = dstx & 0x0f;
+
+    // The destination blit width can be different from the source,
+    // depending on where the tile is offset, it can span extra words
+    UINT16 start_dst_word = dstx >> 4;
+    UINT16 end_dst_word = (dstx + blit_width_pixels) >> 4;
+    UINT16 dst_blit_width = end_dst_word - start_dst_word + 1;
+
+    UINT16 alwm = 0xffff;  // ALWM masks the shifted pixels
+    UINT16 final_blit_width = blit_width_words;
+    if (dst_blit_width > blit_width_words) {
+        final_blit_width = dst_blit_width;
+        alwm = 0;
+    }
+    //printf("dst_shift: %d\n", dst_shift);
+    // modulos are in *bytes*
+    UINT16 srcmod = src_width_bytes - (final_blit_width << 1);
+    UINT16 dstmod = dst_width_bytes - (final_blit_width << 1);
+
+
+    UINT16 bltsize = (UINT16) (blit_height_total << 6) | final_blit_width & 0x3f;
+    // The actual blitter part
+    WaitBlit();
+    // D = A => LF = 0xf0, channels A and D turned on => 0x09
+    custom.bltcon0 = 0x09f0 | (dst_shift << 12);
+    // not used
+    custom.bltcon1 = 0;
+
+    custom.bltafwm = 0xffff;
+    custom.bltalwm = alwm;
+
+    custom.bltamod = srcmod;
+    custom.bltbmod = 0;
+    custom.bltcmod = 0;
+    custom.bltdmod = dstmod;
+
+    custom.bltapt = (UINT8 *) src_addr;
+    custom.bltbpt = 0;
+    custom.bltcpt = 0;
+    custom.bltdpt = (UINT8 *) dst_addr;
+    custom.bltsize = bltsize;
+    return bltsize;
+}
+
+// *************************************************************
+// **** Cookie cutter blit
+// ****************************
 
 /**
  * This is a general purpose blit, cookie cut of arbitrary width,
