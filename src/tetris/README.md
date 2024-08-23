@@ -9,3 +9,5 @@ As such it implements modern Tetris rules and otherwise focuses on fluent gamepl
 
 ## Blitting strategy
 
+Every block should take a maximum of 2 blits for displaying it and a maximum of 2
+blits for deleting

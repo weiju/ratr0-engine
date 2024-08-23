@@ -71,8 +71,8 @@ extern void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
 
 
 /**
- * Common case 2: Copy an arbitrary sized rectangular block from the source to
- * an arbitrary location in the destination, shifting might be applied
+ * Common case 2: Copy an arbitrary sized rectangular block from source A to
+ * an arbitrary location in the destination D, shifting might be applied
  depending on the parameters.
  *
  * Notes:
@@ -88,12 +88,33 @@ extern void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
  * @param blit_height_pixels blit height in pixels
  * @return blit size
  */
-extern UINT16 ratr0_blit_rect(struct Ratr0Surface *dst,
-                              struct Ratr0Surface *src,
-                              UINT16 dstx, UINT16 dsty,
-                              UINT16 srcx, UINT16 srcy,
-                              UINT16 blit_width_pixels,
-                              UINT16 blit_height_pixels);
+extern UINT16 ratr0_blit_rect_ad(struct Ratr0Surface *dst,
+                                 struct Ratr0Surface *src,
+                                 UINT16 dstx, UINT16 dsty,
+                                 UINT16 srcx, UINT16 srcy,
+                                 UINT16 blit_width_pixels,
+                                 UINT16 blit_height_pixels);
+
+/**
+ * Diagnostic blit function. Instead of performing an A->D blit,
+ * this function simply prints out all the calculated values.
+ *
+ * @param dst destination surface
+ * @param src source surface
+ * @param dstx destination x-coordinate
+ * @param dsty destination y-coordinate
+ * @param srcx source x-coordinate
+ * @param srcy source y-coordinate
+ * @param blit_width_pixels blit width in pixels
+ * @param blit_height_pixels blit height in pixels
+ * @return blit size
+ */
+extern UINT16 ratr0_diag_blit_rect_ad(struct Ratr0Surface *dst,
+                                   struct Ratr0Surface *src,
+                                   UINT16 dstx, UINT16 dsty,
+                                   UINT16 srcx, UINT16 srcy,
+                                   UINT16 blit_width_pixels,
+                                   UINT16 blit_height_pixels);
 
 /**
  * Default font blitting function.

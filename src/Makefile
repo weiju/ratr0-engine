@@ -44,7 +44,7 @@ INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
 
 CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/main_stage.o
 
-TETRIS_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o
+TETRIS_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o tetris/game_data.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
