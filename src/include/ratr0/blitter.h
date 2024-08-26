@@ -68,12 +68,11 @@ extern void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
                                     UINT16 srcx, UINT16 srcy,
                                     UINT16 bltsize);
 
-
-
 /**
- * Common case 2: Copy an arbitrary sized rectangular block from source A to
- * an arbitrary location in the destination D, shifting might be applied
- depending on the parameters.
+ * Common case 2: Copy an arbitrary sized rectangular block from
+ * source A to an arbitrary location in the destination D, and
+ * preserving D's data by or'ing the data,  shifting might be applied
+ * depending on the parameters.
  *
  * Notes:
  *   * srcx should be on a 16 pixel boundary
@@ -84,37 +83,32 @@ extern void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
  * @param dsty destination y-coordinate
  * @param srcx source x-coordinate
  * @param srcy source y-coordinate
- * @param blit_width_pixels blit width in pixels
+ * @param blit_width_words blit width in words
  * @param blit_height_pixels blit height in pixels
- * @return blit size
  */
-extern UINT16 ratr0_blit_rect_ad(struct Ratr0Surface *dst,
-                                 struct Ratr0Surface *src,
-                                 UINT16 dstx, UINT16 dsty,
-                                 UINT16 srcx, UINT16 srcy,
-                                 UINT16 blit_width_pixels,
-                                 UINT16 blit_height_pixels);
+extern void ratr0_blit_ab(struct Ratr0Surface *dst,
+                          struct Ratr0Surface *src,
+                          UINT16 dstx, UINT16 dsty,
+                          UINT16 srcx, UINT16 srcy,
+                          UINT8 lf, INT8 a_shift,
+                          UINT16 afwm, UINT16 alwm,
+                          UINT16 blit_width_words,
+                          UINT16 blit_height_pixels);
 
 /**
- * Diagnostic blit function. Instead of performing an A->D blit,
- * this function simply prints out all the calculated values.
+ * Common case 3: Clears a rectangular area that is a multiple of 8 pixels
+ * wide.
  *
  * @param dst destination surface
- * @param src source surface
  * @param dstx destination x-coordinate
  * @param dsty destination y-coordinate
- * @param srcx source x-coordinate
- * @param srcy source y-coordinate
  * @param blit_width_pixels blit width in pixels
  * @param blit_height_pixels blit height in pixels
- * @return blit size
  */
-extern UINT16 ratr0_diag_blit_rect_ad(struct Ratr0Surface *dst,
-                                   struct Ratr0Surface *src,
-                                   UINT16 dstx, UINT16 dsty,
-                                   UINT16 srcx, UINT16 srcy,
-                                   UINT16 blit_width_pixels,
-                                   UINT16 blit_height_pixels);
+extern void ratr0_blit_clear8(struct Ratr0Surface *dst,
+                              UINT16 dstx, UINT16 dsty,
+                              UINT16 blit_width_pixels,
+                              UINT16 blit_height_pixels);
 
 /**
  * Default font blitting function.

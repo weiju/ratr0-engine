@@ -27,8 +27,154 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 struct Ratr0TileSheet background_ts, tiles_ts;
 struct Ratr0Surface *backbuffer_surface, tiles_surface;
 
-static int diag_count = 0;
+#define BOARD_X0 (48)
+#define BOARD_Y0 (16)
 
+
+void draw_3x1(int color, int row, int col)
+{
+    int x = col * 8 + BOARD_X0;
+    int y = row * 8 + BOARD_Y0;
+    int blit_width_words = 2;
+    int shift = x % 16;
+    x -= shift;
+
+    UINT16 afwm, alwm;
+    if (shift == 8) {
+        afwm = 0x00ff;
+        alwm = 0xffff;
+        blit_width_words++;
+    } else {
+        afwm = 0xffff;
+        alwm = 0xff00;
+    }
+
+    // 3x1 block
+    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+                  0, color * 32,
+                  x, y,
+                  0xfc, 0,
+                  afwm, alwm,
+                  blit_width_words, 8);
+}
+
+void draw_2x1(int color, int row, int col)
+{
+    int x = col * 8 + BOARD_X0;
+    int y = row * 8 + BOARD_Y0;
+    int blit_width_words = 1;
+    int shift = x % 16;
+    x -= shift;
+
+    UINT16 afwm, alwm;
+    if (shift == 8) {
+        afwm = 0x00ff;
+        alwm = 0xff00;
+        blit_width_words++;
+    } else {
+        afwm = 0xffff;
+        alwm = 0xffff;
+    }
+
+    // 2x1 block
+    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+                  0, color * 32,
+                  x, y, 0xfc, 0,
+                  afwm, alwm,
+                  blit_width_words, 8);
+}
+
+void clear_2x1(int color, int row, int col)
+{
+    int x = col * 8 + BOARD_X0;
+    int y = row * 8 + BOARD_Y0;
+    int blit_width_words = 1;
+    int shift = x % 16;
+    x -= shift;
+
+    UINT16 afwm, alwm;
+    if (shift == 8) {
+        afwm = 0x00ff;
+        alwm = 0xff00;
+        blit_width_words++;
+    } else {
+        afwm = 0xffff;
+        alwm = 0xffff;
+    }
+
+    // 2x1 block
+    ratr0_blit_clear8(backbuffer_surface, x, y, 16, 8);
+}
+
+/**
+ * Blits a 4x1 block
+ */
+void draw_4x1(int color, int row, int col)
+{
+    int x = col * 8 + BOARD_X0;
+    int y = row * 8 + BOARD_Y0;
+    int blit_width_words = 2;
+    int shift = x % 16;
+    x -= shift;
+
+    UINT16 afwm = 0xffff, alwm = 0xffff;
+    if (shift == 8) {
+        blit_width_words++;
+    }
+
+    // 4x1 block
+    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+                  0, color * 32,
+                  x, y,
+                  // we actually perform that shift !!!
+                  0xfc, shift,
+                  afwm, alwm,
+                  blit_width_words, 8);
+
+}
+
+void draw_1xn(int color, int row, int col, int num_rows)
+{
+    int x = col * 8 + BOARD_X0;
+    int y = row * 8 + BOARD_Y0;
+    int shift = x % 16;
+    x -= shift;
+
+    UINT16 afwm, alwm;
+    if (shift == 8) {
+        afwm = 0x00ff;
+        alwm = 0xffff;
+    } else {
+        afwm = 0xff00;
+        alwm = 0xffff;
+    }
+    // we don't actually need a shift. We just mask either
+    // the first or the second block
+    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+                  0, color * 32,
+                  x, y, 0xfc, 0,
+                  afwm, alwm,
+                  1, num_rows * 8);
+}
+
+void draw_1x1(int color, int row, int col)
+{
+    draw_1xn(color, row, col, 1);
+}
+void draw_1x2(int color, int row, int col)
+{
+    draw_1xn(color, row, col, 2);
+}
+void draw_1x3(int color, int row, int col)
+{
+    draw_1xn(color, row, col, 3);
+}
+void draw_1x4(int color, int row, int col)
+{
+    draw_1xn(color, row, col, 4);
+}
+
+BOOL done = 0;
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
@@ -44,40 +190,20 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // Test blitting a tile
     backbuffer_surface = ratr0_get_back_buffer();
-    /*
-    ratr0_blit_rect_simple(backbuffer_surface, &tiles_surface, 48, 16, 0, 0, 16, 8);
-    ratr0_blit_rect_simple(backbuffer_surface, &tiles_surface, 48, 24, 0, 0, 16, 8);
-    // Shift by 8
-    ratr0_blit_rect(backbuffer_surface, &tiles_surface, 56, 32, 0, 0, 16, 8);
-    // on a middle row tile
-    ratr0_blit_rect(backbuffer_surface, &tiles_surface, 56, 40, 0, 64, 16, 8);
-    */
-    //ratr0_blit_rect(backbuffer_surface, &tiles_surface, 48, 16, 0, 0, 8, 8);
-    //ratr0_blit_rect(backbuffer_surface, &tiles_surface, 48, 24, 0, 0, 24, 8);
-    if (diag_count == 0) {
-        ratr0_diag_blit_rect_ad(backbuffer_surface, &tiles_surface, 56, 16, 0, 0, 24, 8);
-        diag_count++;
-    } else {
-        ratr0_blit_rect_ad(backbuffer_surface, &tiles_surface, 56, 16, 0, 0, 24, 8);
+    if (done < 2) {
+        /*
+        for (int i = 0; i < 8; i++) {
+            draw_3x1(1, i, i);
+            }*/
+        draw_4x1(0, 0, 0);
+        draw_4x1(2, 5, 6);
+        //draw_2x1(3, 2, 2);
+        //draw_1x3(4, 1, 0);
+        // This is a clear
+        //clear_2x1(1, 0, 0);
+        done++;
     }
-    //ratr0_blit_rect(backbuffer_surface, &tiles_surface, 56, 24, 0, 0, 24, 8);
-    // on a middle row tile
-    // Test the J Blit data
-    // 48,16 is the left top corner of the game board
-    // BUG: We currently can't blit rects that are not a multiple of 16
-    // which means, alwm and afwm are not set correctly
-    /*
-    int dsty = 16;
-    for (int i = 0; i < J_SPEC.blit_specs[0].num_blits; i++) {
-        ratr0_blit_rect(backbuffer_surface, &tiles_surface,
-                        48, dsty,
-                        J_SPEC.blit_specs[0].blit_rects[i].srcx,
-                        J_SPEC.blit_specs[0].blit_rects[i].srcy,
-                        J_SPEC.blit_specs[0].blit_rects[i].width,
-                        J_SPEC.blit_specs[0].blit_rects[i].height);
-        dsty += 16;
-        }
-    */
+
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -111,7 +237,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     struct Position *jr0 = J_SPEC.rotations[0];
     int jr0_numblits = J_SPEC.blit_specs[0].num_blits;
-    printf("JR0, # blits: %d, [(%d, %d), (%d, %d), (%d, %d), (%d, %d)]",
+    printf("JR0, # blits: %d, [(%d, %d), (%d, %d), (%d, %d), (%d, %d)]\n",
            jr0_numblits, jr0[0].x, jr0[0].y, jr0[1].x, jr0[1].y,
            jr0[2].x, jr0[2].y, jr0[3].x, jr0[3].y);
 
