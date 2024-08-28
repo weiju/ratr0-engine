@@ -27,11 +27,11 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 struct Ratr0TileSheet background_ts, tiles_ts;
 struct Ratr0Surface *backbuffer_surface, tiles_surface;
 
-#define BOARD_X0 (48)
+#define BOARD_X0 (112)
 #define BOARD_Y0 (16)
 
 
-void draw_3x1(int color, int row, int col)
+void draw_1x3(int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -58,7 +58,7 @@ void draw_3x1(int color, int row, int col)
                   blit_width_words, 8);
 }
 
-void draw_2x1(int color, int row, int col)
+void draw_1x2(int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -84,7 +84,7 @@ void draw_2x1(int color, int row, int col)
                   blit_width_words, 8);
 }
 
-void clear_2x1(int color, int row, int col)
+void clear_1x2(int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -101,15 +101,13 @@ void clear_2x1(int color, int row, int col)
         afwm = 0xffff;
         alwm = 0xffff;
     }
-
-    // 2x1 block
     ratr0_blit_clear8(backbuffer_surface, x, y, 16, 8);
 }
 
 /**
- * Blits a 4x1 block
+ * Blits a 1x4 block
  */
-void draw_4x1(int color, int row, int col)
+void draw_1x4(int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -121,8 +119,6 @@ void draw_4x1(int color, int row, int col)
     if (shift == 8) {
         blit_width_words++;
     }
-
-    // 4x1 block
     ratr0_blit_ab(backbuffer_surface, &tiles_surface,
                   0, color * 32,
                   x, y,
@@ -133,7 +129,7 @@ void draw_4x1(int color, int row, int col)
 
 }
 
-void draw_1xn(int color, int row, int col, int num_rows)
+void draw_nx1(int color, int row, int col, int num_rows)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -159,19 +155,50 @@ void draw_1xn(int color, int row, int col, int num_rows)
 
 void draw_1x1(int color, int row, int col)
 {
-    draw_1xn(color, row, col, 1);
+    draw_nx1(color, row, col, 1);
 }
-void draw_1x2(int color, int row, int col)
+void draw_2x1(int color, int row, int col)
 {
-    draw_1xn(color, row, col, 2);
+    draw_nx1(color, row, col, 2);
 }
-void draw_1x3(int color, int row, int col)
+void draw_3x1(int color, int row, int col)
 {
-    draw_1xn(color, row, col, 3);
+    draw_nx1(color, row, col, 3);
 }
-void draw_1x4(int color, int row, int col)
+void draw_4x1(int color, int row, int col)
 {
-    draw_1xn(color, row, col, 4);
+    draw_nx1(color, row, col, 4);
+}
+
+void draw_block(struct DrawSpec *spec, int color)
+{
+    for (int i = 0; i < spec->num_rects; i++) {
+        switch (spec->draw_rects[i].shape) {
+        case RS_1x1:
+            draw_1x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        case RS_1x2:
+            draw_1x2(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        case RS_1x3:
+            draw_1x3(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        case RS_1x4:
+            draw_1x4(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        case RS_2x1:
+            draw_2x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        case RS_3x1:
+            draw_3x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        case RS_4x1:
+            draw_4x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 BOOL done = 0;
@@ -188,17 +215,11 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     } else if (engine->input_system->was_action_pressed(action_drop)) {
     }
 
-    // Test blitting a tile
+    // Test blitting a block
     backbuffer_surface = ratr0_get_back_buffer();
     if (done < 2) {
-        /*
-        for (int i = 0; i < 8; i++) {
-            draw_3x1(1, i, i);
-            }*/
-        draw_4x1(0, 0, 0);
-        draw_4x1(2, 5, 6);
-        //draw_2x1(3, 2, 2);
-        //draw_1x3(4, 1, 0);
+        // JBlock
+        draw_block(&J_SPEC.draw_specs[3], 0);
         // This is a clear
         //clear_2x1(1, 0, 0);
         done++;
@@ -234,12 +255,6 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     tiles_surface.depth = tiles_ts.header.bmdepth;
     tiles_surface.is_interleaved = TRUE;
     tiles_surface.buffer = engine->memory_system->block_address(tiles_ts.h_imgdata);
-
-    struct Position *jr0 = J_SPEC.rotations[0];
-    int jr0_numblits = J_SPEC.blit_specs[0].num_blits;
-    printf("JR0, # blits: %d, [(%d, %d), (%d, %d), (%d, %d), (%d, %d)]\n",
-           jr0_numblits, jr0[0].x, jr0[0].y, jr0[1].x, jr0[1].y,
-           jr0[2].x, jr0[2].y, jr0[3].x, jr0[3].y);
 
     return main_scene;
 }

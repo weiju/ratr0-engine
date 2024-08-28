@@ -22,15 +22,21 @@ struct Position {
     int x, y;
 };
 
-/** \brief Blit source rectangle specification. */
-struct BlitRect {
-    int srcx, srcy, width, height;
+typedef enum {
+    RS_1x1=0, RS_1x2, RS_1x3, RS_1x4,
+    RS_2x1, RS_3x1, RS_4x1
+} DrawRectShape;
+
+/** \brief a draw rectangle specification. */
+struct DrawRect {
+    DrawRectShape shape;
+    int row, col;
 };
 
-/** \brief Blit specification, number and blit rectangles. */
-struct BlitSpec {
-    int num_blits;
-    struct BlitRect blit_rects[2];
+/** \brief Draw specification, number, position and shape of rectangles. */
+struct DrawSpec {
+    int num_rects;
+    struct DrawRect draw_rects[2];
 };
 
 extern struct Position BLOCK_CONFIGS[7][4][4];
@@ -38,10 +44,11 @@ extern struct BlitSpec BLIT_SPECS[2][4];
 
 struct BlockSpec {
     struct Position rotations[4][4];
-    struct BlitSpec blit_specs[4];
+    struct DrawSpec draw_specs[4];
 };
 
 extern struct BlockSpec I_SPEC;
 extern struct BlockSpec J_SPEC;
+extern struct BlockSpec L_SPEC;
 
 #endif // !__GAME_DATA_H__
