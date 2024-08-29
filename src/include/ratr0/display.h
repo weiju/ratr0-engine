@@ -137,6 +137,16 @@ struct Ratr0Surface {
 };
 
 /**
+ * A display buffer is a surface with a number. Since the display can
+ * have any number of back buffers, it can be useful to know which one
+ * is currently at the back an which one is at the front.
+ */
+struct Ratr0DisplayBuffer {
+    struct Ratr0Surface surface;
+    int buffernum;
+};
+
+/**
  * Shut down the display subsystem.
  */
 extern void ratr0_display_shutdown(void);
@@ -187,14 +197,14 @@ extern void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
  *
  * @return pointer to the current front buffer
  */
-extern struct Ratr0Surface *ratr0_get_front_buffer(void);
+extern struct Ratr0DisplayBuffer *ratr0_get_front_buffer(void);
 
 /**
  * Returns a pointer to the current back buffer.
  *
  * @return pointer to the current back buffer
  */
-extern struct Ratr0Surface *ratr0_get_back_buffer(void);
+extern struct Ratr0DisplayBuffer *ratr0_get_back_buffer(void);
 
 //
 // Current front and back buffer numbers, these are made global for efficiency,

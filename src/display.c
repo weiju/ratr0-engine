@@ -65,7 +65,7 @@ static void set_display_surface(UINT16 coplist[], int num_words,
                                 struct Ratr0CopperListInfo *info,
                                 struct Ratr0Surface *s);
 
-static struct Ratr0Surface display_surface[MAX_BUFFERS];
+static struct Ratr0DisplayBuffer display_buffer[MAX_BUFFERS];
 UINT16 ratr0_back_buffer = 1;
 UINT16 ratr0_front_buffer = 0;
 
@@ -130,7 +130,7 @@ void ratr0_display_swap_buffers(void)
     // 2. set new front buffer to copper list
     set_display_surface(current_coplist, current_coplist_size,
                         current_copper_info,
-                        &display_surface[ratr0_front_buffer]);
+                        &display_buffer[ratr0_front_buffer].surface);
 }
 
 // Our vertical blank server only implements a simple frame counter
@@ -182,13 +182,13 @@ static void set_display_mode(UINT16 coplist[],
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-struct Ratr0Surface *ratr0_get_front_buffer(void)
+struct Ratr0DisplayBuffer *ratr0_get_front_buffer(void)
 {
-    return &display_surface[ratr0_front_buffer];
+    return &display_buffer[ratr0_front_buffer];
 }
-struct Ratr0Surface *ratr0_get_back_buffer(void)
+struct Ratr0DisplayBuffer *ratr0_get_back_buffer(void)
 {
-    return &display_surface[ratr0_back_buffer];
+    return &display_buffer[ratr0_back_buffer];
 }
 
 /**
@@ -252,7 +252,7 @@ void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
                                  i, NULL_SPRITE_DATA);
     }
     set_display_surface(coplist, num_words,
-                        info, &display_surface[ratr0_front_buffer]);
+                        info, &display_buffer[ratr0_front_buffer].surface);
 }
 
 static int display_buffer_size;
@@ -262,15 +262,16 @@ static void build_display_buffer(struct Ratr0DisplayInfo *init_data)
         * init_data->depth;
     //PRINT_DEBUG("# BUFFERS INITIALIZED: %u", init_data->num_buffers);
     for (int i = 0; i < init_data->num_buffers; i++) {
-        display_surface[i].width = init_data->buffer_width;
-        display_surface[i].height = init_data->buffer_height;
+        display_buffer[i].buffernum = i;
+        display_buffer[i].surface.width = init_data->buffer_width;
+        display_buffer[i].surface.height = init_data->buffer_height;
 
-        display_surface[i].depth = init_data->depth;
-        display_surface[i].is_interleaved = TRUE;
+        display_buffer[i].surface.depth = init_data->depth;
+        display_buffer[i].surface.is_interleaved = TRUE;
         // display buffer memory is allocated directly from the OS, otherwise the memory allocator
         // gets too inflexible
-        display_surface[i].buffer = (void *) AllocMem(display_buffer_size, MEMF_CHIP|MEMF_CLEAR);
-        if (display_surface[i].buffer == NULL) {
+        display_buffer[i].surface.buffer = (void *) AllocMem(display_buffer_size, MEMF_CHIP|MEMF_CLEAR);
+        if (display_buffer[i].surface.buffer == NULL) {
             PRINT_DEBUG("ERROR: can't allocate memory for display buffers !");
             break;
         }
@@ -280,7 +281,7 @@ static void build_display_buffer(struct Ratr0DisplayInfo *init_data)
 static void free_display_buffer(void)
 {
     for (int i = 0; i < display_info.num_buffers; i++) {
-        FreeMem(display_surface[i].buffer, display_buffer_size);
+        FreeMem(display_buffer[i].surface.buffer, display_buffer_size);
     }
 }
 

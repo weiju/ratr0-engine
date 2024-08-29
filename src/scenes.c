@@ -117,8 +117,8 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
         backdrop = current_scene->backdrop;
         // Blit the backdrop once if it exists
         struct Ratr0Surface *back_buffer, *front_buffer;
-        front_buffer = ratr0_get_front_buffer();
-        back_buffer = ratr0_get_back_buffer();
+        front_buffer = &ratr0_get_front_buffer()->surface;
+        back_buffer = &ratr0_get_back_buffer()->surface;
         OwnBlitter();
         ratr0_blit_rect_simple(front_buffer, &backdrop->surface, 0, 0, 0, 0,
                                backdrop->surface.width, backdrop->surface.height);
@@ -317,7 +317,7 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
             ratr0_update_scene_node(current_scene->children, current_scene);
         }
         // process all the BOBS
-        back_buffer = ratr0_get_back_buffer();
+        back_buffer = &ratr0_get_back_buffer()->surface;
 
         struct Ratr0Bob *bob;
         for (int i = 0; i < current_scene->num_bobs; i++) {

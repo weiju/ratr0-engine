@@ -109,9 +109,17 @@ UINT16 ratr0_get_keyboard_state(void)
 {
     read_keyboard();
     if (is_keydown(RAW_KEY_ESCAPE)) {
-        return 1;
+        return RATR0_KEY_ESCAPE;
+    } else if (is_keydown(RAW_KEY_CURSOR_LEFT)) {
+        return RATR0_KEY_LEFT;
+    } else if (is_keydown(RAW_KEY_CURSOR_RIGHT)) {
+        return RATR0_KEY_RIGHT;
+    } else if (is_keydown(RAW_KEY_CURSOR_UP)) {
+        return RATR0_KEY_UP;
+    } else if (is_keydown(RAW_KEY_CURSOR_DOWN)) {
+        return RATR0_KEY_DOWN;
     }
-    return 0;
+    return RATR0_KEY_NONE;
 }
 
 /**
@@ -300,6 +308,14 @@ void poll_keyboard(void)
     UINT16 keystate = ratr0_get_keyboard_state();
     if (keystate == RATR0_KEY_ESCAPE) {
         REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_ESCAPE);
+    } else if (keystate == RATR0_KEY_LEFT) {
+        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_LEFT);
+    } else if (keystate == RATR0_KEY_RIGHT) {
+        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_RIGHT);
+    } else if (keystate == RATR0_KEY_UP) {
+        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_UP);
+    } else if (keystate == RATR0_KEY_DOWN) {
+        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_DOWN);
     }
 }
 

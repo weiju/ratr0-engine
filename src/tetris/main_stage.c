@@ -18,7 +18,7 @@ struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
-    action_quit;
+    action_rotate, action_quit;
 
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
@@ -82,26 +82,6 @@ void draw_1x2(int color, int row, int col)
                   x, y, 0xfc, 0,
                   afwm, alwm,
                   blit_width_words, 8);
-}
-
-void clear_1x2(int color, int row, int col)
-{
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 1;
-    int shift = x % 16;
-    x -= shift;
-
-    UINT16 afwm, alwm;
-    if (shift == 8) {
-        afwm = 0x00ff;
-        alwm = 0xff00;
-        blit_width_words++;
-    } else {
-        afwm = 0xffff;
-        alwm = 0xffff;
-    }
-    ratr0_blit_clear8(backbuffer_surface, x, y, 16, 8);
 }
 
 /**
@@ -170,30 +150,37 @@ void draw_4x1(int color, int row, int col)
     draw_nx1(color, row, col, 4);
 }
 
-void draw_block(struct DrawSpec *spec, int color)
+void draw_block(struct DrawSpec *spec, int color, int row, int col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {
         case RS_1x1:
-            draw_1x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_1x1(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         case RS_1x2:
-            draw_1x2(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_1x2(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         case RS_1x3:
-            draw_1x3(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_1x3(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         case RS_1x4:
-            draw_1x4(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_1x4(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         case RS_2x1:
-            draw_2x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_2x1(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         case RS_3x1:
-            draw_3x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_3x1(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         case RS_4x1:
-            draw_4x1(color, spec->draw_rects[i].row, spec->draw_rects[i].col);
+            draw_4x1(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
             break;
         default:
             break;
@@ -201,30 +188,102 @@ void draw_block(struct DrawSpec *spec, int color)
     }
 }
 
-BOOL done = 0;
+
+void clear_shape(int row, int col, int num_rows, int num_cols)
+{
+    int x = BOARD_X0 + col * 8;
+    int y = BOARD_Y0 + row * 8;
+    ratr0_blit_clear8(backbuffer_surface, x, y, num_cols * 8,
+                      num_rows * 8);
+}
+void clear_block(struct DrawSpec *spec, int row, int col)
+{
+    for (int i = 0; i < spec->num_rects; i++) {
+        switch (spec->draw_rects[i].shape) {
+        case RS_1x1:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 1, 1);
+            break;
+        case RS_1x2:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 1, 2);
+            break;
+        case RS_1x3:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 1, 3);
+            break;
+        case RS_1x4:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 1, 4);
+            break;
+        case RS_2x1:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 2, 1);
+            break;
+        case RS_3x1:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 3, 1);
+            break;
+        case RS_4x1:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 4, 1);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+struct PlayerState {
+    int row, col;
+    int rotation;
+};
+
+struct PlayerState player_state[2] = {
+    { 0, 0, 0},
+    { 0, 0, 0}
+};
+
+int done = 0;
+int cur_ticks = 0;
+int dir = 1;
+int clear_count = 0;
+int current_row = 0, current_col = 0;
+int cur_buffer;
+
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
+    cur_buffer = ratr0_get_back_buffer()->buffernum;
+    backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    int rotation = 1;
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
-    if (engine->input_system->was_action_pressed(action_move_left)) {
-        //
-    } else if (engine->input_system->was_action_pressed(action_move_right)) {
-        //
-    } else if (engine->input_system->was_action_pressed(action_drop)) {
+    if (cur_ticks == 0) {
+        if (engine->input_system->was_action_pressed(action_move_left)) {
+            current_col--;
+            if (current_col < 0) current_col = 0;
+        } else if (engine->input_system->was_action_pressed(action_move_right)) {
+            current_col++;
+            if (current_col > 6) current_col = 6;
+        } else if (engine->input_system->was_action_pressed(action_drop)) {
+        } else if (engine->input_system->was_action_pressed(action_rotate)) {
+        }
     }
+    clear_block(&J_SPEC.draw_specs[player_state[cur_buffer].rotation],
+                player_state[cur_buffer].row,
+                player_state[cur_buffer].col);
+    draw_block(&J_SPEC.draw_specs[rotation], 0, current_row, current_col);
 
-    // Test blitting a block
-    backbuffer_surface = ratr0_get_back_buffer();
-    if (done < 2) {
-        // JBlock
-        draw_block(&J_SPEC.draw_specs[3], 0);
-        // This is a clear
-        //clear_2x1(1, 0, 0);
-        done++;
-    }
+    // remember state for this buffer
+    player_state[cur_buffer].rotation = rotation;
+    player_state[cur_buffer].row = current_row;
+    player_state[cur_buffer].col = current_col;
 
+    // We should actually be able to set the poll rate in the engine
+    cur_ticks++;
+    cur_ticks %= 2;
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)

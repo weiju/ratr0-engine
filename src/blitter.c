@@ -132,17 +132,54 @@ void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
 }
 
 // A blit that clears a rectangular region with a mask
+// and the width is a multiple of 8
 void ratr0_blit_clear8(struct Ratr0Surface *dst,
                        UINT16 dstx, UINT16 dsty,
                        UINT16 width_pixels,
                        UINT16 height_pixels)
 {
     UINT16 dst_width_bytes = dst->width >> 3;
-    UINT16 blit_width_words = width_pixels / 16;
-    if ((width_pixels % 16) > 0) {
-        blit_width_words++;
-    }
+    UINT16 blit_width_words = width_pixels >> 4;
+    UINT16 width_mod16 = width_pixels & 0x0f;
+    INT8 a_shift = dstx & 0x0f;
+    UINT16 afwm = 0xffff;
+    UINT16 alwm = 0xffff;
 
+    // Lots of special cases here:
+    if (width_pixels == 8) {
+        // 1. We don't actually have to shift with a width of 8 pixels, just
+        // mask out the half that matters, and set blit width to 1
+        // first  word == last word, so the mask is the same
+        if (a_shift == 8) {
+            afwm = 0x00ff;
+            alwm = 0x00ff;
+        } else {
+            afwm = 0xff00;
+            alwm = 0xff00;
+        }
+        a_shift = 0;
+        blit_width_words = 1;
+    } else {
+        afwm = 0xffff;
+        alwm = 0xffff;
+        // 2. width >= 16 pixels
+        if (a_shift > 0 || width_mod16 > 0) {
+            blit_width_words++;
+        }
+        // A shift typically extends the width, so mask out the last word
+        if (a_shift > 0) {
+            alwm = 0x0000;
+        }
+        // unless the rect is a multiple of 8 but not 16 wide
+        if (width_mod16 > 0) {
+            alwm = 0xff00;
+        }
+    }
+    /*
+    printf("blit_clear8(), dstx: %d dsty: %d w: %d h: %d a_shift: %d blit width words: %d afwm: %04x alwm: %04x\n",
+           dstx, dsty, width_pixels, height_pixels, a_shift, blit_width_words,
+           afwm, alwm);
+    */
     // calculate start addresses in both source and destination
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
     int blit_height_total = height_pixels * dst->depth;
@@ -150,13 +187,10 @@ void ratr0_blit_clear8(struct Ratr0Surface *dst,
     // modulos are in *bytes*
     UINT16 dstmod = dst_width_bytes - (blit_width_words << 1);
     UINT16 bltsize = (UINT16) (blit_height_total << 6) | blit_width_words & 0x3f;
-    UINT16 afwm = 0xffff;
-    UINT16 alwm = 0xffff;
-    INT8 a_shift = 0;
 
     // The actual blitter part
     WaitBlit();
-    // D = ~AB => LF = 0x0f, channels B and D turned on => 0x1
+    // D = ~AB => LF = 0x0f, channels B and D turned on => 0x5
     // By using negation, we can use the alwm and afwm masks to
     // to select the parts where the background shines through
     custom.bltcon0 = 0x050c | (a_shift << 12);
