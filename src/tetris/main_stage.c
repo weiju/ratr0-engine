@@ -250,16 +250,23 @@ int dir = 1;
 int clear_count = 0;
 int current_row = 0, current_col = 0;
 int cur_buffer;
+// current rotation
+int rotation = 0;
+
+// rotation cooldown. We introduce a cooldown, to avoid the player
+// piece rotating way too fast
+#define ROTATE_COOLDOWN_TIME (10)
+int rotate_cooldown = 0;
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
     backbuffer_surface = &ratr0_get_back_buffer()->surface;
-    int rotation = 1;
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
+    if (rotate_cooldown > 0) rotate_cooldown--;
     if (cur_ticks == 0) {
         if (engine->input_system->was_action_pressed(action_move_left)) {
             current_col--;
@@ -269,6 +276,11 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             if (current_col > 6) current_col = 6;
         } else if (engine->input_system->was_action_pressed(action_drop)) {
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
+            if (rotate_cooldown == 0) {
+                rotation++;
+                rotation %= 4;
+                rotate_cooldown = ROTATE_COOLDOWN_TIME;
+            }
         }
     }
     clear_block(&J_SPEC.draw_specs[player_state[cur_buffer].rotation],
