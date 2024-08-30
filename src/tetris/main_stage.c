@@ -84,6 +84,32 @@ void draw_1x2(int color, int row, int col)
                   blit_width_words, 8);
 }
 
+void draw_2x2(int color, int row, int col)
+{
+    int x = col * 8 + BOARD_X0;
+    int y = row * 8 + BOARD_Y0;
+    int blit_width_words = 1;
+    int shift = x % 16;
+    x -= shift;
+
+    UINT16 afwm, alwm;
+    if (shift == 8) {
+        afwm = 0x00ff;
+        alwm = 0xff00;
+        blit_width_words++;
+    } else {
+        afwm = 0xffff;
+        alwm = 0xffff;
+    }
+
+    // 2x1 block
+    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+                  0, color * 32,
+                  x, y, 0xfc, 0,
+                  afwm, alwm,
+                  blit_width_words, 16);
+}
+
 /**
  * Blits a 1x4 block
  */
@@ -182,6 +208,10 @@ void draw_block(struct DrawSpec *spec, int color, int row, int col)
             draw_4x1(color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
+        case RS_2x2:
+            draw_2x2(color, spec->draw_rects[i].row + row,
+                     spec->draw_rects[i].col + col);
+            break;
         default:
             break;
         }
@@ -228,6 +258,10 @@ void clear_block(struct DrawSpec *spec, int row, int col)
             clear_shape(row + spec->draw_rects[i].row,
                         col + spec->draw_rects[i].col, 4, 1);
             break;
+        case RS_2x2:
+            clear_shape(row + spec->draw_rects[i].row,
+                        col + spec->draw_rects[i].col, 2, 2);
+            break;
         default:
             break;
         }
@@ -235,8 +269,8 @@ void clear_block(struct DrawSpec *spec, int row, int col)
 }
 
 struct PlayerState {
+    int block, rotation;
     int row, col;
-    int rotation;
 };
 
 struct PlayerState player_state[2] = {
@@ -244,12 +278,13 @@ struct PlayerState player_state[2] = {
     { 0, 0, 0}
 };
 
-int done = 0;
+int cur_buffer;
 int cur_ticks = 0;
 int dir = 1;
 int clear_count = 0;
 int current_row = 0, current_col = 0;
-int cur_buffer;
+// current block
+int current_block = BLOCK_Z;
 // current rotation
 int rotation = 0;
 
@@ -283,17 +318,20 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             }
         }
     }
-    clear_block(&J_SPEC.draw_specs[player_state[cur_buffer].rotation],
+    clear_block(&BLOCK_SPECS[current_block].draw_specs[player_state[cur_buffer].rotation],
                 player_state[cur_buffer].row,
                 player_state[cur_buffer].col);
-    draw_block(&J_SPEC.draw_specs[rotation], 0, current_row, current_col);
+    draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], 0, current_row, current_col);
 
     // remember state for this buffer
     player_state[cur_buffer].rotation = rotation;
+    player_state[cur_buffer].block = current_block;
     player_state[cur_buffer].row = current_row;
     player_state[cur_buffer].col = current_col;
 
+    // TODO:
     // We should actually be able to set the poll rate in the engine
+    // or use a cooldown
     cur_ticks++;
     cur_ticks %= 2;
 }

@@ -4,7 +4,11 @@
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mTETRIS\033[0m", __VA_ARGS__)
 
-// DEBUG: Global action ids
+// Global action ids
+// We need actions
+//   - left, right, down movement, rotation: cursor keys / joystick direction
+//   - drop piece: fire button 1 / space
+//   - move/swap to hold: fire button 2 / left shift
 RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_rotate, action_quit;
 

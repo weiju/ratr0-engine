@@ -15,7 +15,10 @@
 #define BOARD_HEIGHT (20)
 
 /** \brief Block types */
-typedef enum { I = 0, J, L, O, S, T, Z, CLEAR } BlockType;
+typedef enum {
+    BLOCK_I = 0, BLOCK_J, BLOCK_L, BLOCK_O, BLOCK_S, BLOCK_T,
+    BLOCK_Z
+} BlockType;
 
 /** \brief Position on the game board */
 struct Position {
@@ -24,7 +27,7 @@ struct Position {
 
 typedef enum {
     RS_1x1=0, RS_1x2, RS_1x3, RS_1x4,
-    RS_2x1, RS_3x1, RS_4x1
+    RS_2x1, RS_3x1, RS_4x1, RS_2x2
 } DrawRectShape;
 
 /** \brief a draw rectangle specification. */
@@ -39,16 +42,13 @@ struct DrawSpec {
     struct DrawRect draw_rects[2];
 };
 
-extern struct Position BLOCK_CONFIGS[7][4][4];
-extern struct BlitSpec BLIT_SPECS[2][4];
+//extern struct Position BLOCK_CONFIGS[7][4][4];
 
 struct BlockSpec {
     struct Position rotations[4][4];
     struct DrawSpec draw_specs[4];
 };
 
-extern struct BlockSpec I_SPEC;
-extern struct BlockSpec J_SPEC;
-extern struct BlockSpec L_SPEC;
+extern struct BlockSpec BLOCK_SPECS[7];
 
 #endif // !__GAME_DATA_H__
