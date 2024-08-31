@@ -24,9 +24,14 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
+#define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
 struct Ratr0TileSheet background_ts, tiles_ts;
 struct Ratr0Surface *backbuffer_surface, tiles_surface;
+
+// ghost piece outline
+struct Ratr0SpriteSheet outlines_sheet;
+struct Ratr0HWSprite *outline_frame[9];
 
 #define BOARD_X0 (112)
 #define BOARD_Y0 (16)
@@ -269,6 +274,20 @@ void clear_block(struct DrawSpec *spec, int row, int col)
     }
 }
 
+void draw_ghost_piece(struct Ratr0Scene *scene,
+                      struct SpriteOutline *outline, int row, int col)
+{
+    struct Ratr0HWSprite *spr0 = outline_frame[outline->framenum0];
+    struct Ratr0HWSprite *spr1 = outline_frame[outline->framenum1];
+    spr0->base_obj.bounds.x = BOARD_X0 + (col + outline->col0) * 8;
+    spr0->base_obj.bounds.y = BOARD_Y0 + (row + outline->row0) * 8;
+    spr1->base_obj.bounds.x = BOARD_X0 + (col + outline->col1) * 8;
+    spr1->base_obj.bounds.y = BOARD_Y0 + (row + outline->row1) * 8;
+    scene->sprites[0] = spr0;
+    scene->sprites[1] = spr1;
+    scene->num_sprites = 2;
+}
+
 struct PlayerState {
     int block, rotation;
     int row, col;
@@ -327,6 +346,11 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
                 player_state[cur_buffer].col);
     draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], 0, current_row, current_col);
 
+    // Ghost piece
+    draw_ghost_piece(this_scene,
+                     &BLOCK_SPECS[current_block].outline[rotation],
+                     current_row + 10, current_col);
+
     // remember state for this buffer
     player_state[cur_buffer].rotation = rotation;
     player_state[cur_buffer].block = current_block;
@@ -369,5 +393,10 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     tiles_surface.is_interleaved = TRUE;
     tiles_surface.buffer = engine->memory_system->block_address(tiles_ts.h_imgdata);
 
+    // load block outlines as sprite for the ghost piece
+    engine->resource_system->read_spritesheet(OUTLINES_PATH, &outlines_sheet);
+    for (int i = 0; i < outlines_sheet.header.num_sprites; i++) {
+        outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
+    }
     return main_scene;
 }

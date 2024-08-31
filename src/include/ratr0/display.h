@@ -41,6 +41,11 @@
 #define DIWSTOP_VALUE_PAL_288  0x2cb1
 #define DIWSTOP_VALUE_NTSC_288 0xf4b1
 
+// These values make the sprite positions consistent with BOB positions,
+// provided we have a 320 pixel wide display
+#define DISP_SPRITE_X0_320 (128)
+#define DISP_SPRITE_Y0 (44)
+
 #define MAX_BITPLANES (6)
 
 #ifdef AMIGA
@@ -397,10 +402,20 @@ extern struct Ratr0HWSprite *ratr0_create_sprite(struct Ratr0TileSheet *tileshee
  * @param sheet sprite sheet pointer
  * @param speed animation speed
  * @param loop_type loop type
+ * @return pointer to an animated HW sprite
  */
 extern struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSheet *sheet,
                                                                    UINT8 speed,
                                                                    UINT8 loop_type);
+
+/**
+ * Extract a non-animated sprite from a sprite sheet frame.
+ *
+ * @param sheet sprite sheet pointer
+ * @param framenum frame number
+ * @return pointer to a static HW sprite
+ */
+extern struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet_frame(struct Ratr0SpriteSheet *sheet, int framenum);
 
 /**
  * Create a blitter object from a tile sheet.

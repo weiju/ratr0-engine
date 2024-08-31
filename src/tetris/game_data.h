@@ -36,6 +36,12 @@ struct DrawRect {
     int row, col;
 };
 
+/** \brief a sprite outline description. 2 sprites are needed for consistency */
+struct SpriteOutline {
+    int framenum0, row0, col0;
+    int framenum1, row1, col1;
+};
+
 /** \brief Draw specification, number, position and shape of rectangles. */
 struct DrawSpec {
     int num_rects;
@@ -47,6 +53,7 @@ struct DrawSpec {
 struct BlockSpec {
     struct Position rotations[4][4];
     struct DrawSpec draw_specs[4];
+    struct SpriteOutline outline[4];
 };
 
 extern struct BlockSpec BLOCK_SPECS[7];

@@ -234,6 +234,7 @@ static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *s
     }
 }
 
+static current_frame_sprites = 0;
 static void _update_sprite(struct Ratr0HWSprite *sprite)
 {
     UINT16 hstart, vstart, vstop;
@@ -271,7 +272,10 @@ static void _update_sprite(struct Ratr0HWSprite *sprite)
     // 2 zero stop words
     int frame_words = (sprite->base_obj.bounds.height + 2) * 2;
     int frames_per_sprite = sprite->is_attached ? 2 : 1;
-    sprite_data0 += sprite->base_obj.anim_frames.current_frame_idx * frames_per_sprite * frame_words;
+
+    // The actual frame index within the source sprite data
+    int frame_index = sprite->base_obj.anim_frames.frames[sprite->base_obj.anim_frames.current_frame_idx];
+    sprite_data0 += frame_index * frames_per_sprite * frame_words;
     // The second half of the attached sprite is always on the next frame
     sprite_data1 = sprite_data0 + frame_words;
 
@@ -280,23 +284,33 @@ static void _update_sprite(struct Ratr0HWSprite *sprite)
 
     // TODO: this is actually not completely correct, because this
     // assumes a fixed DIWSTRT
-    hstart = sprite->base_obj.bounds.x + 160;
-    vstart = sprite->base_obj.bounds.y + 90;
+    hstart = sprite->base_obj.bounds.x + DISP_SPRITE_X0_320;
+    vstart = sprite->base_obj.bounds.y + DISP_SPRITE_Y0;
     vstop = vstart + sprite->base_obj.bounds.height;
 
-    // If not attached, this is enough
-    ratr0_sprites_set_pos(sprite_data1,
-                          hstart, vstart, vstop);
-    ratr0_display_set_sprite(current_coplist, current_coplist_size,
-                             current_copper_info,
-                             1, sprite_data1);
     if (sprite->is_attached) {
+        // TODO: currently, this does not look up if the
+        // sprites are in the same group, but this needs to be
+        // if we want them to display in 16 colors
+        ratr0_sprites_set_pos(sprite_data1,
+                              hstart, vstart, vstop);
+        ratr0_display_set_sprite(current_coplist, current_coplist_size,
+                                 current_copper_info,
+                                 current_frame_sprites + 1, sprite_data1);
         ratr0_sprites_set_pos(sprite_data0,
                               hstart, vstart, vstop);
         ratr0_display_set_sprite(current_coplist, current_coplist_size,
                                  current_copper_info,
-                                 0, sprite_data0);
-                                 }
+                                 current_frame_sprites, sprite_data0);
+        current_frame_sprites += 2;
+    } else {
+        ratr0_sprites_set_pos(sprite_data0,
+                              hstart, vstart, vstop);
+        ratr0_display_set_sprite(current_coplist, current_coplist_size,
+                                 current_copper_info,
+                                 current_frame_sprites, sprite_data0);
+        current_frame_sprites++;
+    }
 }
 
 static void _update_sprites(void)
@@ -352,6 +366,7 @@ static void ratr0_scenes_update(UINT8 frames_elapsed)
         custom.dmacon = DMAF_BLITHOG;
         DisownBlitter();
 
+        current_frame_sprites = 0;
         _update_sprites();
     }
 }

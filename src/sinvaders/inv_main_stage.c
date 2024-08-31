@@ -46,8 +46,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // TEST: blit
     OwnBlitter();
-    struct Ratr0Surface *back_buffer = ratr0_get_back_buffer();
-    ratr0_blit_rect_1plane(back_buffer, &bobs2_sheet, 0, 0, 0, 0);
+    struct Ratr0DisplayBuffer *back_buffer = ratr0_get_back_buffer();
+    ratr0_blit_rect_1plane(&back_buffer->surface, &bobs2_sheet, 0, 0, 0, 0);
     DisownBlitter();
 }
 
@@ -141,13 +141,13 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     }
     main_scene->num_bobs = NUM_BOBS;
 
-    struct Ratr0Surface *back_buffer, *front_buffer;
+    struct Ratr0DisplayBuffer *back_buffer, *front_buffer;
     front_buffer = ratr0_get_front_buffer();
     back_buffer = ratr0_get_back_buffer();
     main_scene->backdrop = node_factory->create_backdrop(&grid_sheet);
     printf("BACKDROP WIDTH: %d fb width: %d bb width: %d\n",\
            (int) main_scene->backdrop->surface.width,
-           (int) front_buffer->width,
-           (int) back_buffer->width);
+           (int) front_buffer->surface.width,
+           (int) back_buffer->surface.width);
     return main_scene;
 }

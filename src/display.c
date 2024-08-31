@@ -439,6 +439,34 @@ struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSh
     return result;
 }
 
+struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet_frame(struct Ratr0SpriteSheet *sheet, int framenum)
+{
+    struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
+    // Data and frame information
+    result->sprite_data = (UINT16 *) engine->memory_system->block_address(sheet->h_imgdata);
+
+    // remember the attachment state here
+    result->is_attached = ((result->sprite_data[1] & 0x80) == 0x80);
+
+    // copy size and color information
+    result->base_obj.bounds.x = 0;
+    result->base_obj.bounds.y = 0;
+    result->base_obj.bounds.width = 16;
+    result->base_obj.bounds.height = (int) result->sprite_data[0];
+    result->base_obj.anim_frames.num_frames = 1;
+    result->base_obj.anim_frames.current_frame_idx = 0;
+    result->base_obj.anim_frames.current_tick = 0;
+    result->base_obj.translate.x = 0;
+    result->base_obj.translate.y = 0;
+    result->base_obj.anim_frames.frames[0] = framenum;
+    // loop type and speed could possibly be part of the sprite sheet
+    result->base_obj.anim_frames.loop_type = RATR0_ANIM_LOOP_TYPE_NONE;
+    result->base_obj.anim_frames.speed = 1;
+    result->base_obj.anim_frames.loop_dir = 1;
+    return result;
+}
+
+
 struct Ratr0Bob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
                                   UINT8 frames[], UINT8 num_frames,
                                   UINT8 speed)
