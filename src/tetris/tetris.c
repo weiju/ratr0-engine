@@ -10,6 +10,7 @@
 //   - drop piece: fire button 1 / space
 //   - move/swap to hold: fire button 2 / left shift
 RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
+    action_move_down,
     action_rotate, action_quit;
 
 int main(int argc, char **argv)
@@ -32,6 +33,7 @@ int main(int argc, char **argv)
     // Additional game engine setup: input mapping etc.
     action_move_left = engine->input_system->alloc_action();
     action_move_right = engine->input_system->alloc_action();
+    action_move_down = engine->input_system->alloc_action();
     action_rotate = engine->input_system->alloc_action();
     action_drop = engine->input_system->alloc_action();
     action_quit = engine->input_system->alloc_action();
@@ -40,6 +42,8 @@ int main(int argc, char **argv)
                                               RATR0_KEY_LEFT);
     engine->input_system->map_input_to_action(action_move_right, RATR0_IC_KB,
                                               RATR0_KEY_RIGHT);
+    engine->input_system->map_input_to_action(action_move_down, RATR0_IC_KB,
+                                              RATR0_KEY_DOWN);
     engine->input_system->map_input_to_action(action_rotate, RATR0_IC_KB,
                                               RATR0_KEY_UP);
     engine->input_system->map_input_to_action(action_drop, RATR0_IC_KB,

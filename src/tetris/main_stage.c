@@ -18,6 +18,7 @@ struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
+    action_move_down,
     action_rotate, action_quit;
 
 // Resources
@@ -309,6 +310,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         } else if (engine->input_system->was_action_pressed(action_move_right)) {
             current_col++;
             if (current_col > 6) current_col = 6;
+        } else if (engine->input_system->was_action_pressed(action_move_down)) {
+            current_row++;
+            if (current_row > 10) current_row = 10;
         } else if (engine->input_system->was_action_pressed(action_drop)) {
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
             if (rotate_cooldown == 0) {
