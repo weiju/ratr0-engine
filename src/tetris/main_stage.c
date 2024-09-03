@@ -324,16 +324,36 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     if (rotate_cooldown > 0) rotate_cooldown--;
     if (cur_ticks == 0) {
         if (engine->input_system->was_action_pressed(action_move_left)) {
-            current_col--;
-            if (current_col < 0) current_col = 0;
+            // MOVE LEFT
+            // check if all blocks can move left
+            BOOL ok = TRUE;
+            for (int i = 0; i < 4; i++) {
+                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation][i].x) == 0) {
+                    ok = FALSE;
+                    break;
+                }
+            }
+            if (ok) current_col--;
         } else if (engine->input_system->was_action_pressed(action_move_right)) {
-            current_col++;
-            if (current_col > 6) current_col = 6;
+            // MOVE RIGHT
+            BOOL ok = TRUE;
+            for (int i = 0; i < 4; i++) {
+                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation][i].x) == 9) {
+                    ok = FALSE;
+                    break;
+                }
+            }
+            if (ok) current_col++;
+
         } else if (engine->input_system->was_action_pressed(action_move_down)) {
+            // ACCELERAtE MOVE DOWN
             current_row++;
             if (current_row > 10) current_row = 10;
         } else if (engine->input_system->was_action_pressed(action_drop)) {
+            // QUICK DROP
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
+            // ROTATE
+            // TODO: add wall kick
             if (rotate_cooldown == 0) {
                 rotation++;
                 rotation %= 4;
