@@ -3,16 +3,16 @@
 #define __GAME_DATA_H__
 
 /**
- * This module defines the Tetris game's elementary data structures.
- * In this case, these are the block types and the board.
+ * This module defines the Tetris game's tetromino represetation.
  *
- * For efficiency reasons, each block configuration has an associated
- * blitter specification which tells the blitter how to blit a specific
- * block in a certain rotation
+ * In addition of defining the logical arrangement of a tetromino's
+ * states it stores information about how to draw its rotations
+ * efficiently through blitting and sprites.
+ *
+ * To reduce computation effort in each frame it also
+ * stores which blocks are needed to be checked when a piece moves in a
+ * certain direction.
  */
-
-#define BOARD_WIDTH (10)
-#define BOARD_HEIGHT (20)
 
 /** \brief Block types */
 typedef enum {
@@ -22,7 +22,7 @@ typedef enum {
 
 /** \brief Position on the game board */
 struct Position {
-    int x, y;
+    char x, y;
 };
 
 typedef enum {
@@ -33,25 +33,41 @@ typedef enum {
 /** \brief a draw rectangle specification. */
 struct DrawRect {
     DrawRectShape shape;
-    int row, col;
+    char row, col;
 };
 
 /** \brief a sprite outline description. 2 sprites are needed for consistency */
 struct SpriteOutline {
-    int framenum0, row0, col0;
-    int framenum1, row1, col1;
+    char framenum0, row0, col0;
+    char framenum1, row1, col1;
 };
 
 /** \brief Draw specification, number, position and shape of rectangles. */
 struct DrawSpec {
-    int num_rects;
+    char num_rects;
     struct DrawRect draw_rects[2];
 };
 
-//extern struct Position BLOCK_CONFIGS[7][4][4];
+struct Side {
+    char num_pos;
+    char indexes[4];
+};
+
+
+struct Rotation {
+    struct Position pos[4];
+    // check these positions when dropping to the bottom
+    // define left->right, top->bottom
+    struct Side bottom_side;
+    // define top->bottom, left->right
+    //struct Side left_side;
+    // define top->bottom, right->left
+    //struct Side right_side;
+};
 
 struct BlockSpec {
-    struct Position rotations[4][4];
+    char color;
+    struct Rotation rotations[4];
     struct DrawSpec draw_specs[4];
     struct SpriteOutline outline[4];
 };

@@ -35,6 +35,16 @@ struct Ratr0HWSprite *outline_frame[9];
 
 #define BOARD_X0 (112)
 #define BOARD_Y0 (16)
+#define BOARD_WIDTH (10)
+#define BOARD_HEIGHT (20)
+
+// game board, 0 means empty, if there is a piece it is block type + 1
+// since the block types start at 0 as well
+int gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
+
+// a quick way to determine a quick drop and the ghost piece. if the player
+// piece is above the maximum height, we can drop it to the max height
+int max_height0[BOARD_WIDTH];
 
 
 void draw_1x3(int color, int row, int col)
@@ -308,11 +318,41 @@ int current_block = BLOCK_Z;
 // current rotation
 int rotation = 0;
 
+#define DROP_TIMER_VALUE (40)
 // rotation cooldown. We introduce a cooldown, to avoid the player
 // piece rotating way too fast
 #define ROTATE_COOLDOWN_TIME (10)
 int rotate_cooldown = 0;
+int drop_timer = DROP_TIMER_VALUE;
 
+/**
+ * Determines the row where the quick drop can happen at the current
+ * position
+ * Since we iterate from top left to right bottom, we should end up
+ * with the lowest row and lowest column
+ */
+int get_quickdrop_row()
+{
+    struct Rotation *rot = &BLOCK_SPECS[current_block].rotations[rotation];
+    int min_row = 19;
+    struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
+    for (int t = 0; t < rot->bottom_side.num_pos; t++) {
+        struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
+        for (int r = current_row + pos->y; r < 20; r++) {
+            if (gameboard0[r][pos->x] != 0) {
+                int row = r - pos->y;
+                if (row <= min_row) {
+                    min_row = row;
+                    minpos = pos;
+                }
+                break;
+            }
+        }
+    }
+    return min_row - minpos->y;
+}
+
+int done = FALSE;
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
@@ -322,13 +362,17 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         ratr0_engine_exit();
     }
     if (rotate_cooldown > 0) rotate_cooldown--;
+    if (drop_timer == 0) {
+        drop_timer = DROP_TIMER_VALUE;
+        current_row++;
+    }
     if (cur_ticks == 0) {
         if (engine->input_system->was_action_pressed(action_move_left)) {
             // MOVE LEFT
             // check if all blocks can move left
             BOOL ok = TRUE;
             for (int i = 0; i < 4; i++) {
-                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation][i].x) == 0) {
+                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation].pos[i].x) == 0) {
                     ok = FALSE;
                     break;
                 }
@@ -338,7 +382,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // MOVE RIGHT
             BOOL ok = TRUE;
             for (int i = 0; i < 4; i++) {
-                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation][i].x) == 9) {
+                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation].pos[i].x) == 9) {
                     ok = FALSE;
                     break;
                 }
@@ -346,11 +390,13 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             if (ok) current_col++;
 
         } else if (engine->input_system->was_action_pressed(action_move_down)) {
-            // ACCELERAtE MOVE DOWN
+            // ACCELERATE MOVE DOWN
             current_row++;
-            if (current_row > 10) current_row = 10;
         } else if (engine->input_system->was_action_pressed(action_drop)) {
             // QUICK DROP
+            int qdr = get_quickdrop_row();
+            draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], 0,
+                       qdr, current_col);
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
             // ROTATE
             // TODO: add wall kick
@@ -361,15 +407,24 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             }
         }
     }
+    int qdr = get_quickdrop_row();
+    /*
+    if (!done) {
+        printf("quick drop row: %d\n", qdr);
+        done = TRUE;
+    }
+    */
+
     clear_block(&BLOCK_SPECS[current_block].draw_specs[player_state[cur_buffer].rotation],
                 player_state[cur_buffer].row,
                 player_state[cur_buffer].col);
     draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], 0, current_row, current_col);
 
     // Ghost piece
+    // TODO: determine lowest level to place the piece on
     draw_ghost_piece(this_scene,
                      &BLOCK_SPECS[current_block].outline[rotation],
-                     current_row + 10, current_col);
+                     qdr, current_col);
 
     // remember state for this buffer
     player_state[cur_buffer].rotation = rotation;
@@ -382,6 +437,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     // or use a cooldown
     cur_ticks++;
     cur_ticks %= 2;
+
+    drop_timer--;
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -417,6 +474,16 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     engine->resource_system->read_spritesheet(OUTLINES_PATH, &outlines_sheet);
     for (int i = 0; i < outlines_sheet.header.num_sprites; i++) {
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
+    }
+
+    // initialize game board
+    for (int i = 0; i < BOARD_HEIGHT; i++) {
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            gameboard0[i][j] = 0;
+        }
+    }
+    for (int j = 0; j < BOARD_WIDTH; j++) {
+        max_height0[j] = 0;
     }
     return main_scene;
 }
