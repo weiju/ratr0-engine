@@ -10,15 +10,15 @@
  * efficiently through blitting and sprites.
  *
  * To reduce computation effort in each frame it also
- * stores which blocks are needed to be checked when a piece moves in a
+ * stores which tiles are needed to be checked when a piece moves in a
  * certain direction.
  */
 
 /** \brief Piece types */
 typedef enum {
-    BLOCK_I = 0, BLOCK_J, BLOCK_L, BLOCK_O, BLOCK_S, BLOCK_T,
-    BLOCK_Z
-} BlockType;
+    PIECE_I = 0, PIECE_J, PIECE_L, PIECE_O, PIECE_S, PIECE_T,
+    PIECE_Z
+} PieceType;
 
 /** \brief Position on the game board */
 struct Position {

@@ -10,7 +10,7 @@
 struct PieceSpec PIECE_SPECS[] = {
     // I
     {
-        BLOCK_I,
+        PIECE_I,
         // rotation spec
         {
             {
@@ -47,7 +47,7 @@ struct PieceSpec PIECE_SPECS[] = {
     },
     // J
     {
-        BLOCK_J,
+        PIECE_J,
         // rotation spec
         {
             {
@@ -84,7 +84,7 @@ struct PieceSpec PIECE_SPECS[] = {
     },
     // L
     {
-        BLOCK_L,
+        PIECE_L,
         // rotation spec
         {
             {
@@ -121,7 +121,7 @@ struct PieceSpec PIECE_SPECS[] = {
     },
     // O
     {
-        BLOCK_O,
+        PIECE_O,
         // rotation spec
         {
             {
@@ -159,7 +159,7 @@ struct PieceSpec PIECE_SPECS[] = {
     },
     // S
     {
-        BLOCK_S,
+        PIECE_S,
         // rotation spec
         {
             {
@@ -196,7 +196,7 @@ struct PieceSpec PIECE_SPECS[] = {
     },
     // T
     {
-        BLOCK_T,
+        PIECE_T,
         // rotation spec
         {
             {
@@ -233,7 +233,7 @@ struct PieceSpec PIECE_SPECS[] = {
     },
     // Z
     {
-        BLOCK_Z,
+        PIECE_Z,
         // rotation spec
         {
             {

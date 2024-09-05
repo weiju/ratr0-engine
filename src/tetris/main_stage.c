@@ -300,7 +300,7 @@ void draw_ghost_piece(struct Ratr0Scene *scene,
 }
 
 struct PlayerState {
-    int block, rotation;
+    int piece, rotation;
     int row, col;
 };
 
@@ -314,7 +314,7 @@ int cur_ticks = 0;
 int dir = 1;
 int clear_count = 0;
 int current_row = 0, current_col = 0;
-int current_piece = BLOCK_Z;
+int current_piece = PIECE_Z;
 int hold_piece = -1;
 // current rotation
 int rotation = 0;
@@ -436,7 +436,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // remember state for this buffer
     player_state[cur_buffer].rotation = rotation;
-    player_state[cur_buffer].block = current_piece;
+    player_state[cur_buffer].piece = current_piece;
     player_state[cur_buffer].row = current_row;
     player_state[cur_buffer].col = current_col;
 
