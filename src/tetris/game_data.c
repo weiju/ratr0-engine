@@ -7,7 +7,7 @@
 // 4 potential blits (8 with deletions) into a maximum of 2 blits (4
 // with deletion)
 // Rotation configurations of each block type
-struct BlockSpec BLOCK_SPECS[] = {
+struct PieceSpec PIECE_SPECS[] = {
     // I
     {
         BLOCK_I,
@@ -141,7 +141,8 @@ struct BlockSpec BLOCK_SPECS[] = {
                 {2, {2, 3, -1, -1}}
             }
         },
-        // blit spec
+        // blit spec, I placed it into 0,0 instead of 1,1
+        // because it can be drawn much more efficiently
         {
             {1, { {RS_2x2, 0, 1}, {0, 0, 0} } },
             {1, { {RS_2x2, 0, 1}, {0, 0, 0} } },

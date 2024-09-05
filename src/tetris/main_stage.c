@@ -1,6 +1,7 @@
 /** @file main_stage.c */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <ratr0/ratr0.h>
 #include <clib/graphics_protos.h>
@@ -313,8 +314,8 @@ int cur_ticks = 0;
 int dir = 1;
 int clear_count = 0;
 int current_row = 0, current_col = 0;
-// current block
-int current_block = BLOCK_Z;
+int current_piece = BLOCK_Z;
+int hold_piece = -1;
 // current rotation
 int rotation = 0;
 
@@ -325,6 +326,11 @@ int rotation = 0;
 int rotate_cooldown = 0;
 int drop_timer = DROP_TIMER_VALUE;
 
+#define PIECE_QUEUE_LEN (10)
+int piece_queue[PIECE_QUEUE_LEN];
+int piece_queue_idx = 0;
+
+
 /**
  * Determines the row where the quick drop can happen at the current
  * position
@@ -333,7 +339,7 @@ int drop_timer = DROP_TIMER_VALUE;
  */
 int get_quickdrop_row()
 {
-    struct Rotation *rot = &BLOCK_SPECS[current_block].rotations[rotation];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
     int min_row = 19;
     struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
@@ -372,7 +378,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // check if all blocks can move left
             BOOL ok = TRUE;
             for (int i = 0; i < 4; i++) {
-                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation].pos[i].x) == 0) {
+                if ((current_col + PIECE_SPECS[current_piece].rotations[rotation].pos[i].x) == 0) {
                     ok = FALSE;
                     break;
                 }
@@ -382,7 +388,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // MOVE RIGHT
             BOOL ok = TRUE;
             for (int i = 0; i < 4; i++) {
-                if ((current_col + BLOCK_SPECS[current_block].rotations[rotation].pos[i].x) == 9) {
+                if ((current_col + PIECE_SPECS[current_piece].rotations[rotation].pos[i].x) == 9) {
                     ok = FALSE;
                     break;
                 }
@@ -395,8 +401,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         } else if (engine->input_system->was_action_pressed(action_drop)) {
             // QUICK DROP
             int qdr = get_quickdrop_row();
-            draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation],
-                       current_block,
+            draw_block(&PIECE_SPECS[current_piece].draw_specs[rotation],
+                       current_piece,
                        qdr, current_col);
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
             // ROTATE
@@ -416,21 +422,21 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     }
     */
 
-    clear_block(&BLOCK_SPECS[current_block].draw_specs[player_state[cur_buffer].rotation],
+    clear_block(&PIECE_SPECS[current_piece].draw_specs[player_state[cur_buffer].rotation],
                 player_state[cur_buffer].row,
                 player_state[cur_buffer].col);
-    draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], current_block,
+    draw_block(&PIECE_SPECS[current_piece].draw_specs[rotation], current_piece,
                current_row, current_col);
 
     // Ghost piece
     // TODO: determine lowest level to place the piece on
     draw_ghost_piece(this_scene,
-                     &BLOCK_SPECS[current_block].outline[rotation],
+                     &PIECE_SPECS[current_piece].outline[rotation],
                      qdr, current_col);
 
     // remember state for this buffer
     player_state[cur_buffer].rotation = rotation;
-    player_state[cur_buffer].block = current_block;
+    player_state[cur_buffer].block = current_piece;
     player_state[cur_buffer].row = current_row;
     player_state[cur_buffer].col = current_col;
 
@@ -487,5 +493,13 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     for (int j = 0; j < BOARD_WIDTH; j++) {
         max_height0[j] = 0;
     }
+
+    // initialize piece queue
+    // TODO: use srand() to initialize
+    for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
+        piece_queue[i] = rand() % 7;
+    }
+    piece_queue_idx = 0;
+    current_piece = piece_queue[piece_queue_idx];
     return main_scene;
 }

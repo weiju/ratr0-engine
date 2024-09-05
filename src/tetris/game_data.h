@@ -14,7 +14,7 @@
  * certain direction.
  */
 
-/** \brief Block types */
+/** \brief Piece types */
 typedef enum {
     BLOCK_I = 0, BLOCK_J, BLOCK_L, BLOCK_O, BLOCK_S, BLOCK_T,
     BLOCK_Z
@@ -65,13 +65,13 @@ struct Rotation {
     //struct Side right_side;
 };
 
-struct BlockSpec {
+struct PieceSpec {
     char color;
     struct Rotation rotations[4];
     struct DrawSpec draw_specs[4];
     struct SpriteOutline outline[4];
 };
 
-extern struct BlockSpec BLOCK_SPECS[7];
+extern struct PieceSpec PIECE_SPECS[7];
 
 #endif // !__GAME_DATA_H__
