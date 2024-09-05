@@ -340,12 +340,12 @@ int piece_queue_idx = 0;
 int get_quickdrop_row()
 {
     struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
-    int min_row = 19;
+    int min_row = BOARD_HEIGHT - 1;
     struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
-        for (int r = current_row + pos->y; r < 20; r++) {
-            if (gameboard0[r][pos->x] != 0) {
+        for (int r = current_row + pos->y; r < BOARD_HEIGHT; r++) {
+            if (gameboard0[r][current_col + pos->x] != 0) {
                 int row = r - pos->y;
                 if (row <= min_row) {
                     min_row = row;
@@ -358,7 +358,37 @@ int get_quickdrop_row()
     return min_row - minpos->y;
 }
 
-int done = FALSE;
+BOOL piece_landed(void)
+{
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
+    for (int t = 0; t < rot->bottom_side.num_pos; t++) {
+        // check every bottom tile if it has reached bottom
+        struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
+        // fast out: piece is at the bottom
+        if ((current_row + pos->y + 1) >= BOARD_HEIGHT) return TRUE;
+        if (gameboard0[pos->y + current_row + 1][pos->x + current_col] != 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+void establish_piece(void)
+{
+    // transfer the current piece to the board
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
+    for (int i = 0; i < 4; i++) {
+        struct Position *pos = &rot->pos[rot->bottom_side.indexes[i]];
+        gameboard0[pos->y + current_row][pos->x + current_col] = 1;
+    }
+}
+
+void spawn_next_piece(void)
+{
+    current_row = 0;
+    current_col = 0;
+    current_piece = piece_queue[piece_queue_idx++];
+}
+
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
@@ -368,10 +398,6 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         ratr0_engine_exit();
     }
     if (rotate_cooldown > 0) rotate_cooldown--;
-    if (drop_timer == 0) {
-        drop_timer = DROP_TIMER_VALUE;
-        current_row++;
-    }
     if (cur_ticks == 0) {
         if (engine->input_system->was_action_pressed(action_move_left)) {
             // MOVE LEFT
@@ -397,7 +423,11 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
         } else if (engine->input_system->was_action_pressed(action_move_down)) {
             // ACCELERATE MOVE DOWN
-            current_row++;
+            if (piece_landed()) {
+            } else {
+                current_row++;
+                drop_timer = DROP_TIMER_VALUE; // reset drop timer
+            }
         } else if (engine->input_system->was_action_pressed(action_drop)) {
             // QUICK DROP
             int qdr = get_quickdrop_row();
@@ -414,39 +444,53 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             }
         }
     }
-    int qdr = get_quickdrop_row();
-    /*
-    if (!done) {
-        printf("quick drop row: %d\n", qdr);
-        done = TRUE;
+
+    BOOL dropped = FALSE;
+    // automatic drop
+    if (drop_timer == 0) {
+        drop_timer = DROP_TIMER_VALUE;
+        if (piece_landed()) {
+            player_state[cur_buffer].rotation = rotation;
+            player_state[cur_buffer].piece = current_piece;
+            player_state[cur_buffer].row = 0;
+            player_state[cur_buffer].col = 0;
+            establish_piece();
+            spawn_next_piece();
+            dropped = TRUE;
+        } else {
+            current_row++;
+        }
     }
-    */
 
-    clear_block(&PIECE_SPECS[current_piece].draw_specs[player_state[cur_buffer].rotation],
-                player_state[cur_buffer].row,
-                player_state[cur_buffer].col);
-    draw_block(&PIECE_SPECS[current_piece].draw_specs[rotation], current_piece,
-               current_row, current_col);
+    if (!dropped) {
+        int qdr = get_quickdrop_row();
 
-    // Ghost piece
-    // TODO: determine lowest level to place the piece on
-    draw_ghost_piece(this_scene,
-                     &PIECE_SPECS[current_piece].outline[rotation],
-                     qdr, current_col);
+        // Draw new block position
+        clear_block(&PIECE_SPECS[current_piece].draw_specs[player_state[cur_buffer].rotation],
+                    player_state[cur_buffer].row,
+                    player_state[cur_buffer].col);
+        draw_block(&PIECE_SPECS[current_piece].draw_specs[rotation], current_piece,
+                   current_row, current_col);
 
-    // remember state for this buffer
-    player_state[cur_buffer].rotation = rotation;
-    player_state[cur_buffer].piece = current_piece;
-    player_state[cur_buffer].row = current_row;
-    player_state[cur_buffer].col = current_col;
+        // Ghost piece is drawn with sprite, no background restore needed
+        draw_ghost_piece(this_scene,
+                         &PIECE_SPECS[current_piece].outline[rotation],
+                         qdr, current_col);
 
+        // remember state for this buffer
+        player_state[cur_buffer].rotation = rotation;
+        player_state[cur_buffer].piece = current_piece;
+        player_state[cur_buffer].row = current_row;
+        player_state[cur_buffer].col = current_col;
+
+        drop_timer--;
+    }
     // TODO:
     // We should actually be able to set the poll rate in the engine
     // or use a cooldown
     cur_ticks++;
     cur_ticks %= 2;
 
-    drop_timer--;
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -500,6 +544,6 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
         piece_queue[i] = rand() % 7;
     }
     piece_queue_idx = 0;
-    current_piece = piece_queue[piece_queue_idx];
+    spawn_next_piece();
     return main_scene;
 }
