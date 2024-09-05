@@ -395,7 +395,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         } else if (engine->input_system->was_action_pressed(action_drop)) {
             // QUICK DROP
             int qdr = get_quickdrop_row();
-            draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], 0,
+            draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation],
+                       current_block,
                        qdr, current_col);
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
             // ROTATE
@@ -418,7 +419,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     clear_block(&BLOCK_SPECS[current_block].draw_specs[player_state[cur_buffer].rotation],
                 player_state[cur_buffer].row,
                 player_state[cur_buffer].col);
-    draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], 0, current_row, current_col);
+    draw_block(&BLOCK_SPECS[current_block].draw_specs[rotation], current_block,
+               current_row, current_col);
 
     // Ghost piece
     // TODO: determine lowest level to place the piece on
