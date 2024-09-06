@@ -309,6 +309,11 @@ struct PlayerState player_state[2] = {
     { 0, 0, 0}
 };
 
+struct PlayerState queued_draw[1] = {
+    { 0, 0, 0}
+};
+int num_queued = 0;
+
 int cur_buffer;
 int cur_ticks = 0;
 int dir = 1;
@@ -317,7 +322,7 @@ int current_row = 0, current_col = 0;
 int current_piece = PIECE_Z;
 int hold_piece = -1;
 // current rotation
-int rotation = 0;
+int current_rot = 0;
 
 #define DROP_TIMER_VALUE (40)
 // rotation cooldown. We introduce a cooldown, to avoid the player
@@ -339,7 +344,7 @@ int piece_queue_idx = 0;
  */
 int get_quickdrop_row()
 {
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
     int min_row = BOARD_HEIGHT - 1;
     struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
@@ -360,7 +365,7 @@ int get_quickdrop_row()
 
 BOOL piece_landed(void)
 {
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         // check every bottom tile if it has reached bottom
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
@@ -375,7 +380,7 @@ BOOL piece_landed(void)
 void establish_piece(void)
 {
     // transfer the current piece to the board
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[rotation];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
     for (int i = 0; i < 4; i++) {
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[i]];
         gameboard0[pos->y + current_row][pos->x + current_col] = 1;
@@ -404,7 +409,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // check if all blocks can move left
             BOOL ok = TRUE;
             for (int i = 0; i < 4; i++) {
-                if ((current_col + PIECE_SPECS[current_piece].rotations[rotation].pos[i].x) == 0) {
+                if ((current_col + PIECE_SPECS[current_piece].rotations[current_rot].pos[i].x) == 0) {
                     ok = FALSE;
                     break;
                 }
@@ -414,7 +419,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // MOVE RIGHT
             BOOL ok = TRUE;
             for (int i = 0; i < 4; i++) {
-                if ((current_col + PIECE_SPECS[current_piece].rotations[rotation].pos[i].x) == 9) {
+                if ((current_col + PIECE_SPECS[current_piece].rotations[current_rot].pos[i].x) == 9) {
                     ok = FALSE;
                     break;
                 }
@@ -431,15 +436,15 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         } else if (engine->input_system->was_action_pressed(action_drop)) {
             // QUICK DROP
             int qdr = get_quickdrop_row();
-            draw_block(&PIECE_SPECS[current_piece].draw_specs[rotation],
+            draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot],
                        current_piece,
                        qdr, current_col);
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
             // ROTATE
             // TODO: add wall kick
             if (rotate_cooldown == 0) {
-                rotation++;
-                rotation %= 4;
+                current_rot++;
+                current_rot %= 4;
                 rotate_cooldown = ROTATE_COOLDOWN_TIME;
             }
         }
@@ -450,10 +455,25 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
         if (piece_landed()) {
-            player_state[cur_buffer].rotation = rotation;
-            player_state[cur_buffer].piece = current_piece;
-            player_state[cur_buffer].row = 0;
-            player_state[cur_buffer].col = 0;
+            printf("drop piece: %d, rotation: %d row: %d col: %d\n",
+                   current_piece, current_rot, current_row, current_col);
+            // since we have a double buffer, we have to queue up a draw
+            // for the following frame, too
+            draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot], current_piece,
+                       current_row, current_col);
+            queued_draw[0].piece = current_piece;
+            queued_draw[0].rotation = current_rot;
+            queued_draw[0].row = current_row;
+            queued_draw[0].col = current_col;
+            num_queued = 2;
+
+            // reset the clear positions for the piece
+            for (int i = 0; i < 2; i++) {
+                player_state[cur_buffer].rotation = current_rot;
+                player_state[cur_buffer].piece = current_piece;
+                player_state[cur_buffer].row = 0;
+                player_state[cur_buffer].col = 0;
+            }
             establish_piece();
             spawn_next_piece();
             dropped = TRUE;
@@ -463,22 +483,32 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     }
 
     if (!dropped) {
+        if (num_queued > 0) {
+            printf("draw queued !!!\n");
+            int piece = queued_draw[0].piece;
+            draw_block(&PIECE_SPECS[piece].draw_specs[queued_draw[0].rotation],
+                       queued_draw[0].piece,
+                       queued_draw[0].row,
+                       queued_draw[0].col);
+            num_queued--;
+        }
         int qdr = get_quickdrop_row();
 
-        // Draw new block position
+        // Draw new block position by clearing the old and drawing the new
         clear_block(&PIECE_SPECS[current_piece].draw_specs[player_state[cur_buffer].rotation],
                     player_state[cur_buffer].row,
                     player_state[cur_buffer].col);
-        draw_block(&PIECE_SPECS[current_piece].draw_specs[rotation], current_piece,
+        draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot],
+                   current_piece,
                    current_row, current_col);
 
         // Ghost piece is drawn with sprite, no background restore needed
         draw_ghost_piece(this_scene,
-                         &PIECE_SPECS[current_piece].outline[rotation],
+                         &PIECE_SPECS[current_piece].outline[current_rot],
                          qdr, current_col);
 
         // remember state for this buffer
-        player_state[cur_buffer].rotation = rotation;
+        player_state[cur_buffer].rotation = current_rot;
         player_state[cur_buffer].piece = current_piece;
         player_state[cur_buffer].row = current_row;
         player_state[cur_buffer].col = current_col;

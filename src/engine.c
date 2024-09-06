@@ -1,5 +1,7 @@
 /** @file engine.c */
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
@@ -63,6 +65,8 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
 
     PRINT_DEBUG("Start up...");
 
+    // initialize the C random generator
+    srand(time(NULL));
     engine.memory_system = ratr0_memory_startup(&engine, memory_config);
     //engine.event_system = ratr0_events_startup(&engine);
     engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
