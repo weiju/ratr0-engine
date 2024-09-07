@@ -22,6 +22,9 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down,
     action_rotate, action_quit;
 
+#define DEBUG_FILE "tetris.debug"
+FILE *debug_fp;
+
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
@@ -335,6 +338,16 @@ int drop_timer = DROP_TIMER_VALUE;
 int piece_queue[PIECE_QUEUE_LEN];
 int piece_queue_idx = 0;
 
+void dump_board(void)
+{
+    for (int i = 0; i < BOARD_HEIGHT; i++) {
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            fprintf(debug_fp, "%d ", gameboard0[i][j]);
+        }
+        fputs("\n", debug_fp);
+    }
+    fflush(debug_fp);
+}
 
 /**
  * Determines the row where the quick drop can happen at the current
@@ -346,21 +359,24 @@ int get_quickdrop_row()
 {
     struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
     int min_row = BOARD_HEIGHT - 1;
-    struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
         for (int r = current_row + pos->y; r < BOARD_HEIGHT; r++) {
             if (gameboard0[r][current_col + pos->x] != 0) {
-                int row = r - pos->y;
+                int row = r - 1 - pos->y;
                 if (row <= min_row) {
                     min_row = row;
-                    minpos = pos;
                 }
                 break;
             }
         }
     }
-    return min_row - minpos->y;
+    if (min_row == (BOARD_HEIGHT - 1)) {
+        struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
+        return min_row - minpos->y;
+    } else {
+        return min_row;
+    }
 }
 
 BOOL piece_landed(void)
@@ -382,7 +398,7 @@ void establish_piece(void)
     // transfer the current piece to the board
     struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
     for (int i = 0; i < 4; i++) {
-        struct Position *pos = &rot->pos[rot->bottom_side.indexes[i]];
+        struct Position *pos = &rot->pos[i];
         gameboard0[pos->y + current_row][pos->x + current_col] = 1;
     }
 }
@@ -450,17 +466,13 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         }
     }
 
-    BOOL dropped = FALSE;
+    BOOL dropped = FALSE, clear_previous = TRUE;
     // automatic drop
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
         if (piece_landed()) {
-            printf("drop piece: %d, rotation: %d row: %d col: %d\n",
-                   current_piece, current_rot, current_row, current_col);
             // since we have a double buffer, we have to queue up a draw
             // for the following frame, too
-            draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot], current_piece,
-                       current_row, current_col);
             queued_draw[0].piece = current_piece;
             queued_draw[0].rotation = current_rot;
             queued_draw[0].row = current_row;
@@ -475,29 +487,35 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
                 player_state[cur_buffer].col = 0;
             }
             establish_piece();
-            spawn_next_piece();
+            spawn_next_piece(); // spawn next piece, but don't draw yet
+            //dump_board();
             dropped = TRUE;
         } else {
             current_row++;
         }
     }
-
+    if (num_queued > 0) {
+        int piece = queued_draw[0].piece;
+        draw_block(&PIECE_SPECS[piece].draw_specs[queued_draw[0].rotation],
+                   piece,
+                   queued_draw[0].row,
+                   queued_draw[0].col);
+        num_queued--;
+        // ensure, we don't clear any lines while establishing the
+        // piece in the buffer
+        clear_previous = FALSE;
+    }
     if (!dropped) {
-        if (num_queued > 0) {
-            printf("draw queued !!!\n");
-            int piece = queued_draw[0].piece;
-            draw_block(&PIECE_SPECS[piece].draw_specs[queued_draw[0].rotation],
-                       queued_draw[0].piece,
-                       queued_draw[0].row,
-                       queued_draw[0].col);
-            num_queued--;
-        }
         int qdr = get_quickdrop_row();
 
         // Draw new block position by clearing the old and drawing the new
-        clear_block(&PIECE_SPECS[current_piece].draw_specs[player_state[cur_buffer].rotation],
-                    player_state[cur_buffer].row,
-                    player_state[cur_buffer].col);
+        // don't draw if there are queued up draws !!!
+        if (clear_previous) {
+            struct DrawSpec *prev_spec = &PIECE_SPECS[player_state[cur_buffer].piece].draw_specs[player_state[cur_buffer].rotation];
+            clear_block(prev_spec,
+                        player_state[cur_buffer].row,
+                        player_state[cur_buffer].col);
+        }
         draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot],
                    current_piece,
                    current_row, current_col);
@@ -512,7 +530,6 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         player_state[cur_buffer].piece = current_piece;
         player_state[cur_buffer].row = current_row;
         player_state[cur_buffer].col = current_col;
-
         drop_timer--;
     }
     // TODO:
@@ -525,6 +542,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 {
+    debug_fp = fopen(DEBUG_FILE, "a");
+
     engine = eng;
     // Use the scenes module to create a scene and run that
     struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
