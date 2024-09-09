@@ -19,7 +19,7 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 
 endif  # ifdef AMIGA
 
-EXES=main invaders centi
+EXES=main invaders centi tetra_zone
 TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test
 
 # programs for benchmarks
@@ -81,7 +81,7 @@ invaders: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
 centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-tetris_game: $(ENGINE_OBJECTS) $(TETRIS_OBJECTS)
+tetra_zone: $(ENGINE_OBJECTS) $(TETRIS_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 default_copper.c: default.copper
