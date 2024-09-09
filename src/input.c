@@ -118,6 +118,8 @@ UINT16 ratr0_get_keyboard_state(void)
         return RATR0_KEY_UP;
     } else if (is_keydown(RAW_KEY_CURSOR_DOWN)) {
         return RATR0_KEY_DOWN;
+    } else if (is_keydown(RAW_KEY_SPACE)) {
+        return RATR0_KEY_SPACE;
     }
     return RATR0_KEY_NONE;
 }
@@ -316,6 +318,8 @@ void poll_keyboard(void)
         REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_UP);
     } else if (keystate == RATR0_KEY_DOWN) {
         REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_DOWN);
+    } else if (keystate == RATR0_KEY_SPACE) {
+        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_SPACE);
     }
 }
 

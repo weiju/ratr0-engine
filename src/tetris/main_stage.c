@@ -333,6 +333,8 @@ int current_rot = 0;
 #define ROTATE_COOLDOWN_TIME (10)
 int rotate_cooldown = 0;
 int drop_timer = DROP_TIMER_VALUE;
+#define QUICKDROP_COOLDOWN_TIME (10)
+int quickdrop_cooldown = 0;
 
 #define PIECE_QUEUE_LEN (10)
 int piece_queue[PIECE_QUEUE_LEN];
@@ -418,7 +420,10 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
+    // cooldowns
     if (rotate_cooldown > 0) rotate_cooldown--;
+    if (quickdrop_cooldown > 0) quickdrop_cooldown--;
+
     if (cur_ticks == 0) {
         if (engine->input_system->was_action_pressed(action_move_left)) {
             // MOVE LEFT
@@ -444,17 +449,20 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
         } else if (engine->input_system->was_action_pressed(action_move_down)) {
             // ACCELERATE MOVE DOWN
-            if (piece_landed()) {
-            } else {
+            if (!piece_landed()) {
                 current_row++;
                 drop_timer = DROP_TIMER_VALUE; // reset drop timer
             }
         } else if (engine->input_system->was_action_pressed(action_drop)) {
             // QUICK DROP
-            int qdr = get_quickdrop_row();
-            draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot],
-                       current_piece,
-                       qdr, current_col);
+            // do a quick establish on the quickdrop row
+            // we can do this by setting current_row to qdr and the drop timer
+            // to 0
+            if (quickdrop_cooldown == 0) {
+                current_row = get_quickdrop_row();
+                drop_timer = 0;
+                quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
+            }
         } else if (engine->input_system->was_action_pressed(action_rotate)) {
             // ROTATE
             // TODO: add wall kick
