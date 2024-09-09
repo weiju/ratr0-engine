@@ -65,11 +65,15 @@ struct Rotation {
     //struct Side right_side;
 };
 
+struct RotationSpec {
+    struct Rotation rotation;
+    struct DrawSpec draw_spec;
+    struct SpriteOutline outline;
+};
+
 struct PieceSpec {
     char color;
-    struct Rotation rotations[4];
-    struct DrawSpec draw_specs[4];
-    struct SpriteOutline outline[4];
+    struct RotationSpec rotations[4];
 };
 
 extern struct PieceSpec PIECE_SPECS[7];

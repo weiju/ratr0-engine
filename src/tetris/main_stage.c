@@ -359,7 +359,7 @@ void dump_board(void)
  */
 int get_quickdrop_row()
 {
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
     int min_row = BOARD_HEIGHT - 1;
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
@@ -383,7 +383,7 @@ int get_quickdrop_row()
 
 BOOL piece_landed(void)
 {
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         // check every bottom tile if it has reached bottom
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
@@ -398,7 +398,7 @@ BOOL piece_landed(void)
 void establish_piece(void)
 {
     // transfer the current piece to the board
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot];
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
     for (int i = 0; i < 4; i++) {
         struct Position *pos = &rot->pos[i];
         gameboard0[pos->y + current_row][pos->x + current_col] = 1;
@@ -410,6 +410,36 @@ void spawn_next_piece(void)
     current_row = 0;
     current_col = 0;
     current_piece = piece_queue[piece_queue_idx++];
+}
+
+BOOL can_move_left(struct Rotation *rot)
+{
+    for (int i = 0; i < 4; i++) {
+        int col = current_col + rot->pos[i].x;
+        if (col == 0) {
+            return FALSE;
+        }
+        int row = current_row + rot->pos[i].y;
+        if (gameboard0[row][col - 1] != 0) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+BOOL can_move_right(struct Rotation *rot)
+{
+    for (int i = 0; i < 4; i++) {
+        int col = current_col + rot->pos[i].x;
+        if (col == (BOARD_WIDTH - 1)) {
+            return FALSE;
+        }
+        int row = current_row + rot->pos[i].y;
+        if (gameboard0[row][col + 1] != 0) {
+            return FALSE;
+        }
+    }
+    return TRUE;
 }
 
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
@@ -425,27 +455,11 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     if (quickdrop_cooldown > 0) quickdrop_cooldown--;
 
     if (cur_ticks == 0) {
+        struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
         if (engine->input_system->was_action_pressed(action_move_left)) {
-            // MOVE LEFT
-            // check if all blocks can move left
-            BOOL ok = TRUE;
-            for (int i = 0; i < 4; i++) {
-                if ((current_col + PIECE_SPECS[current_piece].rotations[current_rot].pos[i].x) == 0) {
-                    ok = FALSE;
-                    break;
-                }
-            }
-            if (ok) current_col--;
+            if (can_move_left(rot)) current_col--;
         } else if (engine->input_system->was_action_pressed(action_move_right)) {
-            // MOVE RIGHT
-            BOOL ok = TRUE;
-            for (int i = 0; i < 4; i++) {
-                if ((current_col + PIECE_SPECS[current_piece].rotations[current_rot].pos[i].x) == 9) {
-                    ok = FALSE;
-                    break;
-                }
-            }
-            if (ok) current_col++;
+            if (can_move_right(rot)) current_col++;
 
         } else if (engine->input_system->was_action_pressed(action_move_down)) {
             // ACCELERATE MOVE DOWN
@@ -504,7 +518,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     }
     if (num_queued > 0) {
         int piece = queued_draw[0].piece;
-        draw_block(&PIECE_SPECS[piece].draw_specs[queued_draw[0].rotation],
+        draw_block(&PIECE_SPECS[piece].rotations[queued_draw[0].rotation].draw_spec,
                    piece,
                    queued_draw[0].row,
                    queued_draw[0].col);
@@ -519,18 +533,18 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         // Draw new block position by clearing the old and drawing the new
         // don't draw if there are queued up draws !!!
         if (clear_previous) {
-            struct DrawSpec *prev_spec = &PIECE_SPECS[player_state[cur_buffer].piece].draw_specs[player_state[cur_buffer].rotation];
+            struct DrawSpec *prev_spec = &PIECE_SPECS[player_state[cur_buffer].piece].rotations[player_state[cur_buffer].rotation].draw_spec;
             clear_block(prev_spec,
                         player_state[cur_buffer].row,
                         player_state[cur_buffer].col);
         }
-        draw_block(&PIECE_SPECS[current_piece].draw_specs[current_rot],
+        draw_block(&PIECE_SPECS[current_piece].rotations[current_rot].draw_spec,
                    current_piece,
                    current_row, current_col);
 
         // Ghost piece is drawn with sprite, no background restore needed
         draw_ghost_piece(this_scene,
-                         &PIECE_SPECS[current_piece].outline[current_rot],
+                         &PIECE_SPECS[current_piece].rotations[current_rot].outline,
                          qdr, current_col);
 
         // remember state for this buffer
