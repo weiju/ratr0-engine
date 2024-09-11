@@ -356,6 +356,12 @@ void dump_board(void)
  * position
  * Since we iterate from top left to right bottom, we should end up
  * with the lowest row and lowest column
+ *
+ * There are cases where that fails:
+ *
+ *   - the L in rotation 3 and J in rotation 1 lets the piece drop one level
+ *     too low when there is 1 level at the bottom and you want to hook
+ *     the short piece right above it
  */
 int get_quickdrop_row()
 {
@@ -373,6 +379,19 @@ int get_quickdrop_row()
             }
         }
     }
+
+    // special case for L piece rotation 3
+    if (current_piece == PIECE_L && current_rot == 3 &&
+        min_row == (BOARD_HEIGHT - 2)) {
+        return min_row - 1;
+    }
+    // special case for J piece rotation 1
+    if (current_piece == PIECE_J && current_rot == 1 &&
+        min_row == (BOARD_HEIGHT - 2)) {
+        return min_row - 1;
+    }
+
+    // Handle the rest of the cases
     if (min_row == (BOARD_HEIGHT - 1)) {
         struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
         return min_row - minpos->y;
@@ -405,11 +424,27 @@ void establish_piece(void)
     }
 }
 
+
+/**
+ * Random generation of all our pieces. This will restart when the end
+ * of the queue is reached
+ */
+void init_piece_queue(void)
+{
+    for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
+        //piece_queue[i] = rand() % 7;
+        if (i < 1) piece_queue[i] = PIECE_I;
+        else piece_queue[i] = PIECE_J;
+    }
+    piece_queue_idx = 0;
+}
+
 void spawn_next_piece(void)
 {
     current_row = 0;
     current_col = 0;
     current_piece = piece_queue[piece_queue_idx++];
+    piece_queue_idx %= PIECE_QUEUE_LEN;
 }
 
 BOOL can_move_left(struct Rotation *rot)
@@ -610,11 +645,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     }
 
     // initialize piece queue
-    // TODO: use srand() to initialize
-    for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
-        piece_queue[i] = rand() % 7;
-    }
-    piece_queue_idx = 0;
+    init_piece_queue();
     spawn_next_piece();
     return main_scene;
 }
