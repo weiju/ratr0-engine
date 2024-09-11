@@ -288,6 +288,13 @@ void clear_block(struct DrawSpec *spec, int row, int col)
     }
 }
 
+/**
+ * Draw the ghost piece.
+ * @param scene the current scene
+ * @param outline pointer to the sprite outline
+ * @param row origin row
+ * @param col origin column
+ */
 void draw_ghost_piece(struct Ratr0Scene *scene,
                       struct SpriteOutline *outline, int row, int col)
 {
@@ -312,10 +319,21 @@ struct PlayerState player_state[2] = {
     { NULL, 0, 0, 0}
 };
 
+/**
+ * Since we are performing double buffering, we have a draw an a clear queue.
+ * By this we can decouple logic from rendering and at the same time
+ * impact the double buffer as well
+ */
 struct PlayerState queued_draw[1] = {
     { NULL, 0, 0, 0}
 };
-int num_queued = 0;
+int num_queued_draw = 0;
+
+struct PlayerState queued_clear[1] = {
+    { NULL, 0, 0, 0}
+};
+int num_queued_clear = 0;
+
 
 int cur_buffer;
 int cur_ticks = 0;
@@ -414,6 +432,9 @@ BOOL piece_landed(void)
     return FALSE;
 }
 
+/**
+ * Establish the player piece on the board.
+ */
 void establish_piece(void)
 {
     // transfer the current piece to the board
@@ -422,6 +443,48 @@ void establish_piece(void)
         struct Position *pos = &rot->pos[i];
         gameboard0[pos->y + current_row][pos->x + current_col] = 1;
     }
+}
+
+struct RowRange {
+    int first, last;
+};
+
+/**
+ * Check if there are any completed rows on the board. If the result is TRUE, the range
+ * will be in the completed_rows structure.
+ *
+ * @param completed_rows The completed rows are returned in this structure
+ * @return TRUE if there are any completed rows
+ */
+BOOL get_completed_rows(struct RowRange *completed_rows)
+{
+    BOOL result = FALSE;
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
+    UINT32 processed = 0; // a simple way to mark processed rows as a bit
+    int min = BOARD_HEIGHT, max = 0;
+    for (int i = 0; i < 4; i++) {
+        struct Position *pos = &rot->pos[i];
+        int row = pos->y + current_row;
+        UINT32 mask = 1 << row;
+        if ((mask & processed) == 0) { // no processed yet
+            BOOL complete = TRUE;
+            for (int j = 0; j < BOARD_WIDTH; j++) {
+                if (gameboard0[row][j] == 0) {
+                    complete = FALSE;
+                    break;
+                }
+            }
+            if (complete) {
+                if (row < min) min = row;
+                if (row > max) max = row;
+                result = TRUE;
+            }
+            processed |= mask;
+        }
+    }
+    completed_rows->first = min;
+    completed_rows->last = max;
+    return result;
 }
 
 
@@ -509,7 +572,13 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // to 0
             if (quickdrop_cooldown == 0) {
                 // we also need to enqueue the current position into a clear queue
-                //
+                // so we delete the graphics of the piece
+                queued_clear[0].rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
+                queued_clear[0].row = current_row;
+                queued_clear[0].col = current_col;
+                num_queued_clear = 2;
+
+                // now we update to the drop/establish condition
                 current_row = get_quickdrop_row();
                 drop_timer = 0;
                 quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
@@ -526,6 +595,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     }
 
     BOOL dropped = FALSE, clear_previous = TRUE;
+    struct RowRange completed_rows;
     // automatic drop
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
@@ -537,7 +607,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             queued_draw[0].piece = current_piece; // we need to remember the color
             queued_draw[0].row = current_row;
             queued_draw[0].col = current_col;
-            num_queued = 2;
+            num_queued_draw = 2;
 
             // reset the clear positions for the piece
             for (int i = 0; i < 2; i++) {
@@ -546,23 +616,44 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
                 player_state[cur_buffer].col = 0;
             }
             establish_piece();
-            spawn_next_piece(); // spawn next piece, but don't draw yet
+            if (get_completed_rows(&completed_rows)) {
+                // delay the spawning, and delete completed lines first
+                printf("detected completed rows, first: %d last: %d\n",
+                       completed_rows.first,
+                       completed_rows.last);
+                spawn_next_piece(); // TODO: remove me
+            } else {
+                spawn_next_piece(); // spawn next piece, but don't draw yet
+            }
             dropped = TRUE;
         } else {
             current_row++;
         }
     }
-    if (num_queued > 0) {
+
+    // Clear queue to clean up pieces left by quick drop
+    if (num_queued_clear > 0) {
+        struct RotationSpec *queued_spec = queued_clear[0].rot_spec;
+        clear_block(&queued_spec->draw_spec,
+                    queued_clear[0].row,
+                    queued_clear[0].col);
+        num_queued_clear--;
+    }
+    // Draw queue to draw established pieces
+    if (num_queued_draw > 0) {
         struct RotationSpec *queued_spec = queued_draw[0].rot_spec;
         draw_block(&queued_spec->draw_spec,
                    queued_draw[0].piece,
                    queued_draw[0].row,
                    queued_draw[0].col);
-        num_queued--;
+        num_queued_draw--;
+
         // ensure, we don't clear any lines while establishing the
         // piece in the buffer
         clear_previous = FALSE;
     }
+
+    // This is the default draw function
     if (!dropped) {
         int qdr = get_quickdrop_row();
 
@@ -584,7 +675,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
                          &rot_spec->outline,
                          qdr, current_col);
 
-        // remember state for this buffer
+        // remember state for this buffer so we can delete it
+        // NOTE: maybe we can enqueue it so we have consistency
         player_state[cur_buffer].rot_spec = rot_spec;
         player_state[cur_buffer].row = current_row;
         player_state[cur_buffer].col = current_col;
