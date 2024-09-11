@@ -303,17 +303,17 @@ void draw_ghost_piece(struct Ratr0Scene *scene,
 }
 
 struct PlayerState {
-    int piece, rotation;
-    int row, col;
+    struct RotationSpec *rot_spec;
+    int piece, row, col;
 };
 
 struct PlayerState player_state[2] = {
-    { 0, 0, 0},
-    { 0, 0, 0}
+    { NULL, 0, 0, 0},
+    { NULL, 0, 0, 0}
 };
 
 struct PlayerState queued_draw[1] = {
-    { 0, 0, 0}
+    { NULL, 0, 0, 0}
 };
 int num_queued = 0;
 
@@ -432,9 +432,9 @@ void establish_piece(void)
 void init_piece_queue(void)
 {
     for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
-        //piece_queue[i] = rand() % 7;
-        if (i < 1) piece_queue[i] = PIECE_I;
-        else piece_queue[i] = PIECE_J;
+        piece_queue[i] = rand() % 7;
+        //if (i < 1) piece_queue[i] = PIECE_I;
+        //else piece_queue[i] = PIECE_J;
     }
     piece_queue_idx = 0;
 }
@@ -508,6 +508,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // we can do this by setting current_row to qdr and the drop timer
             // to 0
             if (quickdrop_cooldown == 0) {
+                // we also need to enqueue the current position into a clear queue
+                //
                 current_row = get_quickdrop_row();
                 drop_timer = 0;
                 quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
@@ -528,33 +530,32 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
         if (piece_landed()) {
+            struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
             // since we have a double buffer, we have to queue up a draw
             // for the following frame, too
-            queued_draw[0].piece = current_piece;
-            queued_draw[0].rotation = current_rot;
+            queued_draw[0].rot_spec = rot_spec;
+            queued_draw[0].piece = current_piece; // we need to remember the color
             queued_draw[0].row = current_row;
             queued_draw[0].col = current_col;
             num_queued = 2;
 
             // reset the clear positions for the piece
             for (int i = 0; i < 2; i++) {
-                player_state[cur_buffer].rotation = current_rot;
-                player_state[cur_buffer].piece = current_piece;
+                player_state[cur_buffer].rot_spec = rot_spec;
                 player_state[cur_buffer].row = 0;
                 player_state[cur_buffer].col = 0;
             }
             establish_piece();
             spawn_next_piece(); // spawn next piece, but don't draw yet
-            //dump_board();
             dropped = TRUE;
         } else {
             current_row++;
         }
     }
     if (num_queued > 0) {
-        int piece = queued_draw[0].piece;
-        draw_block(&PIECE_SPECS[piece].rotations[queued_draw[0].rotation].draw_spec,
-                   piece,
+        struct RotationSpec *queued_spec = queued_draw[0].rot_spec;
+        draw_block(&queued_spec->draw_spec,
+                   queued_draw[0].piece,
                    queued_draw[0].row,
                    queued_draw[0].col);
         num_queued--;
@@ -568,23 +569,23 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         // Draw new block position by clearing the old and drawing the new
         // don't draw if there are queued up draws !!!
         if (clear_previous) {
-            struct DrawSpec *prev_spec = &PIECE_SPECS[player_state[cur_buffer].piece].rotations[player_state[cur_buffer].rotation].draw_spec;
-            clear_block(prev_spec,
+            struct RotationSpec *prev_spec = player_state[cur_buffer].rot_spec;
+            clear_block(&prev_spec->draw_spec,
                         player_state[cur_buffer].row,
                         player_state[cur_buffer].col);
         }
-        draw_block(&PIECE_SPECS[current_piece].rotations[current_rot].draw_spec,
+        struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
+        draw_block(&rot_spec->draw_spec,
                    current_piece,
                    current_row, current_col);
 
         // Ghost piece is drawn with sprite, no background restore needed
         draw_ghost_piece(this_scene,
-                         &PIECE_SPECS[current_piece].rotations[current_rot].outline,
+                         &rot_spec->outline,
                          qdr, current_col);
 
         // remember state for this buffer
-        player_state[cur_buffer].rotation = current_rot;
-        player_state[cur_buffer].piece = current_piece;
+        player_state[cur_buffer].rot_spec = rot_spec;
         player_state[cur_buffer].row = current_row;
         player_state[cur_buffer].col = current_col;
         drop_timer--;
