@@ -20,7 +20,7 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 
 EXES=main invaders centi tetra_zone
-TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test
+TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test queue_test
 
 # programs for benchmarks
 PERF_PRGS=set_perf
@@ -58,6 +58,7 @@ check: $(TEST_PRGS)
 	./treeset_test
 	./quadtree_test
 	./vector_test
+	./queue_test
 
 perf: $(PERF_PRGS)
 
@@ -96,6 +97,9 @@ tetris/tetris_copper.c: tetris/tetris.copper
 #
 # TESTS
 #
+queue_test: test/queue_test.o ../chibi_test/chibi.o
+	$(CC) $(LDFLAGS) -o $@ $^
+
 timer_test: test/timer_test.o timers.o ../chibi_test/chibi.o
 	$(CC) $(LDFLAGS) -o $@ $^
 

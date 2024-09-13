@@ -165,3 +165,8 @@ The unit tests are setup in a way that they can be run without
 an Amiga system.
 
 $ make TESTONLY=1 check
+
+### Updating chibi_test
+
+$ git submodule update --init --remote --recursive
+$ git submodule update --recursive
