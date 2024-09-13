@@ -40,13 +40,14 @@ void ratr0_blitter_startup(Ratr0Engine *eng)
  */
 UINT16 _blit_rect_simple(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod,
                          UINT16 srcmod,
-                         UINT16 bltsize)
+                         UINT16 bltsize,
+                         BOOL reversed)
 {
     WaitBlit();
     // D = A => LF = 0xf0, channels A and D turned on => 0x09
     custom.bltcon0 = 0x09f0;
-    // not used
-    custom.bltcon1 = 0;
+    // copy direction
+    custom.bltcon1 = reversed ? 2 : 0;
 
     custom.bltafwm = 0xffff;
     custom.bltalwm = 0xffff;
@@ -91,6 +92,20 @@ UINT16 ratr0_blit_rect_simple(struct Ratr0Surface *dst,
     UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
 
+    // determine blit direction. A blit is reverse if the source and
+    // destination areas overlap and the destination starts after the source
+    BOOL reversed = dsty > srcy && dsty <= srcy + blit_height_pixels;
+    if (reversed) {
+        // start at the last word, so src_addr and dst_addr
+        // need to be pointed to the last word in their respective
+        // blocks
+        UINT16 blit_width_bytes = blit_width_words / 2;
+        src_addr += blit_height_pixels * src_width_bytes * src->depth;
+        src_addr -= (srcmod + 2);
+        dst_addr += blit_height_pixels * dst_width_bytes * dst->depth;
+        dst_addr -= (dstmod + 2);
+    }
+
     int blit_height_total = blit_height_pixels * src->depth;
     if (blit_height_total > 1024) {
         // EDGE CASE: since we are supporting OCS blitter, we might run into issues
@@ -101,10 +116,13 @@ UINT16 ratr0_blit_rect_simple(struct Ratr0Surface *dst,
         // 2. I solve this by performing 2 blits, one of 1024 height, and the rest
         // 3. I assume that the modulos for both source and destination is 0, which should
         //    cover the vast majority of use cases
+        // NOTE: reversed is not supported right now until we actually
+        // ----- encounter a case where we need it
         int blit_height_rest = blit_height_total - 1024;
         // first blit
         UINT16 bltsize = (UINT16) (1024 << 6) | blit_width_words;
-        bltsize = _blit_rect_simple(dst_addr, src_addr, dstmod, srcmod, bltsize);
+        bltsize = _blit_rect_simple(dst_addr, src_addr, dstmod, srcmod, bltsize,
+                                    reversed);
 
         // now the second blit, starting after the stuff, we perform a fast blit for the second
         // blit, since nothing except the blit size and addresses are  changing
@@ -115,7 +133,8 @@ UINT16 ratr0_blit_rect_simple(struct Ratr0Surface *dst,
         return bltsize;
     } else {
         UINT16 bltsize = (UINT16) ((blit_height_pixels * src->depth) << 6) | blit_width_words;
-        return _blit_rect_simple(dst_addr, src_addr, dstmod, srcmod, bltsize);
+        return _blit_rect_simple(dst_addr, src_addr, dstmod, srcmod, bltsize,
+                                 reversed);
     }
 }
 

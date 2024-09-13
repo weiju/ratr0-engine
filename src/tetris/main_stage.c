@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <ratr0/ratr0.h>
+#include <ratr0/datastructs/queue.h>
 #include <clib/graphics_protos.h>
 #include <ratr0/hw_registers.h>
 #include "main_stage.h"
@@ -26,7 +27,8 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 FILE *debug_fp;
 
 // Resources
-#define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
+//#define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
+#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
@@ -334,6 +336,15 @@ struct PlayerState queued_clear[1] = {
 };
 int num_queued_clear = 0;
 
+struct PlayerState NULL_PLAYER_STATE = { NULL, 0, 0, 0 };
+void init_player_state(struct PlayerState *s)
+{
+    *s = NULL_PLAYER_STATE;
+}
+
+RATR0_QUEUE_ARR(draw_queue, struct PlayerState, 2, init_player_state, 2);
+RATR0_QUEUE_ARR(clear_queue, struct PlayerState, 2, init_player_state, 2);
+
 
 int cur_buffer;
 int cur_ticks = 0;
@@ -540,6 +551,77 @@ BOOL can_move_right(struct Rotation *rot)
     return TRUE;
 }
 
+struct RowRange completed_rows;
+
+int done = 0;
+
+void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+{
+    cur_buffer = ratr0_get_back_buffer()->buffernum;
+    backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    // For now, end when the mouse was clicked. This is just for testing
+    if (engine->input_system->was_action_pressed(action_quit)) {
+        ratr0_engine_exit();
+    }
+    /*
+    // delete the lines, but don't allow anything else during that time
+    // we actually might not need this step since we are going to move the
+    // entire contents down
+    int num_deleted_rows = completed_rows.last - completed_rows.first + 1;
+    clear_shape(completed_rows.first, 0,
+                num_deleted_rows,
+                BOARD_WIDTH);
+
+    // move blocks above cleared lines down
+    // 1. the idea is to start with (first - 1) and stop with the first
+    // line that does not have any blocks. This defines the range of
+    // lines that have to be shifted down by num_deleted_rows
+    int topline = -1;
+    for  (int i = completed_rows.last - 1; i >= 0; i--) {
+        BOOL row_clear = TRUE;
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            if (gameboard0[i][j] != 0) {
+                row_clear = FALSE;
+                break;
+            }
+            if (row_clear) {
+                // stop here
+                topline = i;
+                break;
+            }
+        }
+    }
+    */
+    // TODO: we have the top line now. So we move the entire rectangular
+    // area from topline to completed_rows.first
+    // down by num_deleted_rows * 8 pixels, which means
+    // a. we copy the area down
+    int srcx = BOARD_X0, srcy = BOARD_Y0 + 16 * 8,
+        dstx = BOARD_X0, dsty = BOARD_Y0 + 17 * 8;
+    //int num_deleted_rows = completed_rows.last - completed_rows.first + 1;
+    int num_deleted_rows = 3;
+    int blit_width_pixels = BOARD_WIDTH * 8;
+    int blit_height_pixels = num_deleted_rows * 8;
+    if (done < 2) {
+        // only copy once per buffer
+        // reverse copying
+        ratr0_blit_rect_simple(backbuffer_surface,
+                               backbuffer_surface,
+                               dstx, dsty,
+                               srcx, srcy,
+                               blit_width_pixels,
+                               blit_height_pixels);
+        done++;
+    }
+
+    // b. then delete top num_deleted_rows lines
+    // Since in step a we are copying to an overlapping area, we need
+    // to copy backwards
+
+    // TODO
+    // when done switch back to main_scene_update
+    //main_scene->update = main_scene_update;
+}
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
@@ -595,7 +677,6 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     }
 
     BOOL dropped = FALSE, clear_previous = TRUE;
-    struct RowRange completed_rows;
     // automatic drop
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
@@ -603,17 +684,12 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
             // since we have a double buffer, we have to queue up a draw
             // for the following frame, too
-            queued_draw[0].rot_spec = rot_spec;
-            queued_draw[0].piece = current_piece; // we need to remember the color
-            queued_draw[0].row = current_row;
-            queued_draw[0].col = current_col;
+            queued_draw[0] = (struct PlayerState) {rot_spec, current_piece, current_row, current_col};
             num_queued_draw = 2;
 
             // reset the clear positions for the piece
             for (int i = 0; i < 2; i++) {
-                player_state[cur_buffer].rot_spec = rot_spec;
-                player_state[cur_buffer].row = 0;
-                player_state[cur_buffer].col = 0;
+                player_state[cur_buffer] = NULL_PLAYER_STATE;
             }
             establish_piece();
             if (get_completed_rows(&completed_rows)) {
@@ -621,7 +697,10 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
                 printf("detected completed rows, first: %d last: %d\n",
                        completed_rows.first,
                        completed_rows.last);
-                spawn_next_piece(); // TODO: remove me
+
+                // switch state to deleting lines mode
+                this_scene->update = main_scene_delete_lines;
+
             } else {
                 spawn_next_piece(); // spawn next piece, but don't draw yet
             }
@@ -677,9 +756,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
         // remember state for this buffer so we can delete it
         // NOTE: maybe we can enqueue it so we have consistency
-        player_state[cur_buffer].rot_spec = rot_spec;
-        player_state[cur_buffer].row = current_row;
-        player_state[cur_buffer].col = current_col;
+        player_state[cur_buffer] = (struct PlayerState) { rot_spec, current_piece, current_row, current_col };
         drop_timer--;
     }
     // TODO:
@@ -698,7 +775,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // Use the scenes module to create a scene and run that
     struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
     struct Ratr0Scene *main_scene = node_factory->create_scene();
-    main_scene->update = main_scene_update;
+    //main_scene->update = main_scene_update;
+    main_scene->update = main_scene_delete_lines;
 
     // set new copper list
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,

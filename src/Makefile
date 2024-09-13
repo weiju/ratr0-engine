@@ -97,6 +97,9 @@ tetris/tetris_copper.c: tetris/tetris.copper
 #
 # TESTS
 #
+test_queue: test_queue.o
+	$(CC) $(LDFLAGS) -o $@ $^
+
 queue_test: test/queue_test.o ../chibi_test/chibi.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
