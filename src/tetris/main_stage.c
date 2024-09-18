@@ -21,14 +21,14 @@ struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down,
-    action_rotate, action_quit;
+    action_rotate_right, action_rotate_left, action_quit;
 
 #define DEBUG_FILE "tetris.debug"
 FILE *debug_fp;
 
 // Resources
-//#define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
-#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines.ts")
+#define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
+//#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
@@ -347,7 +347,6 @@ RATR0_QUEUE_ARR(clear_queue, struct PlayerState, 2, init_player_state, 2);
 
 
 int cur_buffer;
-int cur_ticks = 0;
 int dir = 1;
 int clear_count = 0;
 int current_row = 0, current_col = 0;
@@ -364,6 +363,8 @@ int rotate_cooldown = 0;
 int drop_timer = DROP_TIMER_VALUE;
 #define QUICKDROP_COOLDOWN_TIME (10)
 int quickdrop_cooldown = 0;
+#define MOVE_COOLDOWN_TIME (3)
+int move_cooldown = 0;
 
 #define PIECE_QUEUE_LEN (10)
 int piece_queue[PIECE_QUEUE_LEN];
@@ -507,8 +508,7 @@ void init_piece_queue(void)
 {
     for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
         piece_queue[i] = rand() % 7;
-        //if (i < 1) piece_queue[i] = PIECE_I;
-        //else piece_queue[i] = PIECE_J;
+        //piece_queue[i] = PIECE_I;
     }
     piece_queue_idx = 0;
 }
@@ -605,12 +605,15 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed
     if (done < 2) {
         // only copy once per buffer
         // reverse copying
+        // this moves the entire stack above the deleted lines
         ratr0_blit_rect_simple(backbuffer_surface,
                                backbuffer_surface,
                                dstx, dsty,
                                srcx, srcy,
                                blit_width_pixels,
                                blit_height_pixels);
+        // and delete the top
+        clear_shape(16, 0, 1, BOARD_WIDTH);
         done++;
     }
 
@@ -622,6 +625,49 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed
     // when done switch back to main_scene_update
     //main_scene->update = main_scene_update;
 }
+
+struct Translate NO_TRANSLATE = {0, 0};
+struct Translate *get_srs_translation(int piece, int from, int to)
+{
+    if (piece == PIECE_O) return &NO_TRANSLATE;
+
+    struct Translate *tests = piece == PIECE_I ?
+        WALLKICK_I[from][to] : WALLKICK_JLTSZ[from][to];
+    struct Position *pos = PIECE_SPECS[piece].rotations[to].rotation.pos;
+
+    for (int i = 0; i < NUM_WALLKICK_TESTS; i++) {
+        int tx = tests[i].x;
+        int ty = tests[i].y;
+        BOOL ok = TRUE;
+        for (int j = 0; j < 4; j++) {
+            int col = current_col + pos[j].x + tx;
+            int row = current_row + pos[j].y + ty;
+            // check if this position is outside or occupied
+            if (row >= BOARD_HEIGHT ||
+                col < 0 || col >= BOARD_WIDTH ||
+                (gameboard0[row][col] != 0)) {
+                ok = FALSE;
+                break;
+            }
+        }
+        if (ok) {
+            /*
+            fprintf(debug_fp, "piece: %d, rotation: %d, successful test at i=%d row: %d col: %d\n",
+                    piece, to, i, current_row, current_col);
+            fflush(debug_fp);
+            */
+            return &tests[i];
+        } else {
+            /*
+            fprintf(debug_fp, "piece: %d, rotation: %d, FAILED test at i=%d row: %d col: %d\n",
+                    piece, to, i, current_row, current_col);
+            fflush(debug_fp);
+            */
+        }
+    }
+    return NULL;
+}
+
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
@@ -631,50 +677,79 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         ratr0_engine_exit();
     }
     // cooldowns
+    if (move_cooldown > 0) move_cooldown--;
     if (rotate_cooldown > 0) rotate_cooldown--;
     if (quickdrop_cooldown > 0) quickdrop_cooldown--;
 
-    if (cur_ticks == 0) {
-        struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
-        if (engine->input_system->was_action_pressed(action_move_left)) {
-            if (can_move_left(rot)) current_col--;
-        } else if (engine->input_system->was_action_pressed(action_move_right)) {
-            if (can_move_right(rot)) current_col++;
+    // Input processing
+    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
+    if (engine->input_system->was_action_pressed(action_move_left)) {
+        if (move_cooldown == 0 && can_move_left(rot)) {
+            current_col--;
+            move_cooldown = MOVE_COOLDOWN_TIME;
+        }
+    } else if (engine->input_system->was_action_pressed(action_move_right)) {
+        if (move_cooldown == 0 && can_move_right(rot)) {
+            current_col++;
+            move_cooldown = MOVE_COOLDOWN_TIME;
+        }
+    } else if (engine->input_system->was_action_pressed(action_move_down)) {
+        // ACCELERATE MOVE DOWN
+        if (!piece_landed()) {
+            current_row++;
+            drop_timer = DROP_TIMER_VALUE; // reset drop timer
+        }
+    } else if (engine->input_system->was_action_pressed(action_drop)) {
+        // QUICK DROP
+        // do a quick establish on the quickdrop row
+        // we can do this by setting current_row to qdr and the drop timer
+        // to 0
+        if (quickdrop_cooldown == 0) {
+            // we also need to enqueue the current position into a clear queue
+            // so we delete the graphics of the piece
+            queued_clear[0].rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
+            queued_clear[0].row = current_row;
+            queued_clear[0].col = current_col;
+            num_queued_clear = 2;
 
-        } else if (engine->input_system->was_action_pressed(action_move_down)) {
-            // ACCELERATE MOVE DOWN
-            if (!piece_landed()) {
-                current_row++;
-                drop_timer = DROP_TIMER_VALUE; // reset drop timer
-            }
-        } else if (engine->input_system->was_action_pressed(action_drop)) {
-            // QUICK DROP
-            // do a quick establish on the quickdrop row
-            // we can do this by setting current_row to qdr and the drop timer
-            // to 0
-            if (quickdrop_cooldown == 0) {
-                // we also need to enqueue the current position into a clear queue
-                // so we delete the graphics of the piece
-                queued_clear[0].rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
-                queued_clear[0].row = current_row;
-                queued_clear[0].col = current_col;
-                num_queued_clear = 2;
-
-                // now we update to the drop/establish condition
-                current_row = get_quickdrop_row();
-                drop_timer = 0;
-                quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
-            }
-        } else if (engine->input_system->was_action_pressed(action_rotate)) {
-            // ROTATE
-            // TODO: add wall kick
-            if (rotate_cooldown == 0) {
+            // now we update to the drop/establish condition
+            current_row = get_quickdrop_row();
+            drop_timer = 0;
+            quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
+        }
+    } else if (engine->input_system->was_action_pressed(action_rotate_right)) {
+        // rotate right with wall kick
+        if (rotate_cooldown == 0) {
+            struct Translate *t = get_srs_translation(current_piece,
+                                                      current_rot,
+                                                      (current_rot + 1) % 4);
+            if (t) {
                 current_rot++;
                 current_rot %= 4;
-                rotate_cooldown = ROTATE_COOLDOWN_TIME;
+                current_row += t->y;
+                current_col += t->x;
             }
+            rotate_cooldown = ROTATE_COOLDOWN_TIME;
+        }
+    } else if (engine->input_system->was_action_pressed(action_rotate_left)) {
+        // rotate left with wall kick
+        if (rotate_cooldown == 0) {
+            struct Translate *t = get_srs_translation(current_piece,
+                                                      current_rot,
+                                                      (current_rot - 1) % 4);
+            if (t) {
+                current_rot--;
+                current_rot %= 4;
+                // SRS wall kick data actually denotes y in reverse
+                // so we need to subtract y
+                current_row -= t->y;
+                current_col += t->x;
+            }
+            rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
     }
+
+    // After input
 
     BOOL dropped = FALSE, clear_previous = TRUE;
     // automatic drop
@@ -759,12 +834,6 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         player_state[cur_buffer] = (struct PlayerState) { rot_spec, current_piece, current_row, current_col };
         drop_timer--;
     }
-    // TODO:
-    // We should actually be able to set the poll rate in the engine
-    // or use a cooldown
-    cur_ticks++;
-    cur_ticks %= 2;
-
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -775,8 +844,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // Use the scenes module to create a scene and run that
     struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
     struct Ratr0Scene *main_scene = node_factory->create_scene();
-    //main_scene->update = main_scene_update;
-    main_scene->update = main_scene_delete_lines;
+    main_scene->update = main_scene_update;
+    //main_scene->update = main_scene_delete_lines;
 
     // set new copper list
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,

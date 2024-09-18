@@ -25,6 +25,10 @@ struct Position {
     char x, y;
 };
 
+struct Translate {
+    char x, y;
+};
+
 typedef enum {
     RS_1x1=0, RS_1x2, RS_1x3, RS_1x4,
     RS_2x1, RS_3x1, RS_4x1, RS_2x2
@@ -77,5 +81,16 @@ struct PieceSpec {
 };
 
 extern struct PieceSpec PIECE_SPECS[7];
+
+// WALL KICK DATA
+#define NUM_FROM_ROTATIONS (4)
+#define NUM_TO_ROTATIONS (2)
+#define NUM_WALLKICK_TESTS (5)
+/**
+ * Translation from -> to
+ */
+extern struct Translate WALLKICK_JLTSZ[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_TESTS];
+
+extern struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_TESTS];
 
 #endif // !__GAME_DATA_H__
