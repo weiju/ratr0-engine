@@ -123,6 +123,9 @@ void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y))
 // Swap back and front buffers
 void ratr0_display_swap_buffers(void)
 {
+    //  NOP for single buffering
+    if (display_info.num_buffers == 1) return;
+
     // 1. swap front and back indexes
     int tmp = ratr0_front_buffer;
     ratr0_front_buffer = ratr0_back_buffer;
@@ -329,6 +332,10 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
     display_info.depth = init_data->depth;
     display_info.num_buffers = init_data->num_buffers;
     display_info.is_pal = (((struct GfxBase *) GfxBase)->DisplayFlags & PAL) == PAL;
+    if (init_data->num_buffers == 1) {
+        // back buffer == front buffer
+        ratr0_back_buffer = 0;
+    }
 
     // Build the display buffer
     build_display_buffer(&display_info);

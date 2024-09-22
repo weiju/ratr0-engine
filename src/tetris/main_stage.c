@@ -10,6 +10,7 @@
 #include "main_stage.h"
 #include "tetris_copper.h"
 #include "game_data.h"
+#include "draw_primitives.h"
 
 struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
     3, 5, 7, 9,
@@ -39,11 +40,6 @@ struct Ratr0Surface *backbuffer_surface, tiles_surface;
 struct Ratr0SpriteSheet outlines_sheet;
 struct Ratr0HWSprite *outline_frame[9];
 
-#define BOARD_X0 (112)
-#define BOARD_Y0 (16)
-#define BOARD_WIDTH (10)
-#define BOARD_HEIGHT (20)
-
 // game board, 0 means empty, if there is a piece it is block type + 1
 // since the block types start at 0 as well
 int gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
@@ -52,243 +48,6 @@ int gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
 // piece is above the maximum height, we can drop it to the max height
 int max_height0[BOARD_WIDTH];
 
-
-void draw_1x3(int color, int row, int col)
-{
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 2;
-    int shift = x % 16;
-    x -= shift;
-
-    UINT16 afwm, alwm;
-    if (shift == 8) {
-        afwm = 0x00ff;
-        alwm = 0xffff;
-        blit_width_words++;
-    } else {
-        afwm = 0xffff;
-        alwm = 0xff00;
-    }
-
-    // 3x1 block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
-                  0, color * 32,
-                  x, y,
-                  0xfc, 0,
-                  afwm, alwm,
-                  blit_width_words, 8);
-}
-
-void draw_1x2(int color, int row, int col)
-{
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 1;
-    int shift = x % 16;
-    x -= shift;
-
-    UINT16 afwm, alwm;
-    if (shift == 8) {
-        afwm = 0x00ff;
-        alwm = 0xff00;
-        blit_width_words++;
-    } else {
-        afwm = 0xffff;
-        alwm = 0xffff;
-    }
-
-    // 2x1 block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
-                  0, color * 32,
-                  x, y, 0xfc, 0,
-                  afwm, alwm,
-                  blit_width_words, 8);
-}
-
-void draw_2x2(int color, int row, int col)
-{
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 1;
-    int shift = x % 16;
-    x -= shift;
-
-    UINT16 afwm, alwm;
-    if (shift == 8) {
-        afwm = 0x00ff;
-        alwm = 0xff00;
-        blit_width_words++;
-    } else {
-        afwm = 0xffff;
-        alwm = 0xffff;
-    }
-
-    // 2x1 block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
-                  0, color * 32,
-                  x, y, 0xfc, 0,
-                  afwm, alwm,
-                  blit_width_words, 16);
-}
-
-/**
- * Blits a 1x4 block
- */
-void draw_1x4(int color, int row, int col)
-{
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 2;
-    int shift = x % 16;
-    x -= shift;
-
-    UINT16 afwm = 0xffff, alwm = 0xffff;
-    if (shift == 8) {
-        blit_width_words++;
-    }
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
-                  0, color * 32,
-                  x, y,
-                  // we actually perform that shift !!!
-                  0xfc, shift,
-                  afwm, alwm,
-                  blit_width_words, 8);
-
-}
-
-void draw_nx1(int color, int row, int col, int num_rows)
-{
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int shift = x % 16;
-    x -= shift;
-
-    UINT16 afwm, alwm;
-    if (shift == 8) {
-        afwm = 0x00ff;
-        alwm = 0xffff;
-    } else {
-        afwm = 0xff00;
-        alwm = 0xffff;
-    }
-    // we don't actually need a shift. We just mask either
-    // the first or the second block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
-                  0, color * 32,
-                  x, y, 0xfc, 0,
-                  afwm, alwm,
-                  1, num_rows * 8);
-}
-
-void draw_1x1(int color, int row, int col)
-{
-    draw_nx1(color, row, col, 1);
-}
-void draw_2x1(int color, int row, int col)
-{
-    draw_nx1(color, row, col, 2);
-}
-void draw_3x1(int color, int row, int col)
-{
-    draw_nx1(color, row, col, 3);
-}
-void draw_4x1(int color, int row, int col)
-{
-    draw_nx1(color, row, col, 4);
-}
-
-void draw_block(struct DrawSpec *spec, int color, int row, int col)
-{
-    for (int i = 0; i < spec->num_rects; i++) {
-        switch (spec->draw_rects[i].shape) {
-        case RS_1x1:
-            draw_1x1(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_1x2:
-            draw_1x2(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_1x3:
-            draw_1x3(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_1x4:
-            draw_1x4(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_2x1:
-            draw_2x1(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_3x1:
-            draw_3x1(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_4x1:
-            draw_4x1(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        case RS_2x2:
-            draw_2x2(color, spec->draw_rects[i].row + row,
-                     spec->draw_rects[i].col + col);
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-
-void clear_shape(int row, int col, int num_rows, int num_cols)
-{
-    int x = BOARD_X0 + col * 8;
-    int y = BOARD_Y0 + row * 8;
-    ratr0_blit_clear8(backbuffer_surface, x, y, num_cols * 8,
-                      num_rows * 8);
-}
-void clear_block(struct DrawSpec *spec, int row, int col)
-{
-    for (int i = 0; i < spec->num_rects; i++) {
-        switch (spec->draw_rects[i].shape) {
-        case RS_1x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 1);
-            break;
-        case RS_1x2:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 2);
-            break;
-        case RS_1x3:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 3);
-            break;
-        case RS_1x4:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 4);
-            break;
-        case RS_2x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 2, 1);
-            break;
-        case RS_3x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 3, 1);
-            break;
-        case RS_4x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 4, 1);
-            break;
-        case RS_2x2:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 2, 2);
-            break;
-        default:
-            break;
-        }
-    }
-}
 
 /**
  * Draw the ghost piece.
@@ -370,136 +129,6 @@ int move_cooldown = 0;
 int piece_queue[PIECE_QUEUE_LEN];
 int piece_queue_idx = 0;
 
-void dump_board(void)
-{
-    for (int i = 0; i < BOARD_HEIGHT; i++) {
-        for (int j = 0; j < BOARD_WIDTH; j++) {
-            fprintf(debug_fp, "%d ", gameboard0[i][j]);
-        }
-        fputs("\n", debug_fp);
-    }
-    fflush(debug_fp);
-}
-
-/**
- * Determines the row where the quick drop can happen at the current
- * position
- * Since we iterate from top left to right bottom, we should end up
- * with the lowest row and lowest column
- *
- * There are cases where that fails:
- *
- *   - the L in rotation 3 and J in rotation 1 lets the piece drop one level
- *     too low when there is 1 level at the bottom and you want to hook
- *     the short piece right above it
- */
-int get_quickdrop_row()
-{
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
-    int min_row = BOARD_HEIGHT - 1;
-    for (int t = 0; t < rot->bottom_side.num_pos; t++) {
-        struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
-        for (int r = current_row + pos->y; r < BOARD_HEIGHT; r++) {
-            if (gameboard0[r][current_col + pos->x] != 0) {
-                int row = r - 1 - pos->y;
-                if (row <= min_row) {
-                    min_row = row;
-                }
-                break;
-            }
-        }
-    }
-
-    // special case for L piece rotation 3
-    if (current_piece == PIECE_L && current_rot == 3 &&
-        min_row == (BOARD_HEIGHT - 2)) {
-        return min_row - 1;
-    }
-    // special case for J piece rotation 1
-    if (current_piece == PIECE_J && current_rot == 1 &&
-        min_row == (BOARD_HEIGHT - 2)) {
-        return min_row - 1;
-    }
-
-    // Handle the rest of the cases
-    if (min_row == (BOARD_HEIGHT - 1)) {
-        struct Position *minpos = &rot->pos[rot->bottom_side.indexes[rot->bottom_side.num_pos - 1]];
-        return min_row - minpos->y;
-    } else {
-        return min_row;
-    }
-}
-
-BOOL piece_landed(void)
-{
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
-    for (int t = 0; t < rot->bottom_side.num_pos; t++) {
-        // check every bottom tile if it has reached bottom
-        struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
-        // fast out: piece is at the bottom
-        if ((current_row + pos->y + 1) >= BOARD_HEIGHT) return TRUE;
-        if (gameboard0[pos->y + current_row + 1][pos->x + current_col] != 0)
-            return TRUE;
-    }
-    return FALSE;
-}
-
-/**
- * Establish the player piece on the board.
- */
-void establish_piece(void)
-{
-    // transfer the current piece to the board
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
-    for (int i = 0; i < 4; i++) {
-        struct Position *pos = &rot->pos[i];
-        gameboard0[pos->y + current_row][pos->x + current_col] = 1;
-    }
-}
-
-struct RowRange {
-    int first, last;
-};
-
-/**
- * Check if there are any completed rows on the board. If the result is TRUE, the range
- * will be in the completed_rows structure.
- *
- * @param completed_rows The completed rows are returned in this structure
- * @return TRUE if there are any completed rows
- */
-BOOL get_completed_rows(struct RowRange *completed_rows)
-{
-    BOOL result = FALSE;
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
-    UINT32 processed = 0; // a simple way to mark processed rows as a bit
-    int min = BOARD_HEIGHT, max = 0;
-    for (int i = 0; i < 4; i++) {
-        struct Position *pos = &rot->pos[i];
-        int row = pos->y + current_row;
-        UINT32 mask = 1 << row;
-        if ((mask & processed) == 0) { // no processed yet
-            BOOL complete = TRUE;
-            for (int j = 0; j < BOARD_WIDTH; j++) {
-                if (gameboard0[row][j] == 0) {
-                    complete = FALSE;
-                    break;
-                }
-            }
-            if (complete) {
-                if (row < min) min = row;
-                if (row > max) max = row;
-                result = TRUE;
-            }
-            processed |= mask;
-        }
-    }
-    completed_rows->first = min;
-    completed_rows->last = max;
-    return result;
-}
-
-
 /**
  * Random generation of all our pieces. This will restart when the end
  * of the queue is reached
@@ -507,8 +136,8 @@ BOOL get_completed_rows(struct RowRange *completed_rows)
 void init_piece_queue(void)
 {
     for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
-        piece_queue[i] = rand() % 7;
-        //piece_queue[i] = PIECE_I;
+        //piece_queue[i] = rand() % 7;
+        piece_queue[i] = PIECE_T;
     }
     piece_queue_idx = 0;
 }
@@ -517,92 +146,60 @@ void spawn_next_piece(void)
 {
     current_row = 0;
     current_col = 0;
+    current_rot = 0;
     current_piece = piece_queue[piece_queue_idx++];
     piece_queue_idx %= PIECE_QUEUE_LEN;
 }
 
-BOOL can_move_left(struct Rotation *rot)
-{
-    for (int i = 0; i < 4; i++) {
-        int col = current_col + rot->pos[i].x;
-        if (col == 0) {
-            return FALSE;
-        }
-        int row = current_row + rot->pos[i].y;
-        if (gameboard0[row][col - 1] != 0) {
-            return FALSE;
-        }
-    }
-    return TRUE;
-}
-
-BOOL can_move_right(struct Rotation *rot)
-{
-    for (int i = 0; i < 4; i++) {
-        int col = current_col + rot->pos[i].x;
-        if (col == (BOARD_WIDTH - 1)) {
-            return FALSE;
-        }
-        int row = current_row + rot->pos[i].y;
-        if (gameboard0[row][col + 1] != 0) {
-            return FALSE;
-        }
-    }
-    return TRUE;
-}
-
-struct RowRange completed_rows;
+struct CompletedRows completed_rows;
 
 int done = 0;
+void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
 
-void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
-{
-    cur_buffer = ratr0_get_back_buffer()->buffernum;
-    backbuffer_surface = &ratr0_get_back_buffer()->surface;
-    // For now, end when the mouse was clicked. This is just for testing
-    if (engine->input_system->was_action_pressed(action_quit)) {
-        ratr0_engine_exit();
-    }
-    /*
-    // delete the lines, but don't allow anything else during that time
-    // we actually might not need this step since we are going to move the
-    // entire contents down
-    int num_deleted_rows = completed_rows.last - completed_rows.first + 1;
-    clear_shape(completed_rows.first, 0,
-                num_deleted_rows,
-                BOARD_WIDTH);
 
+// This state shifts down the blocks that are left from deleting the lines
+void main_scene_shift_down_lines(struct Ratr0Scene *this_scene,
+                                 UINT8 frame_elapsed) {
+    // logically
     // move blocks above cleared lines down
     // 1. the idea is to start with (first - 1) and stop with the first
     // line that does not have any blocks. This defines the range of
     // lines that have to be shifted down by num_deleted_rows
     int topline = -1;
-    for  (int i = completed_rows.last - 1; i >= 0; i--) {
+    for  (int i = completed_rows.rows[0] - 1; i >= 0; i--) {
         BOOL row_clear = TRUE;
         for (int j = 0; j < BOARD_WIDTH; j++) {
             if (gameboard0[i][j] != 0) {
                 row_clear = FALSE;
                 break;
             }
-            if (row_clear) {
-                // stop here
-                topline = i;
-                break;
-            }
+        }
+        if (row_clear) {
+            // stop here
+            topline = i + 1;
+            break;
         }
     }
-    */
+    if (!done) {
+        fprintf(debug_fp, "top line is at: %d\n", topline);
+        fflush(debug_fp);
+    }
+
     // TODO: we have the top line now. So we move the entire rectangular
     // area from topline to completed_rows.first
     // down by num_deleted_rows * 8 pixels, which means
     // a. we copy the area down
-    int srcx = BOARD_X0, srcy = BOARD_Y0 + 16 * 8,
-        dstx = BOARD_X0, dsty = BOARD_Y0 + 17 * 8;
-    //int num_deleted_rows = completed_rows.last - completed_rows.first + 1;
-    int num_deleted_rows = 3;
+    // TODO: we actually have to shift several rows down, because
+    // they are potentially disconnected
+    int bottom = completed_rows.rows[0] - 1;
+    int srcx = BOARD_X0, srcy = BOARD_Y0 + topline * 8,
+        dstx = BOARD_X0, dsty = BOARD_Y0 + bottom * 8;
     int blit_width_pixels = BOARD_WIDTH * 8;
-    int blit_height_pixels = num_deleted_rows * 8;
+    //int blit_height_pixels = num_deleted_rows * 8;
+    int blit_height_pixels = 8;
     if (done < 2) {
+        fprintf(debug_fp, "move rect topline: %d to row: %d\n",
+                topline, bottom);
         // only copy once per buffer
         // reverse copying
         // this moves the entire stack above the deleted lines
@@ -613,7 +210,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed
                                blit_width_pixels,
                                blit_height_pixels);
         // and delete the top
-        clear_shape(16, 0, 1, BOARD_WIDTH);
+        //clear_shape(topline, 0, num_deleted_rows, BOARD_WIDTH);
         done++;
     }
 
@@ -623,55 +220,45 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed
 
     // TODO
     // when done switch back to main_scene_update
-    //main_scene->update = main_scene_update;
-}
-
-struct Translate NO_TRANSLATE = {0, 0};
-struct Translate *get_srs_translation(int piece, int from, int to)
-{
-    if (piece == PIECE_O) return &NO_TRANSLATE;
-
-    struct Translate *tests = piece == PIECE_I ?
-        WALLKICK_I[from][to] : WALLKICK_JLTSZ[from][to];
-    struct Position *pos = PIECE_SPECS[piece].rotations[to].rotation.pos;
-
-    for (int i = 0; i < NUM_WALLKICK_TESTS; i++) {
-        int tx = tests[i].x;
-        int ty = tests[i].y;
-        BOOL ok = TRUE;
-        for (int j = 0; j < 4; j++) {
-            int col = current_col + pos[j].x + tx;
-            int row = current_row + pos[j].y + ty;
-            // check if this position is outside or occupied
-            if (row >= BOARD_HEIGHT ||
-                col < 0 || col >= BOARD_WIDTH ||
-                (gameboard0[row][col] != 0)) {
-                ok = FALSE;
-                break;
-            }
-        }
-        if (ok) {
-            /*
-            fprintf(debug_fp, "piece: %d, rotation: %d, successful test at i=%d row: %d col: %d\n",
-                    piece, to, i, current_row, current_col);
-            fflush(debug_fp);
-            */
-            return &tests[i];
-        } else {
-            /*
-            fprintf(debug_fp, "piece: %d, rotation: %d, FAILED test at i=%d row: %d col: %d\n",
-                    piece, to, i, current_row, current_col);
-            fflush(debug_fp);
-            */
-        }
+    if (done >= 2) {
+        this_scene->update = main_scene_update;
     }
-    return NULL;
 }
 
+
+
+/**
+ * This state cleans up the artifacts from establishing the dropped piece.
+ * And then it deletes the lines that were marked
+ * It should actually only last for 2 frames, to affect the 2 display
+ * buffers
+ */
+void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+{
+    cur_buffer = ratr0_get_back_buffer()->buffernum;
+    backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    // For now, end when the mouse was clicked. This is just for testing
+    if (engine->input_system->was_action_pressed(action_quit)) {
+        ratr0_engine_exit();
+    }
+    // delete the lines, but don't allow anything else during that time
+    // we actually might not need this step since we are going to move the
+    // entire contents down
+    for (int i = 0; i < completed_rows.count; i++) {
+        clear_shape(completed_rows.rows[i], 0, 1, BOARD_WIDTH);
+    }
+    // switch to next state after 2 frames elapsed
+}
+
+/**
+ * This is the main gameplay loop state. Handle input, rotate, move and place
+ * blocks. The state is switched when there are completed lines
+ */
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
     backbuffer_surface = &ratr0_get_back_buffer()->surface;
+
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
@@ -682,20 +269,24 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     if (quickdrop_cooldown > 0) quickdrop_cooldown--;
 
     // Input processing
-    struct Rotation *rot = &PIECE_SPECS[current_piece].rotations[current_rot].rotation;
     if (engine->input_system->was_action_pressed(action_move_left)) {
-        if (move_cooldown == 0 && can_move_left(rot)) {
+        if (move_cooldown == 0 && can_move_left(current_piece, current_rot,
+                                                current_row, current_col,
+                                                &gameboard0)) {
             current_col--;
             move_cooldown = MOVE_COOLDOWN_TIME;
         }
     } else if (engine->input_system->was_action_pressed(action_move_right)) {
-        if (move_cooldown == 0 && can_move_right(rot)) {
+        if (move_cooldown == 0 && can_move_right(current_piece, current_rot,
+                                                 current_row, current_col,
+                                                 &gameboard0)) {
             current_col++;
             move_cooldown = MOVE_COOLDOWN_TIME;
         }
     } else if (engine->input_system->was_action_pressed(action_move_down)) {
         // ACCELERATE MOVE DOWN
-        if (!piece_landed()) {
+        if (!piece_landed(current_piece, current_rot, current_row, current_col,
+                          &gameboard0)) {
             current_row++;
             drop_timer = DROP_TIMER_VALUE; // reset drop timer
         }
@@ -713,7 +304,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             num_queued_clear = 2;
 
             // now we update to the drop/establish condition
-            current_row = get_quickdrop_row();
+            current_row = get_quickdrop_row(current_piece, current_rot,
+                                            current_row, current_col,
+                                            &gameboard0);
             drop_timer = 0;
             quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
         }
@@ -722,7 +315,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         if (rotate_cooldown == 0) {
             struct Translate *t = get_srs_translation(current_piece,
                                                       current_rot,
-                                                      (current_rot + 1) % 4);
+                                                      (current_rot + 1) % 4,
+                                                      current_row, current_col,
+                                                      &gameboard0);
             if (t) {
                 current_rot++;
                 current_rot %= 4;
@@ -736,7 +331,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         if (rotate_cooldown == 0) {
             struct Translate *t = get_srs_translation(current_piece,
                                                       current_rot,
-                                                      (current_rot - 1) % 4);
+                                                      (current_rot - 1) % 4,
+                                                      current_row, current_col,
+                                                      &gameboard0);
             if (t) {
                 current_rot--;
                 current_rot %= 4;
@@ -755,7 +352,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     // automatic drop
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
-        if (piece_landed()) {
+        if (piece_landed(current_piece, current_rot,
+                         current_row, current_col,
+                         &gameboard0)) {
             struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
             // since we have a double buffer, we have to queue up a draw
             // for the following frame, too
@@ -766,14 +365,14 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             for (int i = 0; i < 2; i++) {
                 player_state[cur_buffer] = NULL_PLAYER_STATE;
             }
-            establish_piece();
-            if (get_completed_rows(&completed_rows)) {
+            establish_piece(current_piece, current_rot, current_row,
+                            current_col, &gameboard0);
+            if (get_completed_rows(&completed_rows, current_piece,
+                                   current_rot, current_row,
+                                   &gameboard0)) {
                 // delay the spawning, and delete completed lines first
-                printf("detected completed rows, first: %d last: %d\n",
-                       completed_rows.first,
-                       completed_rows.last);
-
                 // switch state to deleting lines mode
+                // but make sure, we update the drawing
                 this_scene->update = main_scene_delete_lines;
 
             } else {
@@ -809,7 +408,9 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // This is the default draw function
     if (!dropped) {
-        int qdr = get_quickdrop_row();
+        int qdr = get_quickdrop_row(current_piece, current_rot,
+                                    current_row, current_col,
+                                    &gameboard0);
 
         // Draw new block position by clearing the old and drawing the new
         // don't draw if there are queued up draws !!!
@@ -845,7 +446,6 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
     struct Ratr0Scene *main_scene = node_factory->create_scene();
     main_scene->update = main_scene_update;
-    //main_scene->update = main_scene_delete_lines;
 
     // set new copper list
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
@@ -861,6 +461,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
                               32, 0);
 
     // Load tileset for the blocks
+    // NOTE: the tilesheet remains in memory, so it could be used
+    // as a backing buffer of sorts
     engine->resource_system->read_tilesheet(TILES_PATH, &tiles_ts);
     tiles_surface.width = tiles_ts.header.width;
     tiles_surface.height = tiles_ts.header.height;

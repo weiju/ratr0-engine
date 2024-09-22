@@ -20,14 +20,15 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 endif  # ifdef AMIGA
 
 EXES=main invaders centi tetra_zone
-TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test queue_test
+TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test queue_test tetris_test
 
 # programs for benchmarks
 PERF_PRGS=set_perf
 
 TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 	test/bitset_test.o test/treeset_test.o test/quadtree_test.o \
-	test/vector_test.o ../chibi_test/chibi.o
+	test/vector_test.o test/queue_test.o test/tetris_test.o \
+	../chibi_test/chibi.o
 
 # only what we need
 
@@ -44,7 +45,7 @@ INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
 
 CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/main_stage.o
 
-TETRIS_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o tetris/game_data.o
+TETRIS_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o tetris/game_data.o tetris/draw_primitives.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
@@ -59,6 +60,7 @@ check: $(TEST_PRGS)
 	./quadtree_test
 	./vector_test
 	./queue_test
+	./tetris_test
 
 perf: $(PERF_PRGS)
 
@@ -120,3 +122,6 @@ quadtree_test: test/quadtree_test.o datastructs/vector.o datastructs/quadtree.o 
 
 vector_test: test/vector_test.o datastructs/vector.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
+
+tetris_test: test/tetris_test.o tetris/game_data.o ../chibi_test/chibi.o
+	$(CC) $(LDFLAGS) -o $@ $^

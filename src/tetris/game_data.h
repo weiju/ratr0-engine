@@ -1,9 +1,12 @@
 #pragma once
 #ifndef __GAME_DATA_H__
 #define __GAME_DATA_H__
+#include <stdio.h>
+#include <ratr0/ratr0.h>
 
 /**
- * This module defines the Tetris game's tetromino represetation.
+ * This module defines the Tetris game's tetromino represetation and
+ * game logic.
  *
  * In addition of defining the logical arrangement of a tetromino's
  * states it stores information about how to draw its rotations
@@ -13,6 +16,8 @@
  * stores which tiles are needed to be checked when a piece moves in a
  * certain direction.
  */
+#define BOARD_WIDTH (10)
+#define BOARD_HEIGHT (20)
 
 /** \brief Piece types */
 typedef enum {
@@ -57,16 +62,12 @@ struct Side {
     char indexes[4];
 };
 
-
 struct Rotation {
     struct Position pos[4];
+
     // check these positions when dropping to the bottom
-    // define left->right, top->bottom
+    // These can significantly reduce the number of checks
     struct Side bottom_side;
-    // define top->bottom, left->right
-    //struct Side left_side;
-    // define top->bottom, right->left
-    //struct Side right_side;
 };
 
 struct RotationSpec {
@@ -82,6 +83,12 @@ struct PieceSpec {
 
 extern struct PieceSpec PIECE_SPECS[7];
 
+struct CompletedRows {
+    UINT8 count;
+    UINT8 rows[4];
+};
+
+
 // WALL KICK DATA
 #define NUM_FROM_ROTATIONS (4)
 #define NUM_TO_ROTATIONS (2)
@@ -92,5 +99,58 @@ extern struct PieceSpec PIECE_SPECS[7];
 extern struct Translate WALLKICK_JLTSZ[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_TESTS];
 
 extern struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_TESTS];
+
+extern struct Translate *get_srs_translation(int piece, int from, int to,
+                                             int piece_row, int piece_col,
+                                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+extern void dump_board(FILE *debug_fp,
+                       int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+extern void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+/**
+ * Determines the row where the quick drop can happen at the current
+ * position
+ * Since we iterate from top left to right bottom, we should end up
+ * with the lowest row and lowest column
+ *
+ * There are cases where that fails:
+ *
+ *   - the L in rotation 3 and J in rotation 1 lets the piece drop one level
+ *     too low when there is 1 level at the bottom and you want to hook
+ *     the short piece right above it. We handle this with special cases
+ */
+extern int get_quickdrop_row(int piece, int rotation,
+                             int piece_row, int piece_col,
+                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+
+extern BOOL piece_landed(int piece, int rotation,
+                         int piece_row, int piece_col,
+                         int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+
+/**
+ * Establish the player piece on the board.
+ */
+extern void establish_piece(int piece, int rotation,
+                            int piece_row, int piece_col,
+                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+
+extern BOOL get_completed_rows(struct CompletedRows *completed_rows,
+                               int piece, int rotation,
+                               int piece_row,
+                               int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+
+extern BOOL can_move_right(int piece, int rotation,
+                           int piece_row, int piece_col,
+                           int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+extern BOOL can_move_left(int piece, int rotation,
+                          int piece_row, int piece_col,
+                          int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 #endif // !__GAME_DATA_H__
