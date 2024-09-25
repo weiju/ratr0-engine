@@ -48,7 +48,6 @@ int gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
 // piece is above the maximum height, we can drop it to the max height
 int max_height0[BOARD_WIDTH];
 
-
 /**
  * Draw the ghost piece.
  * @param scene the current scene
@@ -70,39 +69,27 @@ void draw_ghost_piece(struct Ratr0Scene *scene,
     scene->num_sprites = 2;
 }
 
-struct PlayerState {
-    struct RotationSpec *rot_spec;
-    int piece, row, col;
-};
-
-struct PlayerState player_state[2] = {
-    { NULL, 0, 0, 0},
-    { NULL, 0, 0, 0}
-};
-
-/**
- * Since we are performing double buffering, we have a draw an a clear queue.
- * By this we can decouple logic from rendering and at the same time
- * impact the double buffer as well
+/*
+ * DrawQueueItem can be a shape, denoted by the piece number. A piece number
+ * of -1 means only row is valid and this deletes an entire row
  */
-struct PlayerState queued_draw[1] = {
-    { NULL, 0, 0, 0}
+struct DrawQueueItem {
+    int piece, rotation, row, col;
+    BOOL clear;  // if TRUE, clear after draw
 };
-int num_queued_draw = 0;
 
-struct PlayerState queued_clear[1] = {
-    { NULL, 0, 0, 0}
-};
-int num_queued_clear = 0;
-
-struct PlayerState NULL_PLAYER_STATE = { NULL, 0, 0, 0 };
-void init_player_state(struct PlayerState *s)
+struct DrawQueueItem NULL_DRAW_QUEUE_ITEM = { 0, 0, 0, 0, TRUE };
+void init_draw_queue_item(struct DrawQueueItem *item)
 {
-    *s = NULL_PLAYER_STATE;
+    *item = NULL_DRAW_QUEUE_ITEM;
 }
 
-RATR0_QUEUE_ARR(draw_queue, struct PlayerState, 2, init_player_state, 2);
-RATR0_QUEUE_ARR(clear_queue, struct PlayerState, 2, init_player_state, 2);
+/**
+ * For each one of the double buffers, create a draw and clear queue
+ * of 4 elements
+ */
+RATR0_QUEUE_ARR(draw_queue, struct DrawQueueItem, 4, init_draw_queue_item, 2);
+RATR0_QUEUE_ARR(clear_queue, struct DrawQueueItem, 4, init_draw_queue_item, 2);
 
 
 int cur_buffer;
@@ -114,6 +101,7 @@ int hold_piece = -1;
 // current rotation
 int current_rot = 0;
 
+/** TIMERS THAT ARE CRITICAL TO GAME FEEL */
 #define DROP_TIMER_VALUE (40)
 // rotation cooldown. We introduce a cooldown, to avoid the player
 // piece rotating way too fast
@@ -296,12 +284,13 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         // we can do this by setting current_row to qdr and the drop timer
         // to 0
         if (quickdrop_cooldown == 0) {
-            // we also need to enqueue the current position into a clear queue
+            // we need to enqueue the current position into a clear queue
             // so we delete the graphics of the piece
-            queued_clear[0].rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
-            queued_clear[0].row = current_row;
-            queued_clear[0].col = current_col;
-            num_queued_clear = 2;
+            struct DrawQueueItem quick_drop_piece = {
+                current_piece, current_row, current_row, current_col, FALSE
+            };
+            RATR0_ENQUEUE_ARR(clear_queue, 0, quick_drop_piece);
+            RATR0_ENQUEUE_ARR(clear_queue, 1, quick_drop_piece);
 
             // now we update to the drop/establish condition
             current_row = get_quickdrop_row(current_piece, current_rot,
@@ -346,8 +335,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         }
     }
 
-    // After input
-
+    // After input, was processed, we can determine what elese is happeneing
     BOOL dropped = FALSE, clear_previous = TRUE;
     // automatic drop
     if (drop_timer == 0) {
@@ -355,16 +343,14 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         if (piece_landed(current_piece, current_rot,
                          current_row, current_col,
                          &gameboard0)) {
-            struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
             // since we have a double buffer, we have to queue up a draw
-            // for the following frame, too
-            queued_draw[0] = (struct PlayerState) {rot_spec, current_piece, current_row, current_col};
-            num_queued_draw = 2;
+            // for the following frame, too, but since this is an
+            // etablished piece, don't clear it in the following frames
+            struct DrawQueueItem dropped_item = (struct DrawQueueItem)
+                {current_piece, current_rot, current_row, current_col, FALSE};
+            RATR0_ENQUEUE_ARR(draw_queue, 0, dropped_item);
+            RATR0_ENQUEUE_ARR(draw_queue, 1, dropped_item);
 
-            // reset the clear positions for the piece
-            for (int i = 0; i < 2; i++) {
-                player_state[cur_buffer] = NULL_PLAYER_STATE;
-            }
             establish_piece(current_piece, current_rot, current_row,
                             current_col, &gameboard0);
             if (get_completed_rows(&completed_rows, current_piece,
@@ -384,57 +370,50 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         }
     }
 
-    // Clear queue to clean up pieces left by quick drop
-    if (num_queued_clear > 0) {
-        struct RotationSpec *queued_spec = queued_clear[0].rot_spec;
-        clear_block(&queued_spec->draw_spec,
-                    queued_clear[0].row,
-                    queued_clear[0].col);
-        num_queued_clear--;
-    }
-    // Draw queue to draw established pieces
-    if (num_queued_draw > 0) {
-        struct RotationSpec *queued_spec = queued_draw[0].rot_spec;
-        draw_block(&queued_spec->draw_spec,
-                   queued_draw[0].piece,
-                   queued_draw[0].row,
-                   queued_draw[0].col);
-        num_queued_draw--;
-
-        // ensure, we don't clear any lines while establishing the
-        // piece in the buffer
-        clear_previous = FALSE;
-    }
-
-    // This is the default draw function
+    // This is the default behavior if there was no drop
     if (!dropped) {
-        int qdr = get_quickdrop_row(current_piece, current_rot,
-                                    current_row, current_col,
-                                    &gameboard0);
-
-        // Draw new block position by clearing the old and drawing the new
-        // don't draw if there are queued up draws !!!
-        if (clear_previous) {
-            struct RotationSpec *prev_spec = player_state[cur_buffer].rot_spec;
-            clear_block(&prev_spec->draw_spec,
-                        player_state[cur_buffer].row,
-                        player_state[cur_buffer].col);
-        }
-        struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
-        draw_block(&rot_spec->draw_spec,
-                   current_piece,
-                   current_row, current_col);
-
-        // Ghost piece is drawn with sprite, no background restore needed
-        draw_ghost_piece(this_scene,
-                         &rot_spec->outline,
-                         qdr, current_col);
-
-        // remember state for this buffer so we can delete it
-        // NOTE: maybe we can enqueue it so we have consistency
-        player_state[cur_buffer] = (struct PlayerState) { rot_spec, current_piece, current_row, current_col };
+        // just draw the piece at the current position
+        struct DrawQueueItem dropped_item = (struct DrawQueueItem)
+            {current_piece, current_rot, current_row, current_col, TRUE};
+        RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, dropped_item);
         drop_timer--;
     }
+
+
+    // This is the drawing section: clear all queued up clear
+    // commands for the current buffer, then draw all queued up draw commands
+    // for the current buffer
+
+    // 1. Clear queue to clean up pieces left by quick drop
+    while (clear_queue_num_elems[cur_buffer] > 0) {
+        struct DrawQueueItem item;
+        RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
+        struct RotationSpec *queued_spec = &PIECE_SPECS[item.piece].rotations[item.rotation];
+        clear_block(&queued_spec->draw_spec, item.row,
+                    item.col);
+    }
+    // 2. draw all enqueued items
+    while (draw_queue_num_elems[cur_buffer] > 0) {
+        struct DrawQueueItem item;
+        RATR0_DEQUEUE_ARR(item, draw_queue, cur_buffer);
+        struct RotationSpec *queued_spec = &PIECE_SPECS[item.piece].rotations[item.rotation];
+        draw_block(&queued_spec->draw_spec, item.piece,
+                   item.row, item.col);
+        if (item.clear) {
+            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, item);
+        }
+    }
+    // Ghost piece is drawn with sprite, no background restore needed
+    int qdr = get_quickdrop_row(current_piece, current_rot,
+                                current_row, current_col,
+                                &gameboard0);
+    struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
+    draw_ghost_piece(this_scene,
+                     &rot_spec->outline,
+                     qdr, current_col);
+
+
+
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -487,6 +466,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     }
 
     // initialize piece queue
+    clear_board(&gameboard0);
     init_piece_queue();
     spawn_next_piece();
     return main_scene;
