@@ -38,7 +38,7 @@ CHIBI_TEST(TestInsertIsSet)
 
 void process_bit(UINT16 index)
 {
-    printf("BIT SET INDEX: %d\n", index);
+    //printf("BIT SET INDEX: %d\n", index);
 }
 
 CHIBI_TEST(TestIterate)

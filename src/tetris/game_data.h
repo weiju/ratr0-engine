@@ -88,6 +88,18 @@ struct CompletedRows {
     UINT8 rows[4];
 };
 
+struct MoveRegion {
+    int start, end;
+    int move_by;
+};
+
+#define MAX_MOVE_REGIONS (2)
+
+struct MoveRegions {
+    UINT8 count;
+    struct MoveRegion regions[MAX_MOVE_REGIONS];
+};
+
 
 // WALL KICK DATA
 #define NUM_FROM_ROTATIONS (4)
@@ -152,5 +164,24 @@ extern BOOL can_move_right(int piece, int rotation,
 extern BOOL can_move_left(int piece, int rotation,
                           int piece_row, int piece_col,
                           int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+
+/**
+ * Get the regions moved when deleting completed_rows. The
+ * result will be in move_regions, ordered from the highest numbered
+ * index to lowest (bottom->top).
+ *
+ * @param move_regions the output
+ * @param completed_rows the completed rows
+ * @param gameboard the board
+ * @return TRUE if it succeeded
+ */
+extern BOOL get_move_regions(struct MoveRegions *move_regions,
+                             struct CompletedRows *completed_rows,
+                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+
+extern BOOL delete_rows_from_board(struct MoveRegions *move_regions,
+                                   struct CompletedRows *completed_rows,
+                                   int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 #endif // !__GAME_DATA_H__

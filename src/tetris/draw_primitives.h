@@ -14,9 +14,9 @@ extern void draw_1x1(int color, int row, int col);
 extern void draw_2x1(int color, int row, int col);
 extern void draw_3x1(int color, int row, int col);
 extern void draw_4x1(int color, int row, int col);
-extern void draw_block(struct DrawSpec *spec, int color, int row, int col);
-extern void clear_shape(int row, int col, int num_rows, int num_cols);
-extern void clear_block(struct DrawSpec *spec, int row, int col);
+extern void draw_piece(struct DrawSpec *spec, int color, int row, int col);
+extern void clear_rect(int row, int col, int num_rows, int num_cols);
+extern void clear_piece(struct DrawSpec *spec, int row, int col);
 
 
 #endif /* __DRAW_PRIMITIVES_H__ */

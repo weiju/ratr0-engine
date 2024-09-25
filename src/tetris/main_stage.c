@@ -44,10 +44,6 @@ struct Ratr0HWSprite *outline_frame[9];
 // since the block types start at 0 as well
 int gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
 
-// a quick way to determine a quick drop and the ghost piece. if the player
-// piece is above the maximum height, we can drop it to the max height
-int max_height0[BOARD_WIDTH];
-
 /**
  * Draw the ghost piece.
  * @param scene the current scene
@@ -69,16 +65,37 @@ void draw_ghost_piece(struct Ratr0Scene *scene,
     scene->num_sprites = 2;
 }
 
+#define NUM_DISPLAY_BUFFERS (2)
+#define DRAW_QUEUE_LEN (4)
+enum {
+    DRAW_TYPE_PIECE = 0, DRAW_TYPE_ROWS
+};
+
 /*
  * DrawQueueItem can be a shape, denoted by the piece number. A piece number
  * of -1 means only row is valid and this deletes an entire row
  */
-struct DrawQueueItem {
+struct DrawPiece {
     int piece, rotation, row, col;
-    BOOL clear;  // if TRUE, clear after draw
+    BOOL clear; // if TRUE, clear after draw
+};
+struct ClearRows {
+    int row, num_rows;
+};
+struct DrawQueueItem {
+    int draw_type; // piece or rows
+    union {
+        struct DrawPiece piece;
+        struct ClearRows rows;
+    } item;
 };
 
-struct DrawQueueItem NULL_DRAW_QUEUE_ITEM = { 0, 0, 0, 0, TRUE };
+struct DrawQueueItem NULL_DRAW_QUEUE_ITEM = {
+    DRAW_TYPE_PIECE, {
+        0, 0, 0, 0,
+        TRUE
+    }
+};
 void init_draw_queue_item(struct DrawQueueItem *item)
 {
     *item = NULL_DRAW_QUEUE_ITEM;
@@ -88,9 +105,25 @@ void init_draw_queue_item(struct DrawQueueItem *item)
  * For each one of the double buffers, create a draw and clear queue
  * of 4 elements
  */
-RATR0_QUEUE_ARR(draw_queue, struct DrawQueueItem, 4, init_draw_queue_item, 2);
-RATR0_QUEUE_ARR(clear_queue, struct DrawQueueItem, 4, init_draw_queue_item, 2);
+RATR0_QUEUE_ARR(draw_queue, struct DrawQueueItem, DRAW_QUEUE_LEN,
+                init_draw_queue_item, NUM_DISPLAY_BUFFERS)
+RATR0_QUEUE_ARR(clear_queue, struct DrawQueueItem, DRAW_QUEUE_LEN,
+                init_draw_queue_item, NUM_DISPLAY_BUFFERS)
 
+/**
+ * The Move queue is to store the actions to move regions of block rows
+ * after lines where deleted
+ */
+struct MoveQueueItem {
+    int from, to, num_rows;
+};
+struct MoveQueueItem NULL_MOVE_QUEUE_ITEM = { 0, 0, 0 };
+void init_move_queue_item(struct MoveQueueItem *item)
+{
+    *item = NULL_MOVE_QUEUE_ITEM;
+}
+RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, DRAW_QUEUE_LEN,
+                init_move_queue_item, NUM_DISPLAY_BUFFERS)
 
 int cur_buffer;
 int dir = 1;
@@ -124,8 +157,8 @@ int piece_queue_idx = 0;
 void init_piece_queue(void)
 {
     for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
-        //piece_queue[i] = rand() % 7;
-        piece_queue[i] = PIECE_T;
+        piece_queue[i] = rand() % 7;
+        //piece_queue[i] = PIECE_T;
     }
     piece_queue_idx = 0;
 }
@@ -139,13 +172,86 @@ void spawn_next_piece(void)
     piece_queue_idx %= PIECE_QUEUE_LEN;
 }
 
-struct CompletedRows completed_rows;
+/**
+ * This is the drawing section: clear all queued up clear
+ * commands for the current buffer, then draw all queued up draw commands
+ * for the current buffer
+ */
+void process_blit_queues(void)
+{
+    struct DrawQueueItem item;
+    struct RotationSpec *queued_spec;
+    // 1. Clear queue to clean up pieces from the previous render pass
+    while (clear_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
+        if (item.draw_type == DRAW_TYPE_ROWS) {
+            // clear a row
+            fprintf(debug_fp, "clear row %d on buffer %d\n",
+                    item.item.rows.row,
+                    cur_buffer);
+            clear_rect(item.item.rows.row, 0, 1, BOARD_WIDTH);
+        } else {
+            queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
+            clear_piece(&queued_spec->draw_spec, item.item.piece.row,
+                        item.item.piece.col);
+        }
+    }
+    // 2. draw all enqueued items
+    while (draw_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(item, draw_queue, cur_buffer);
+        queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
+        draw_piece(&queued_spec->draw_spec,
+                   item.item.piece.piece,
+                   item.item.piece.row,
+                   item.item.piece.col);
 
+        // put this piece in the clear buffer for next time this
+        // frame gets drawn
+        if (item.item.piece.clear) {
+            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, item);
+        }
+    }
+}
+
+/**
+ * STATE FUNCTIONS
+ */
+struct CompletedRows completed_rows;
 int done = 0;
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
 
+/**
+ * Move the specified rectangular region
+ */
+void _move_board_rect(int from_row, int to_row, int num_rows)
+{
+    int srcx = BOARD_X0, srcy = BOARD_Y0 + from_row * 8,
+        dstx = BOARD_X0, dsty = BOARD_Y0 + to_row * 8;
+    int blit_width_pixels = BOARD_WIDTH * 8;
+    int blit_height_pixels = num_rows * 8;
+
+    // this is most likely overlapping, ratr0_blit_rect_simple()
+    // will perform reverse copying if that is the case
+    ratr0_blit_rect_simple(backbuffer_surface,
+                           backbuffer_surface,
+                           dstx, dsty,
+                           srcx, srcy,
+                           blit_width_pixels,
+                           blit_height_pixels);
+}
+
+void process_move_queue()
+{
+    struct MoveQueueItem item;
+    while (move_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
+        _move_board_rect(item.from, item.to, item.num_rows);
+    }
+}
+
 
 // This state shifts down the blocks that are left from deleting the lines
+// Delete this function, it's only here for reference
 void main_scene_shift_down_lines(struct Ratr0Scene *this_scene,
                                  UINT8 frame_elapsed) {
     // logically
@@ -198,7 +304,7 @@ void main_scene_shift_down_lines(struct Ratr0Scene *this_scene,
                                blit_width_pixels,
                                blit_height_pixels);
         // and delete the top
-        //clear_shape(topline, 0, num_deleted_rows, BOARD_WIDTH);
+        //clear_rect(topline, 0, num_deleted_rows, BOARD_WIDTH);
         done++;
     }
 
@@ -214,28 +320,120 @@ void main_scene_shift_down_lines(struct Ratr0Scene *this_scene,
 }
 
 
+/**
+ * The state to reorganize the board after lines were completed
+ * That means collapsing all visible block to the bottom and
+ * dropping all logical blocks down to the correct level
+ */
+void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
+                                 UINT8 frame_elapsed) {
+    // For now, end when the mouse was clicked. This is just for testing
+    if (engine->input_system->was_action_pressed(action_quit)) {
+        ratr0_engine_exit();
+    }
+    process_blit_queues();
+}
 
 /**
  * This state cleans up the artifacts from establishing the dropped piece.
  * And then it deletes the lines that were marked
  * It should actually only last for 2 frames, to affect the 2 display
- * buffers
+ * buffers.
+ * Since we have 2 frames of CPU time where we don't do much, this is an
+ * opportunity to calculate the update to the board.
+ * The general rule is that we have to delete between 1 and 4 rows and
+ * accordingly have to move a range of blocks that are on top of the
+ * deleted rows:
+ * - 1 or 4 deleted rows: 0 or 1 row regions to move
+ * - 2 or 3 deleted rows: 0, 1 or 2 row regions to move
+ * - if there are 3 deleted rows, there will be at least 2 rows that are
+ *   together
+ * - if there are 2 deleted rows, they are either together or 1 or 2 rows
+ *   distance between
  */
+BOOL done_delete_lines = 0;
 void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
     cur_buffer = ratr0_get_back_buffer()->buffernum;
     backbuffer_surface = &ratr0_get_back_buffer()->surface;
-    // For now, end when the mouse was clicked. This is just for testing
-    if (engine->input_system->was_action_pressed(action_quit)) {
-        ratr0_engine_exit();
+    // make sure this only gets executed once !!! Otherwise this will
+    // keep queueing clear requests
+    if (done_delete_lines == 0) {
+        // 1. delete the lines: this could be combined with
+        // some animation effect
+        struct DrawQueueItem clear_row = {
+            DRAW_TYPE_ROWS, { 0, 0 }
+        };
+        for (int i = 0; i < completed_rows.count; i++) {
+            clear_row.item.rows.row = completed_rows.rows[i];
+            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
+            RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
+        }
+        // 2. move the regions above the deleted lines down graphically
+        struct MoveRegions move_regions;
+        get_move_regions(&move_regions, &completed_rows, &gameboard0);
+        for (int i = 0; i < move_regions.count; i++) {
+            struct MoveQueueItem move_item = {
+                move_regions.regions[i].start,
+                move_regions.regions[i].start + move_regions.regions[i].move_by,
+                move_regions.regions[i].end - move_regions.regions[i].start
+            };
+            RATR0_ENQUEUE_ARR(move_queue, cur_buffer, move_item);
+            RATR0_ENQUEUE_ARR(move_queue, ((cur_buffer + 1) % 2), move_item);
+        }
+        // 3. TODO: Delete the rows at the top, since moving won't get rid
+        // of those
+        // 4. TODO: compact the board logically by moving every block above
+        // the deleted lines down
+        delete_rows_from_board(&move_regions, &completed_rows, &gameboard0);
     }
-    // delete the lines, but don't allow anything else during that time
-    // we actually might not need this step since we are going to move the
-    // entire contents down
-    for (int i = 0; i < completed_rows.count; i++) {
-        clear_shape(completed_rows.rows[i], 0, 1, BOARD_WIDTH);
-    }
+    process_blit_queues();
+    process_move_queue();
+    done_delete_lines++;
     // switch to next state after 2 frames elapsed
+    if (done_delete_lines >= 2) {
+        this_scene->update = main_scene_reorganize_board;
+    }
+}
+
+/**
+ * A state that is simply there to establish the last game piece
+ * and decide what to do from there. This is mainly to break up
+ * the logic further into simple parts
+ */
+BOOL done_establish = FALSE;
+void main_scene_establish_piece(struct Ratr0Scene *this_scene,
+                                UINT8 frames_elapsed)
+{
+    if (!done_establish) {
+        // since we have a double buffer, we have to queue up a draw
+        // for the following frame, too, but since this is an
+        // etablished piece, don't clear it in the following frames
+        struct DrawQueueItem dropped_item = (struct DrawQueueItem)
+            {
+                DRAW_TYPE_PIECE,
+                {current_piece, current_rot, current_row, current_col, FALSE}
+            };
+        RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, dropped_item);
+        RATR0_ENQUEUE_ARR(draw_queue, ((cur_buffer + 1) % 2), dropped_item);
+        establish_piece(current_piece, current_rot, current_row,
+                        current_col, &gameboard0);
+        done_establish = TRUE;
+    } else {
+        if (get_completed_rows(&completed_rows, current_piece,
+                               current_rot, current_row,
+                               &gameboard0)) {
+
+            // delay the spawning, and delete completed lines first
+            // switch state to deleting lines mode
+            // but make sure, we update the drawing
+            this_scene->update = main_scene_delete_lines;
+        } else {
+            spawn_next_piece(); // spawn next piece, but don't draw yet
+            this_scene->update = main_scene_update;
+        }
+    }
+    process_blit_queues();
 }
 
 /**
@@ -287,10 +485,12 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             // we need to enqueue the current position into a clear queue
             // so we delete the graphics of the piece
             struct DrawQueueItem quick_drop_piece = {
-                current_piece, current_row, current_row, current_col, FALSE
+                DRAW_TYPE_PIECE,
+                {
+                    current_piece, current_rot, current_row, current_col, FALSE
+                }
             };
-            RATR0_ENQUEUE_ARR(clear_queue, 0, quick_drop_piece);
-            RATR0_ENQUEUE_ARR(clear_queue, 1, quick_drop_piece);
+            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, quick_drop_piece);
 
             // now we update to the drop/establish condition
             current_row = get_quickdrop_row(current_piece, current_rot,
@@ -335,85 +535,42 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
         }
     }
 
-    // After input, was processed, we can determine what elese is happeneing
-    BOOL dropped = FALSE, clear_previous = TRUE;
+    // After input, was processed, we can determine what else is happening
+    BOOL landed = FALSE;
     // automatic drop
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
-        if (piece_landed(current_piece, current_rot,
-                         current_row, current_col,
-                         &gameboard0)) {
-            // since we have a double buffer, we have to queue up a draw
-            // for the following frame, too, but since this is an
-            // etablished piece, don't clear it in the following frames
-            struct DrawQueueItem dropped_item = (struct DrawQueueItem)
-                {current_piece, current_rot, current_row, current_col, FALSE};
-            RATR0_ENQUEUE_ARR(draw_queue, 0, dropped_item);
-            RATR0_ENQUEUE_ARR(draw_queue, 1, dropped_item);
-
-            establish_piece(current_piece, current_rot, current_row,
-                            current_col, &gameboard0);
-            if (get_completed_rows(&completed_rows, current_piece,
-                                   current_rot, current_row,
-                                   &gameboard0)) {
-                // delay the spawning, and delete completed lines first
-                // switch state to deleting lines mode
-                // but make sure, we update the drawing
-                this_scene->update = main_scene_delete_lines;
-
-            } else {
-                spawn_next_piece(); // spawn next piece, but don't draw yet
-            }
-            dropped = TRUE;
+        landed = piece_landed(current_piece, current_rot, current_row,
+                              current_col, &gameboard0);
+        if (landed) {
+            done_establish = FALSE;
+            this_scene->update = main_scene_establish_piece;
         } else {
             current_row++;
         }
     }
 
-    // This is the default behavior if there was no drop
-    if (!dropped) {
+    // This is the default behavior if there was no establishment
+    if (!landed) {
         // just draw the piece at the current position
-        struct DrawQueueItem dropped_item = (struct DrawQueueItem)
-            {current_piece, current_rot, current_row, current_col, TRUE};
-        RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, dropped_item);
+        struct DrawQueueItem piece_to_draw = (struct DrawQueueItem)
+            {
+                DRAW_TYPE_PIECE,
+                {
+                    current_piece, current_rot, current_row, current_col, TRUE
+                }
+            };
+        RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, piece_to_draw);
         drop_timer--;
     }
 
-
-    // This is the drawing section: clear all queued up clear
-    // commands for the current buffer, then draw all queued up draw commands
-    // for the current buffer
-
-    // 1. Clear queue to clean up pieces left by quick drop
-    while (clear_queue_num_elems[cur_buffer] > 0) {
-        struct DrawQueueItem item;
-        RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
-        struct RotationSpec *queued_spec = &PIECE_SPECS[item.piece].rotations[item.rotation];
-        clear_block(&queued_spec->draw_spec, item.row,
-                    item.col);
-    }
-    // 2. draw all enqueued items
-    while (draw_queue_num_elems[cur_buffer] > 0) {
-        struct DrawQueueItem item;
-        RATR0_DEQUEUE_ARR(item, draw_queue, cur_buffer);
-        struct RotationSpec *queued_spec = &PIECE_SPECS[item.piece].rotations[item.rotation];
-        draw_block(&queued_spec->draw_spec, item.piece,
-                   item.row, item.col);
-        if (item.clear) {
-            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, item);
-        }
-    }
+    process_blit_queues();
     // Ghost piece is drawn with sprite, no background restore needed
     int qdr = get_quickdrop_row(current_piece, current_rot,
                                 current_row, current_col,
                                 &gameboard0);
     struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
-    draw_ghost_piece(this_scene,
-                     &rot_spec->outline,
-                     qdr, current_col);
-
-
-
+    draw_ghost_piece(this_scene, &rot_spec->outline, qdr, current_col);
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
@@ -455,17 +612,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
     }
 
-    // initialize game board
-    for (int i = 0; i < BOARD_HEIGHT; i++) {
-        for (int j = 0; j < BOARD_WIDTH; j++) {
-            gameboard0[i][j] = 0;
-        }
-    }
-    for (int j = 0; j < BOARD_WIDTH; j++) {
-        max_height0[j] = 0;
-    }
-
-    // initialize piece queue
+    // initialize board and  piece queue
     clear_board(&gameboard0);
     init_piece_queue();
     spawn_next_piece();

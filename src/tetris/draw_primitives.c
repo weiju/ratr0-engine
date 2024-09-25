@@ -149,7 +149,7 @@ void draw_4x1(int color, int row, int col)
     draw_nx1(color, row, col, 4);
 }
 
-void draw_block(struct DrawSpec *spec, int color, int row, int col)
+void draw_piece(struct DrawSpec *spec, int color, int row, int col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {
@@ -191,49 +191,48 @@ void draw_block(struct DrawSpec *spec, int color, int row, int col)
     }
 }
 
-
-void clear_shape(int row, int col, int num_rows, int num_cols)
+void clear_rect(int row, int col, int num_rows, int num_cols)
 {
     int x = BOARD_X0 + col * 8;
     int y = BOARD_Y0 + row * 8;
     ratr0_blit_clear8(backbuffer_surface, x, y, num_cols * 8,
                       num_rows * 8);
 }
-void clear_block(struct DrawSpec *spec, int row, int col)
+void clear_piece(struct DrawSpec *spec, int row, int col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {
         case RS_1x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 1);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 1, 1);
             break;
         case RS_1x2:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 2);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 1, 2);
             break;
         case RS_1x3:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 3);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 1, 3);
             break;
         case RS_1x4:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 1, 4);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 1, 4);
             break;
         case RS_2x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 2, 1);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 2, 1);
             break;
         case RS_3x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 3, 1);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 3, 1);
             break;
         case RS_4x1:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 4, 1);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 4, 1);
             break;
         case RS_2x2:
-            clear_shape(row + spec->draw_rects[i].row,
-                        col + spec->draw_rects[i].col, 2, 2);
+            clear_rect(row + spec->draw_rects[i].row,
+                       col + spec->draw_rects[i].col, 2, 2);
             break;
         default:
             break;

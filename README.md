@@ -4,12 +4,25 @@
 
 ## Description
 
-A game development framework written in C for creating retro style 2D games.
-The goal is to have a platform that works on both modern systems down to 16
-and 8 bit machines.
+A game development framework written in C for creating retro style 2D games on
+the Amiga.
 
-On modern systems, RATR0 will build on top of SDL, while on retro systems
-it will be direct hardware abstraction.
+## Disclaimer
+
+At the moment, I don't recommend writing any game based on RATR0. There will be
+a lot of changes as my understanding of the concepts deepens.
+
+What you *can* do though is study the examples and the code and take what you
+find useful. Maybe you are struggling with a current technical problem
+and you are looking for a solution in other people's code. That's what I do,
+too. Hope you find something that helps.
+
+There are alternatives you might want to consider:
+
+Take a look at ACE (Amiga C Engine), if you want to use C. Or Scorpion if you
+want to just focus on making a game - or whatever you like. These engines are
+intended to be used by a wider audience and provide more support to
+help you achive your goal.
 
 ## Why did I create RATR0 ?
 
@@ -170,3 +183,9 @@ $ make TESTONLY=1 check
 
 $ git submodule update --init --remote --recursive
 $ git submodule update --recursive
+
+## Closing words
+
+I have my opinions and values and you have yours. That's fine. I don't
+give a f@ck if they are different from mine.
+Have fun, experiment, learn and write games, the way you want !

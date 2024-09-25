@@ -561,7 +561,9 @@ void establish_piece(int piece, int rotation,
 /**
  * Check if there are any completed rows on the board based on the
  * rows that a game piece was placed in. If the result is TRUE, the
- * completed row numbers will be in the completed_rows structure.
+ * completed row numbers will be in the completed_rows structure, ordered
+ * from highest to lowest (which means lowest row number first and
+ * highest row number last)
  *
  * @param completed_rows The completed rows are returned in this structure
  * @param piece The piece being placed
@@ -645,4 +647,181 @@ void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
             (*gameboard)[i][j] = 0;
         }
     }
+}
+
+BOOL _get_move_region_above(struct MoveRegion *move_region,
+                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH],
+                            int row, int min_row)
+{
+    BOOL result = FALSE;
+    move_region->end = row;
+    for (int i = row; i >= min_row; i--) {
+        BOOL empty_row = TRUE;
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            if ((*gameboard)[i][j] != 0) {
+                empty_row = FALSE;
+                break;
+            }
+        }
+        if (empty_row) break;
+        move_region->start = i;
+        result = TRUE;
+    }
+    return result;
+}
+
+BOOL get_move_regions(struct MoveRegions *move_regions,
+                      struct CompletedRows *completed_rows,
+                      int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+{
+    if (completed_rows->count == 1 || completed_rows->count == 4) {
+        // there is at most one region to move and it's above the first
+        // completed row since completed rows go from top to bottom
+        BOOL res = _get_move_region_above(&move_regions->regions[0],
+                                          gameboard,
+                                          completed_rows->rows[0] - 1, 0);
+        if (res) {
+            move_regions->regions[0].move_by = completed_rows->count;
+            move_regions->count = 1;
+        } else {
+            move_regions->count = 0;
+        }
+    } else if (completed_rows->count == 2) {
+        // the 2 deleted rows are either connected
+        // or there is a gap
+        int diff = completed_rows->rows[1] - completed_rows->rows[0];
+        if (diff == 1) {
+            // connected -> 0 or 1 ranges
+            BOOL res = _get_move_region_above(&move_regions->regions[0],
+                                              gameboard,
+                                              completed_rows->rows[0] - 1, 0);
+            if (res) {
+                move_regions->count = 1;
+                move_regions->regions[0].move_by = completed_rows->count;
+            } else {
+                move_regions->count = 0;
+            }
+        } else {
+            // gap of height "diff" -> 1 or 2 regions
+            BOOL res;
+            // 1. get the gap region first
+            move_regions->count = 1;
+            res = _get_move_region_above(&move_regions->regions[0],
+                                         gameboard,
+                                         completed_rows->rows[1] - 1,
+                                         completed_rows->rows[0] + 1);
+            move_regions->regions[0].move_by = diff - 1;
+            // 2. get the above region next
+            res = _get_move_region_above(&move_regions->regions[1],
+                                         gameboard,
+                                         completed_rows->rows[0] - 1, 0);
+            if (res) {
+                move_regions->count++;
+                move_regions->regions[1].move_by = diff;
+            }
+        }
+    } else if (completed_rows->count == 3) {
+        // most complicated case
+        // the 3 deleted rows are either connected
+        // or there are 2 connected and one disconnected
+        int diff1 = completed_rows->rows[1] - completed_rows->rows[0];
+        int diff2 = completed_rows->rows[2] - completed_rows->rows[1];
+        if (diff1 == 1 && diff2 == 1) {
+            // connected -> 0 or 1 regions
+            BOOL res = _get_move_region_above(&move_regions->regions[0],
+                                              gameboard,
+                                              completed_rows->rows[0] - 1, 0);
+            if (res) {
+                move_regions->count = 1;
+                move_regions->regions[0].move_by = completed_rows->count;
+            } else {
+                move_regions->count = 0;
+            }
+        } else if (diff1 == 1) {
+            // top and second  are connected
+            // -> 1 or 2 regions and the gap is height 1
+            // 1. get the gap region first, it is fixed, so no calculation needed
+            move_regions->count = 1;
+            move_regions->regions[0].start = move_regions->regions[0].end
+                = completed_rows->rows[2] - 1;
+            move_regions->regions[0].move_by = 1;
+            BOOL res = _get_move_region_above(&move_regions->regions[1],
+                                             gameboard,
+                                             completed_rows->rows[0] - 1, 0);
+            if (res) {
+                move_regions->count++;
+                move_regions->regions[1].move_by = 3;
+            }
+        } else {
+            // second and bottom are connected
+            // -> 1 or 2 regions and the gap is height 1
+            // 1. get the gap region first, it is fixed, so no calculation needed
+            move_regions->count = 1;
+            move_regions->regions[0].start = move_regions->regions[0].end
+                = completed_rows->rows[1] - 1;
+            move_regions->regions[0].move_by = 2;
+            BOOL res = _get_move_region_above(&move_regions->regions[1],
+                                              gameboard,
+                                              completed_rows->rows[0] - 1, 0);
+            if (res) {
+                move_regions->count++;
+                move_regions->regions[1].move_by = 3;
+            }
+        }
+    }
+    return TRUE;
+}
+
+/**
+ * Move the specified region. We do this by moving rows by
+ * (region->move_by) from bottom to top
+ *
+ * @parame region region to move
+ * @param gameboard the game board to modify
+ */
+void _move_region(struct MoveRegion *region,
+                  int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+{
+    int move_by = region->move_by;
+    for (int i = region->end; i >= region->start; i--) {
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            (*gameboard)[i + move_by][j] = (*gameboard)[i][j];
+        }
+    }
+}
+
+/**
+ * Logically delete the rows of the board by clearing the deleted lines and
+ * dropping the blocks above them down as far as possible
+ * Since we already computed MoveRegions, we can use that information to
+ * move the data from these regions and delete
+ * completed_rows.count rows on the top of the move regions
+ */
+BOOL delete_rows_from_board(struct MoveRegions *move_regions,
+                            struct CompletedRows *completed_rows,
+                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+{
+    int delete_start = completed_rows->rows[0];
+
+    // we have at least 1 region, so move them in order, which
+    // means from bottom to top
+    int num_regions = move_regions->count;
+    if (num_regions > 0) {
+        delete_start = move_regions->regions[num_regions - 1].start;
+        for (int i = 0; i < num_regions; i++) {
+            _move_region(&move_regions->regions[i], gameboard);
+        }
+    }
+
+    // Delete the top rows: if there are no move_regions, then take the
+    // first completed_rows.count rows, starting from the first one
+    // otherwise start see if the first move region starts before
+    // completed_rows and delete from the highest row of that
+    for (int i = 0; i < completed_rows->count; i++) {
+        int row = delete_start + i;
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            (*gameboard)[row][j] = 0;
+        }
+    }
+    return TRUE;
 }
