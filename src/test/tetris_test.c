@@ -28,8 +28,8 @@ void tetris_test_teardown(void *userdata) { }
  */
 CHIBI_TEST(TestGetSRSTranslation_O)
 {
-    struct Translate *translation = get_srs_translation(PIECE_O, 0, 1,
-                                                        10, 5,
+    struct PieceState from = {PIECE_O, 0, 10, 5};
+    struct Translate *translation = get_srs_translation(&from, 1,
                                                         &gameboard);
     chibi_assert_eq_int(0, translation->x);
     chibi_assert_eq_int(0, translation->y);
@@ -47,15 +47,15 @@ void print_wallkick_data(int from, int to)
 
 CHIBI_TEST(TestGetSRSTranslation_Z)
 {
-    struct Translate *translation1 = get_srs_translation(PIECE_Z, 0, 1,
-                                                         3, 0,
+    struct PieceState from1 = {PIECE_Z, 0, 3, 0};
+    struct Translate *translation1 = get_srs_translation(&from1, 1,
                                                          &gameboard);
     chibi_assert_eq_int(0, translation1->x);
     chibi_assert_eq_int(0, translation1->y);
 
     // Test 2
-    struct Translate *translation2 = get_srs_translation(PIECE_Z, 1, 2,
-                                                         7, -1,
+    struct PieceState from2 = {PIECE_Z, 1, 7, -1};
+    struct Translate *translation2 = get_srs_translation(&from2, 2,
                                                          &gameboard);
     chibi_assert_not_null(translation2);
     chibi_assert_eq_int(1, translation2->x);
@@ -64,7 +64,8 @@ CHIBI_TEST(TestGetSRSTranslation_Z)
 
 CHIBI_TEST(TestCanMoveLeft_LeftBorder)
 {
-    chibi_assert(!can_move_left(PIECE_T, 0, 10, 0, &gameboard));
+    struct PieceState piece = {PIECE_T, 0, 10, 0};
+    chibi_assert(!can_move_left(&piece, &gameboard));
 }
 
 CHIBI_TEST(TestGetCompletedRows_BottomRow)

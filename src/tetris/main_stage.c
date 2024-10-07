@@ -125,9 +125,9 @@ void init_move_queue_item(struct MoveQueueItem *item)
 RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, DRAW_QUEUE_LEN,
                 init_move_queue_item, NUM_DISPLAY_BUFFERS)
 
-int current_row = 0, current_col = 0;
-int current_piece = PIECE_Z;
-int current_rot = 0;
+struct PieceState current_piece = {
+    PIECE_Z, 0, 0, 0
+};
 
 /** TIMERS THAT ARE CRITICAL TO GAME FEEL */
 #define DROP_TIMER_VALUE (40)
@@ -160,10 +160,10 @@ void init_piece_queue(void)
 
 void spawn_next_piece(void)
 {
-    current_row = 0;
-    current_col = 0;
-    current_rot = 0;
-    current_piece = piece_queue[piece_queue_idx++];
+    current_piece.row = 0;
+    current_piece.col = 0;
+    current_piece.rotation = 0;
+    current_piece.piece = piece_queue[piece_queue_idx++];
     piece_queue_idx %= PIECE_QUEUE_LEN;
 }
 
@@ -375,16 +375,16 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
         struct DrawQueueItem dropped_item = (struct DrawQueueItem)
             {
                 DRAW_TYPE_PIECE,
-                {current_piece, current_rot, current_row, current_col, FALSE}
+                {current_piece.piece, current_piece.rotation,
+                 current_piece.row, current_piece.col, FALSE}
             };
         RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, dropped_item);
         RATR0_ENQUEUE_ARR(draw_queue, ((cur_buffer + 1) % 2), dropped_item);
-        establish_piece(current_piece, current_rot, current_row,
-                        current_col, &gameboard0);
+        establish_piece(&current_piece, &gameboard0);
         done_establish = TRUE;
     } else {
-        if (get_completed_rows(&completed_rows, current_piece,
-                               current_rot, current_row,
+        if (get_completed_rows(&completed_rows, current_piece.piece,
+                               current_piece.rotation, current_piece.row,
                                &gameboard0)) {
 
             // delay the spawning, and delete completed lines first
@@ -418,24 +418,21 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // Input processing
     if (engine->input_system->was_action_pressed(action_move_left)) {
-        if (move_cooldown == 0 && can_move_left(current_piece, current_rot,
-                                                current_row, current_col,
+        if (move_cooldown == 0 && can_move_left(&current_piece,
                                                 &gameboard0)) {
-            current_col--;
+            current_piece.col--;
             move_cooldown = MOVE_COOLDOWN_TIME;
         }
     } else if (engine->input_system->was_action_pressed(action_move_right)) {
-        if (move_cooldown == 0 && can_move_right(current_piece, current_rot,
-                                                 current_row, current_col,
+        if (move_cooldown == 0 && can_move_right(&current_piece,
                                                  &gameboard0)) {
-            current_col++;
+            current_piece.col++;
             move_cooldown = MOVE_COOLDOWN_TIME;
         }
     } else if (engine->input_system->was_action_pressed(action_move_down)) {
         // ACCELERATE MOVE DOWN
-        if (!piece_landed(current_piece, current_rot, current_row, current_col,
-                          &gameboard0)) {
-            current_row++;
+        if (!piece_landed(&current_piece, &gameboard0)) {
+            current_piece.row++;
             drop_timer = DROP_TIMER_VALUE; // reset drop timer
         }
     } else if (engine->input_system->was_action_pressed(action_drop)) {
@@ -449,49 +446,45 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             struct DrawQueueItem quick_drop_piece = {
                 DRAW_TYPE_PIECE,
                 {
-                    current_piece, current_rot, current_row, current_col, FALSE
+                    current_piece.piece, current_piece.rotation,
+                    current_piece.row, current_piece.col, FALSE
                 }
             };
             RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, quick_drop_piece);
 
             // now we update to the drop/establish condition
-            current_row = get_quickdrop_row(current_piece, current_rot,
-                                            current_row, current_col,
-                                            &gameboard0);
+            current_piece.row = get_quickdrop_row(&current_piece,
+                                                  &gameboard0);
             drop_timer = 0;
             quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
         }
     } else if (engine->input_system->was_action_pressed(action_rotate_right)) {
         // rotate right with wall kick
         if (rotate_cooldown == 0) {
-            struct Translate *t = get_srs_translation(current_piece,
-                                                      current_rot,
-                                                      (current_rot + 1) % 4,
-                                                      current_row, current_col,
+            struct Translate *t = get_srs_translation(&current_piece,
+                                                      (current_piece.rotation + 1) % 4,
                                                       &gameboard0);
             if (t) {
-                current_rot++;
-                current_rot %= 4;
-                current_row += t->y;
-                current_col += t->x;
+                current_piece.rotation++;
+                current_piece.rotation %= 4;
+                current_piece.row += t->y;
+                current_piece.col += t->x;
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
     } else if (engine->input_system->was_action_pressed(action_rotate_left)) {
         // rotate left with wall kick
         if (rotate_cooldown == 0) {
-            struct Translate *t = get_srs_translation(current_piece,
-                                                      current_rot,
-                                                      (current_rot - 1) % 4,
-                                                      current_row, current_col,
+            struct Translate *t = get_srs_translation(&current_piece,
+                                                      (current_piece.rotation - 1) % 4,
                                                       &gameboard0);
             if (t) {
-                current_rot--;
-                current_rot %= 4;
+                current_piece.rotation--;
+                current_piece.rotation %= 4;
                 // SRS wall kick data actually denotes y in reverse
                 // so we need to subtract y
-                current_row -= t->y;
-                current_col += t->x;
+                current_piece.row -= t->y;
+                current_piece.col += t->x;
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
@@ -502,13 +495,12 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
     // automatic drop
     if (drop_timer == 0) {
         drop_timer = DROP_TIMER_VALUE;
-        landed = piece_landed(current_piece, current_rot, current_row,
-                              current_col, &gameboard0);
+        landed = piece_landed(&current_piece, &gameboard0);
         if (landed) {
             done_establish = FALSE;
             this_scene->update = main_scene_establish_piece;
         } else {
-            current_row++;
+            current_piece.row++;
         }
     }
 
@@ -519,7 +511,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
             {
                 DRAW_TYPE_PIECE,
                 {
-                    current_piece, current_rot, current_row, current_col, TRUE
+                    current_piece.piece, current_piece.rotation,
+                    current_piece.row, current_piece.col, TRUE
                 }
             };
         RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, piece_to_draw);
@@ -528,11 +521,10 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     process_blit_queues();
     // Ghost piece is drawn with sprite, no background restore needed
-    int qdr = get_quickdrop_row(current_piece, current_rot,
-                                current_row, current_col,
+    int qdr = get_quickdrop_row(&current_piece,
                                 &gameboard0);
-    struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece].rotations[current_rot];
-    draw_ghost_piece(this_scene, &rot_spec->outline, qdr, current_col);
+    struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece.piece].rotations[current_piece.rotation];
+    draw_ghost_piece(this_scene, &rot_spec->outline, qdr, current_piece.col);
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)

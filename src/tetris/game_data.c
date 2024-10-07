@@ -441,26 +441,25 @@ struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_T
 
 extern FILE *debug_fp;
 struct Translate NO_TRANSLATE = {0, 0};
-struct Translate *get_srs_translation(int piece, int from, int to,
-                                      int piece_row, int piece_col,
+struct Translate *get_srs_translation(struct PieceState *from, int to,
                                       int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
-    if (piece == PIECE_O) return &NO_TRANSLATE;
+    if (from->piece == PIECE_O) return &NO_TRANSLATE;
     // This is the index into the kick data array, corrected
     // for the fact that the "to" array only has 2 elements
-    int to_idx = (to - 1) - from % 2;
+    int to_idx = (to - 1) - from->rotation % 2;
 
-    struct Translate *tests = piece == PIECE_I ?
-        WALLKICK_I[from][to_idx] : WALLKICK_JLTSZ[from][to_idx];
-    struct Position *pos = PIECE_SPECS[piece].rotations[to].rotation.pos;
+    struct Translate *tests = from->piece == PIECE_I ?
+        WALLKICK_I[from->rotation][to_idx] : WALLKICK_JLTSZ[from->rotation][to_idx];
+    struct Position *pos = PIECE_SPECS[from->piece].rotations[to].rotation.pos;
 
     for (int i = 0; i < NUM_WALLKICK_TESTS; i++) {
         int tx = tests[i].x;
         int ty = tests[i].y;
         BOOL ok = TRUE;
         for (int j = 0; j < 4; j++) {
-            int col = piece_col + pos[j].x + tx;
-            int row = piece_row + pos[j].y - ty;
+            int col = from->col + pos[j].x + tx;
+            int row = from->row + pos[j].y - ty;
 
             // check if this position is outside
             // or occupied
@@ -488,16 +487,15 @@ void dump_board(FILE *debug_fp, int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
     fflush(debug_fp);
 }
 
-int get_quickdrop_row(int piece, int rotation,
-                       int piece_row, int piece_col,
-                       int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+int get_quickdrop_row(struct PieceState *piece,
+                      int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
-    struct Rotation *rot = &PIECE_SPECS[piece].rotations[rotation].rotation;
+    struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     int min_row = BOARD_HEIGHT - 1;
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
-        for (int r = piece_row + pos->y; r < BOARD_HEIGHT; r++) {
-            if ((*gameboard)[r][piece_col + pos->x] != 0) {
+        for (int r = piece->row + pos->y; r < BOARD_HEIGHT; r++) {
+            if ((*gameboard)[r][piece->col + pos->x] != 0) {
                 int row = r - 1 - pos->y;
                 if (row <= min_row) {
                     min_row = row;
@@ -508,12 +506,12 @@ int get_quickdrop_row(int piece, int rotation,
     }
 
     // special case for L piece rotation 3
-    if (piece == PIECE_L && rotation == 3 &&
+    if (piece->piece == PIECE_L && piece->rotation == 3 &&
         min_row == (BOARD_HEIGHT - 2)) {
         return min_row - 1;
     }
     // special case for J piece rotation 1
-    if (piece == PIECE_J && rotation == 1 &&
+    if (piece->piece == PIECE_J && piece->rotation == 1 &&
         min_row == (BOARD_HEIGHT - 2)) {
         return min_row - 1;
     }
@@ -527,17 +525,16 @@ int get_quickdrop_row(int piece, int rotation,
     }
 }
 
-BOOL piece_landed(int piece, int rotation,
-                  int piece_row, int piece_col,
+BOOL piece_landed(struct PieceState *piece,
                   int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
-    struct Rotation *rot = &PIECE_SPECS[piece].rotations[rotation].rotation;
+    struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
         // check every bottom tile if it has reached bottom
         struct Position *pos = &rot->pos[rot->bottom_side.indexes[t]];
         // fast out: piece is at the bottom
-        if ((piece_row + pos->y + 1) >= BOARD_HEIGHT) return TRUE;
-        if ((*gameboard)[pos->y + piece_row + 1][pos->x + piece_col] != 0)
+        if ((piece->row + pos->y + 1) >= BOARD_HEIGHT) return TRUE;
+        if ((*gameboard)[pos->y + piece->row + 1][pos->x + piece->col] != 0)
             return TRUE;
     }
     return FALSE;
@@ -546,15 +543,14 @@ BOOL piece_landed(int piece, int rotation,
 /**
  * Establish the player piece on the board.
  */
-void establish_piece(int piece, int rotation,
-                     int piece_row, int piece_col,
+void establish_piece(struct PieceState *piece,
                      int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     // transfer the current piece to the board
-    struct Rotation *rot = &PIECE_SPECS[piece].rotations[rotation].rotation;
+    struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
         struct Position *pos = &rot->pos[i];
-        (*gameboard)[pos->y + piece_row][pos->x + piece_col] = 1;
+        (*gameboard)[pos->y + piece->row][pos->x + piece->col] = 1;
     }
 }
 
@@ -603,18 +599,16 @@ BOOL get_completed_rows(struct CompletedRows *completed_rows,
     return result;
 }
 
-
-BOOL can_move_left(int piece, int rotation,
-                   int piece_row, int piece_col,
+BOOL can_move_left(struct PieceState *piece,
                    int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
-    struct Rotation *rot = &PIECE_SPECS[piece].rotations[rotation].rotation;
+    struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
-        int col = piece_col + rot->pos[i].x;
+        int col = piece->col + rot->pos[i].x;
         if (col == 0) {
             return FALSE;
         }
-        int row = piece_row + rot->pos[i].y;
+        int row = piece->row + rot->pos[i].y;
         if ((*gameboard)[row][col - 1] != 0) {
             return FALSE;
         }
@@ -622,17 +616,16 @@ BOOL can_move_left(int piece, int rotation,
     return TRUE;
 }
 
-BOOL can_move_right(int piece, int rotation,
-                    int piece_row, int piece_col,
+BOOL can_move_right(struct PieceState *piece,
                     int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
-    struct Rotation *rot = &PIECE_SPECS[piece].rotations[rotation].rotation;
+    struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
-        int col = piece_col + rot->pos[i].x;
+        int col = piece->col + rot->pos[i].x;
         if (col == (BOARD_WIDTH - 1)) {
             return FALSE;
         }
-        int row = piece_row + rot->pos[i].y;
+        int row = piece->row + rot->pos[i].y;
         if ((*gameboard)[row][col + 1] != 0) {
             return FALSE;
         }

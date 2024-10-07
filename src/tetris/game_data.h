@@ -34,6 +34,10 @@ struct Translate {
     char x, y;
 };
 
+struct PieceState {
+    int piece, rotation, row, col;
+};
+
 typedef enum {
     RS_1x1=0, RS_1x2, RS_1x3, RS_1x4,
     RS_2x1, RS_3x1, RS_4x1, RS_2x2
@@ -112,8 +116,7 @@ extern struct Translate WALLKICK_JLTSZ[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM
 
 extern struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_TESTS];
 
-extern struct Translate *get_srs_translation(int piece, int from, int to,
-                                             int piece_row, int piece_col,
+extern struct Translate *get_srs_translation(struct PieceState *from, int to,
                                              int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 extern void dump_board(FILE *debug_fp,
@@ -133,21 +136,18 @@ extern void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
  *     too low when there is 1 level at the bottom and you want to hook
  *     the short piece right above it. We handle this with special cases
  */
-extern int get_quickdrop_row(int piece, int rotation,
-                             int piece_row, int piece_col,
+extern int get_quickdrop_row(struct PieceState *piece,
                              int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
-extern BOOL piece_landed(int piece, int rotation,
-                         int piece_row, int piece_col,
+extern BOOL piece_landed(struct PieceState *piece,
                          int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
 /**
  * Establish the player piece on the board.
  */
-extern void establish_piece(int piece, int rotation,
-                            int piece_row, int piece_col,
+extern void establish_piece(struct PieceState *piece,
                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
@@ -157,12 +157,10 @@ extern BOOL get_completed_rows(struct CompletedRows *completed_rows,
                                int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
-extern BOOL can_move_right(int piece, int rotation,
-                           int piece_row, int piece_col,
+extern BOOL can_move_right(struct PieceState *piece,
                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
-extern BOOL can_move_left(int piece, int rotation,
-                          int piece_row, int piece_col,
+extern BOOL can_move_left(struct  PieceState *piece,
                           int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
