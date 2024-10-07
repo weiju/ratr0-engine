@@ -1,10 +1,10 @@
-#include <ratr0/ratr0.h>
-#include "game_data.h"
 #include "draw_primitives.h"
 
-extern struct Ratr0Surface *backbuffer_surface, tiles_surface;
+//extern struct Ratr0Surface *backbuffer_surface, tiles_surface;
 
-void draw_1x3(int color, int row, int col)
+void draw_1x3(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -23,7 +23,7 @@ void draw_1x3(int color, int row, int col)
     }
 
     // 3x1 block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+    ratr0_blit_ab(backbuffer_surface, tiles_surface,
                   0, color * 32,
                   x, y,
                   0xfc, 0,
@@ -31,7 +31,9 @@ void draw_1x3(int color, int row, int col)
                   blit_width_words, 8);
 }
 
-void draw_1x2(int color, int row, int col)
+void draw_1x2(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -50,14 +52,16 @@ void draw_1x2(int color, int row, int col)
     }
 
     // 2x1 block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+    ratr0_blit_ab(backbuffer_surface, tiles_surface,
                   0, color * 32,
                   x, y, 0xfc, 0,
                   afwm, alwm,
                   blit_width_words, 8);
 }
 
-void draw_2x2(int color, int row, int col)
+void draw_2x2(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -76,7 +80,7 @@ void draw_2x2(int color, int row, int col)
     }
 
     // 2x1 block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+    ratr0_blit_ab(backbuffer_surface, tiles_surface,
                   0, color * 32,
                   x, y, 0xfc, 0,
                   afwm, alwm,
@@ -86,7 +90,9 @@ void draw_2x2(int color, int row, int col)
 /**
  * Blits a 1x4 block
  */
-void draw_1x4(int color, int row, int col)
+void draw_1x4(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -98,7 +104,7 @@ void draw_1x4(int color, int row, int col)
     if (shift == 8) {
         blit_width_words++;
     }
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+    ratr0_blit_ab(backbuffer_surface, tiles_surface,
                   0, color * 32,
                   x, y,
                   // we actually perform that shift !!!
@@ -108,7 +114,9 @@ void draw_1x4(int color, int row, int col)
 
 }
 
-void draw_nx1(int color, int row, int col, int num_rows)
+void draw_nx1(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col, int num_rows)
 {
     int x = col * 8 + BOARD_X0;
     int y = row * 8 + BOARD_Y0;
@@ -125,64 +133,82 @@ void draw_nx1(int color, int row, int col, int num_rows)
     }
     // we don't actually need a shift. We just mask either
     // the first or the second block
-    ratr0_blit_ab(backbuffer_surface, &tiles_surface,
+    ratr0_blit_ab(backbuffer_surface, tiles_surface,
                   0, color * 32,
                   x, y, 0xfc, 0,
                   afwm, alwm,
                   1, num_rows * 8);
 }
 
-void draw_1x1(int color, int row, int col)
+void draw_1x1(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
-    draw_nx1(color, row, col, 1);
+    draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 1);
 }
-void draw_2x1(int color, int row, int col)
+void draw_2x1(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
-    draw_nx1(color, row, col, 2);
+    draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 2);
 }
-void draw_3x1(int color, int row, int col)
+void draw_3x1(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
-    draw_nx1(color, row, col, 3);
+    draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 3);
 }
-void draw_4x1(int color, int row, int col)
+void draw_4x1(struct Ratr0Surface *backbuffer_surface,
+              struct Ratr0Surface *tiles_surface,
+              int color, int row, int col)
 {
-    draw_nx1(color, row, col, 4);
+    draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 4);
 }
 
-void draw_piece(struct DrawSpec *spec, int color, int row, int col)
+void draw_piece(struct Ratr0Surface *backbuffer_surface,
+                struct Ratr0Surface *tiles_surface,
+                struct DrawSpec *spec, int color, int row, int col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {
         case RS_1x1:
-            draw_1x1(color, spec->draw_rects[i].row + row,
+            draw_1x1(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_1x2:
-            draw_1x2(color, spec->draw_rects[i].row + row,
+            draw_1x2(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_1x3:
-            draw_1x3(color, spec->draw_rects[i].row + row,
+            draw_1x3(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_1x4:
-            draw_1x4(color, spec->draw_rects[i].row + row,
+            draw_1x4(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_2x1:
-            draw_2x1(color, spec->draw_rects[i].row + row,
+            draw_2x1(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_3x1:
-            draw_3x1(color, spec->draw_rects[i].row + row,
+            draw_3x1(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_4x1:
-            draw_4x1(color, spec->draw_rects[i].row + row,
+            draw_4x1(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         case RS_2x2:
-            draw_2x2(color, spec->draw_rects[i].row + row,
+            draw_2x2(backbuffer_surface, tiles_surface,
+                     color, spec->draw_rects[i].row + row,
                      spec->draw_rects[i].col + col);
             break;
         default:
@@ -191,47 +217,57 @@ void draw_piece(struct DrawSpec *spec, int color, int row, int col)
     }
 }
 
-void clear_rect(int row, int col, int num_rows, int num_cols)
+void clear_rect(struct Ratr0Surface *backbuffer_surface,
+                int row, int col, int num_rows, int num_cols)
 {
     int x = BOARD_X0 + col * 8;
     int y = BOARD_Y0 + row * 8;
     ratr0_blit_clear8(backbuffer_surface, x, y, num_cols * 8,
                       num_rows * 8);
 }
-void clear_piece(struct DrawSpec *spec, int row, int col)
+void clear_piece(struct Ratr0Surface *backbuffer_surface,
+                 struct DrawSpec *spec, int row, int col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {
         case RS_1x1:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 1, 1);
             break;
         case RS_1x2:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 1, 2);
             break;
         case RS_1x3:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 1, 3);
             break;
         case RS_1x4:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 1, 4);
             break;
         case RS_2x1:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 2, 1);
             break;
         case RS_3x1:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 3, 1);
             break;
         case RS_4x1:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 4, 1);
             break;
         case RS_2x2:
-            clear_rect(row + spec->draw_rects[i].row,
+            clear_rect(backbuffer_surface,
+                       row + spec->draw_rects[i].row,
                        col + spec->draw_rects[i].col, 2, 2);
             break;
         default:

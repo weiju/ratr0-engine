@@ -34,7 +34,7 @@ FILE *debug_fp;
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
 struct Ratr0TileSheet background_ts, tiles_ts;
-struct Ratr0Surface *backbuffer_surface, tiles_surface;
+struct Ratr0Surface tiles_surface;
 
 // ghost piece outline
 struct Ratr0SpriteSheet outlines_sheet;
@@ -125,13 +125,8 @@ void init_move_queue_item(struct MoveQueueItem *item)
 RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, DRAW_QUEUE_LEN,
                 init_move_queue_item, NUM_DISPLAY_BUFFERS)
 
-int cur_buffer;
-int dir = 1;
-int clear_count = 0;
 int current_row = 0, current_col = 0;
 int current_piece = PIECE_Z;
-int hold_piece = -1;
-// current rotation
 int current_rot = 0;
 
 /** TIMERS THAT ARE CRITICAL TO GAME FEEL */
@@ -181,6 +176,8 @@ void process_blit_queues(void)
 {
     struct DrawQueueItem item;
     struct RotationSpec *queued_spec;
+    struct Ratr0Surface *backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    int cur_buffer = ratr0_get_back_buffer()->buffernum;
     // 1. Clear queue to clean up pieces from the previous render pass
     while (clear_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
@@ -189,18 +186,21 @@ void process_blit_queues(void)
             fprintf(debug_fp, "clear row %d on buffer %d\n",
                     item.item.rows.row,
                     cur_buffer);
-            clear_rect(item.item.rows.row, 0, 1, BOARD_WIDTH);
+            clear_rect(backbuffer_surface, item.item.rows.row, 0, 1, BOARD_WIDTH);
         } else {
             queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
-            clear_piece(&queued_spec->draw_spec, item.item.piece.row,
+            clear_piece(backbuffer_surface,
+                        &queued_spec->draw_spec, item.item.piece.row,
                         item.item.piece.col);
         }
+        fflush(debug_fp);
     }
     // 2. draw all enqueued items
     while (draw_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, draw_queue, cur_buffer);
         queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
-        draw_piece(&queued_spec->draw_spec,
+        draw_piece(backbuffer_surface, &tiles_surface,
+                   &queued_spec->draw_spec,
                    item.item.piece.piece,
                    item.item.piece.row,
                    item.item.piece.col);
@@ -223,7 +223,8 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
 /**
  * Move the specified rectangular region
  */
-void _move_board_rect(int from_row, int to_row, int num_rows)
+void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
+                      int from_row, int to_row, int num_rows)
 {
     int srcx = BOARD_X0, srcy = BOARD_Y0 + from_row * 8,
         dstx = BOARD_X0, dsty = BOARD_Y0 + to_row * 8;
@@ -243,80 +244,41 @@ void _move_board_rect(int from_row, int to_row, int num_rows)
 void process_move_queue()
 {
     struct MoveQueueItem item;
+    struct Ratr0Surface *backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    int cur_buffer = ratr0_get_back_buffer()->buffernum;
     while (move_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
-        _move_board_rect(item.from, item.to, item.num_rows);
+        _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
     }
 }
 
 
 // This state shifts down the blocks that are left from deleting the lines
 // Delete this function, it's only here for reference
-void main_scene_shift_down_lines(struct Ratr0Scene *this_scene,
-                                 UINT8 frame_elapsed) {
-    // logically
-    // move blocks above cleared lines down
-    // 1. the idea is to start with (first - 1) and stop with the first
-    // line that does not have any blocks. This defines the range of
-    // lines that have to be shifted down by num_deleted_rows
-    int topline = -1;
-    for  (int i = completed_rows.rows[0] - 1; i >= 0; i--) {
-        BOOL row_clear = TRUE;
-        for (int j = 0; j < BOARD_WIDTH; j++) {
-            if (gameboard0[i][j] != 0) {
-                row_clear = FALSE;
-                break;
-            }
-        }
-        if (row_clear) {
-            // stop here
-            topline = i + 1;
-            break;
-        }
+int done_debug = 0;
+void main_scene_debug(struct Ratr0Scene *this_scene,
+                      UINT8 frame_elapsed) {
+    struct Ratr0Surface *backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    if (engine->input_system->was_action_pressed(action_quit)) {
+        ratr0_engine_exit();
     }
-    if (!done) {
-        fprintf(debug_fp, "top line is at: %d\n", topline);
-        fflush(debug_fp);
+    clear_rect(backbuffer_surface, 16, 0, 2, BOARD_WIDTH);
+    clear_rect(backbuffer_surface, 17, 0, 2, BOARD_WIDTH);
+    clear_rect(backbuffer_surface, 18, 0, 2, BOARD_WIDTH);
+    if (done_debug < 4) {
+        /*
+        struct DrawQueueItem clear_row = {
+            DRAW_TYPE_ROWS, { 0, 0 }
+        };
+        clear_row.item.rows.row = BOARD_HEIGHT - 2;
+        clear_row.item.rows.num_rows = 1;
+        RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
+        RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
+        */
+        done_debug++;
     }
-
-    // TODO: we have the top line now. So we move the entire rectangular
-    // area from topline to completed_rows.first
-    // down by num_deleted_rows * 8 pixels, which means
-    // a. we copy the area down
-    // TODO: we actually have to shift several rows down, because
-    // they are potentially disconnected
-    int bottom = completed_rows.rows[0] - 1;
-    int srcx = BOARD_X0, srcy = BOARD_Y0 + topline * 8,
-        dstx = BOARD_X0, dsty = BOARD_Y0 + bottom * 8;
-    int blit_width_pixels = BOARD_WIDTH * 8;
-    //int blit_height_pixels = num_deleted_rows * 8;
-    int blit_height_pixels = 8;
-    if (done < 2) {
-        fprintf(debug_fp, "move rect topline: %d to row: %d\n",
-                topline, bottom);
-        // only copy once per buffer
-        // reverse copying
-        // this moves the entire stack above the deleted lines
-        ratr0_blit_rect_simple(backbuffer_surface,
-                               backbuffer_surface,
-                               dstx, dsty,
-                               srcx, srcy,
-                               blit_width_pixels,
-                               blit_height_pixels);
-        // and delete the top
-        //clear_rect(topline, 0, num_deleted_rows, BOARD_WIDTH);
-        done++;
-    }
-
-    // b. then delete top num_deleted_rows lines
-    // Since in step a we are copying to an overlapping area, we need
-    // to copy backwards
-
-    // TODO
-    // when done switch back to main_scene_update
-    if (done >= 2) {
-        this_scene->update = main_scene_update;
-    }
+    //process_blit_queues();
 }
 
 
@@ -354,8 +316,8 @@ void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
 BOOL done_delete_lines = 0;
 void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
-    cur_buffer = ratr0_get_back_buffer()->buffernum;
-    backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+
     // make sure this only gets executed once !!! Otherwise this will
     // keep queueing clear requests
     if (done_delete_lines == 0) {
@@ -405,6 +367,7 @@ BOOL done_establish = FALSE;
 void main_scene_establish_piece(struct Ratr0Scene *this_scene,
                                 UINT8 frames_elapsed)
 {
+    int cur_buffer = ratr0_get_back_buffer()->buffernum;
     if (!done_establish) {
         // since we have a double buffer, we have to queue up a draw
         // for the following frame, too, but since this is an
@@ -442,8 +405,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
  */
 void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 {
-    cur_buffer = ratr0_get_back_buffer()->buffernum;
-    backbuffer_surface = &ratr0_get_back_buffer()->surface;
+    int cur_buffer = ratr0_get_back_buffer()->buffernum;
 
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
@@ -581,6 +543,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // Use the scenes module to create a scene and run that
     struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
     struct Ratr0Scene *main_scene = node_factory->create_scene();
+    //main_scene->update = main_scene_debug;
     main_scene->update = main_scene_update;
 
     // set new copper list
