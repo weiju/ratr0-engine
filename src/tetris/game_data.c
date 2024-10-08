@@ -7,7 +7,7 @@
 // 4 potential blits (8 with deletions) into a maximum of 2 blits (4
 // with deletion)
 // Rotation configurations of each block type
-struct PieceSpec PIECE_SPECS[] = {
+struct PieceSpec PIECE_SPECS[NUM_PIECES] = {
     // I
     {
         PIECE_I,
@@ -441,21 +441,23 @@ struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_T
 
 extern FILE *debug_fp;
 struct Translate NO_TRANSLATE = {0, 0};
-struct Translate *get_srs_translation(struct PieceState *from, int to,
-                                      int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+struct Translate *get_srs_translation(struct PieceState *from, UINT8 to,
+                                      UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     if (from->piece == PIECE_O) return &NO_TRANSLATE;
     // This is the index into the kick data array, corrected
     // for the fact that the "to" array only has 2 elements
-    int to_idx = (to - 1) - from->rotation % 2;
+    UINT8 to_idx = ((to - from->rotation) == -1) ? 1 : 0;
 
-    struct Translate *tests = from->piece == PIECE_I ?
-        WALLKICK_I[from->rotation][to_idx] : WALLKICK_JLTSZ[from->rotation][to_idx];
+    struct Translate (*tests)[NUM_WALLKICK_TESTS] = from->piece == PIECE_I ?
+        &(WALLKICK_I[from->rotation][to_idx]) :
+        &(WALLKICK_JLTSZ[from->rotation][to_idx]);
+
     struct Position *pos = PIECE_SPECS[from->piece].rotations[to].rotation.pos;
 
     for (int i = 0; i < NUM_WALLKICK_TESTS; i++) {
-        int tx = tests[i].x;
-        int ty = tests[i].y;
+        int tx = (*tests)[i].x;
+        int ty = (*tests)[i].y;
         BOOL ok = TRUE;
         for (int j = 0; j < 4; j++) {
             int col = from->col + pos[j].x + tx;
@@ -470,17 +472,17 @@ struct Translate *get_srs_translation(struct PieceState *from, int to,
             }
         }
         if (ok) {
-            return &tests[i];
+            return &((*tests)[i]);
         }
     }
     return NULL;
 }
 
-void dump_board(FILE *debug_fp, int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+void dump_board(FILE *debug_fp, UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     for (int i = 0; i < BOARD_HEIGHT; i++) {
         for (int j = 0; j < BOARD_WIDTH; j++) {
-            fprintf(debug_fp, "%d ", (*gameboard)[i][j]);
+            fprintf(debug_fp, "%uc ", (*gameboard)[i][j]);
         }
         fputs("\n", debug_fp);
     }
@@ -488,7 +490,7 @@ void dump_board(FILE *debug_fp, int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 }
 
 int get_quickdrop_row(struct PieceState *piece,
-                      int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                      UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     int min_row = BOARD_HEIGHT - 1;
@@ -526,7 +528,7 @@ int get_quickdrop_row(struct PieceState *piece,
 }
 
 BOOL piece_landed(struct PieceState *piece,
-                  int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                  UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int t = 0; t < rot->bottom_side.num_pos; t++) {
@@ -544,7 +546,7 @@ BOOL piece_landed(struct PieceState *piece,
  * Establish the player piece on the board.
  */
 void establish_piece(struct PieceState *piece,
-                     int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                     UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     // transfer the current piece to the board
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
@@ -565,24 +567,23 @@ void establish_piece(struct PieceState *piece,
  * @param piece The piece being placed
  * @param rotation rotation of the piece
  * @param piece_row row position of the piece
- * @return TRUE if there are any completed rows
+ * @return number of completed rows
  */
-BOOL get_completed_rows(struct CompletedRows *completed_rows,
-                        int piece, int rotation,
-                        int piece_row,
-                        int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+UINT8 get_completed_rows(struct CompletedRows *completed_rows,
+                         struct PieceState *piece,
+                         UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
-    BOOL result = FALSE;
-    struct Rotation *rot = &PIECE_SPECS[piece].rotations[rotation].rotation;
+    BOOL result = FALSE, complete;
+    struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     UINT32 processed = 0; // a simple way to mark processed rows as a bit
     completed_rows->count = 0;
 
     for (int i = 0; i < 4; i++) {
         struct Position *pos = &rot->pos[i];
-        int row = pos->y + piece_row;
+        int row = pos->y + piece->row;
         UINT32 mask = 1 << row;
         if ((mask & processed) == 0) { // row not processed yet
-            BOOL complete = TRUE;
+            complete = TRUE;
             for (int j = 0; j < BOARD_WIDTH; j++) {
                 if ((*gameboard)[row][j] == 0) {
                     complete = FALSE;
@@ -596,11 +597,11 @@ BOOL get_completed_rows(struct CompletedRows *completed_rows,
             processed |= mask;
         }
     }
-    return result;
+    return completed_rows->count;
 }
 
 BOOL can_move_left(struct PieceState *piece,
-                   int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                   UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
@@ -617,7 +618,7 @@ BOOL can_move_left(struct PieceState *piece,
 }
 
 BOOL can_move_right(struct PieceState *piece,
-                    int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                    UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
@@ -633,7 +634,7 @@ BOOL can_move_right(struct PieceState *piece,
     return TRUE;
 }
 
-void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+void clear_board(UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     for (int i = 0; i < BOARD_HEIGHT; i++) {
         for (int j = 0; j < BOARD_WIDTH; j++) {
@@ -643,7 +644,7 @@ void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 }
 
 BOOL _get_move_region_above(struct MoveRegion *move_region,
-                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH],
+                            UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH],
                             int row, int min_row)
 {
     BOOL result = FALSE;
@@ -665,7 +666,7 @@ BOOL _get_move_region_above(struct MoveRegion *move_region,
 
 BOOL get_move_regions(struct MoveRegions *move_regions,
                       struct CompletedRows *completed_rows,
-                      int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                      UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     if (completed_rows->count == 1 || completed_rows->count == 4) {
         // there is at most one region to move and it's above the first
@@ -773,7 +774,7 @@ BOOL get_move_regions(struct MoveRegions *move_regions,
  * @param gameboard the game board to modify
  */
 void _move_region(struct MoveRegion *region,
-                  int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                  UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     int move_by = region->move_by;
     for (int i = region->end; i >= region->start; i--) {
@@ -792,7 +793,7 @@ void _move_region(struct MoveRegion *region,
  */
 BOOL delete_rows_from_board(struct MoveRegions *move_regions,
                             struct CompletedRows *completed_rows,
-                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
+                            UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     int delete_start = completed_rows->rows[0];
 

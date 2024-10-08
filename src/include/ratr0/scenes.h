@@ -15,46 +15,6 @@
 struct Ratr0Scene;
 
 /**
- * Nodes are the base object of the system
- * Top level node that is the base of a node. The node system is inspired by
- * the Godot design, but will be much simpler to accomodate to the target systems
- * that are very memory constrained.
- * In general, nodes can call methods on nodes that are below them in the scene tree,
- * while signal are used to communicate up and across the hierarchy.
- */
-struct Ratr0Node {
-    /**
-     * \brief node class identifier
-     *
-     * Identifying information. We don't support subclassing. It's rather a way to find the
-     * appropriate handlers
-     */
-    UINT16 class_id;
-
-    /** \brief next sibling node */
-    struct Ratr0Node *next;
-    /** \brief first child node */
-    struct Ratr0Node *children;
-
-    /**
-     * The node's update function. This is a way to customize system behavior
-     * It is optional, if the update function set to a non-null, value, it
-     * will be executed on each iteration of the game loop.
-     *
-     * @param scene the scene that contains this node
-     * @param this_node the node to run the update function on
-     */
-    void (*update)(struct Ratr0Scene *scene, struct Ratr0Node *this_node);
-};
-
-/**
- * \brief Built-in node types in the RATR0 engine.
- */
-enum Ratr0NodeTypes {
-    BACKGROUND
-};
-
-/**
  * A scene is a component of a game. It contains the movable and static game objects
  * and the assets. The game can also provide functions for transitions and scene specific
  * updates.
@@ -73,26 +33,12 @@ struct Ratr0Scene {
     UINT16 *copper_list;
 
     /**
-     * \brief child nodes of the scene
-     *
-     * A hierarchy of child nodes that are used to organize the scene.
-     * Theoretically, we don't need this and can do everything in the
-     * scene object.
-     */
-    struct Ratr0Node *children;
-
-    /**
      * \brief this scene's backdrop object
      *
      * A scene can have a backdrop, if it does not need a tile map, this might
      * be the only thing you need. Can be null if you don't need a backdrop.
      */
     struct Ratr0Backdrop *backdrop;
-    /**
-     * A number of optional tilemaps, which can define a screen. Can be null if
-     * you don't need any level maps
-     */
-    struct Ratr0Node *tilemaps;
 
     //
     // The animated objects in the scene that are visible/active. The scenes module will
@@ -160,6 +106,12 @@ struct Ratr0NodeFactory {
      */
     struct Ratr0Scene *(*create_scene)(void);
 
+    // TODO:
+    // -----
+    // This should actually be funcitons of the resources subsystem.
+    // Logically this does not belong here. Also, the sprites and
+    // backdrops are not associated with a scene. This is a design
+    // flaw
     /**
      * Creates a new sprite.
      *
@@ -214,14 +166,6 @@ struct Ratr0ScenesSystem {
      * @return the singleton node factory instance
      */
     struct Ratr0NodeFactory *(*get_node_factory)(void);
-
-    /**
-     * Adds a child node to another node.
-     *
-     * @param parent the parent node
-     * @param child the new child node
-     */
-    void (*add_child)(struct Ratr0Node *parent, struct Ratr0Node *child);
 };
 
 /**
@@ -231,13 +175,5 @@ struct Ratr0ScenesSystem {
  * @return an initialized Ratr0SceneSystem instance
  */
 extern struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng);
-
-/**
- * Base node initialization. Sets a Ratr0Node struct members to a defined state.
- *
- * @param node pointer to the node to initialize
- * @param clsid the class id
- */
-extern void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid);
 
 #endif /* __RATR0_SCENES_H__ */

@@ -1,7 +1,7 @@
 ifdef TESTONLY
 
 CC=gcc
-CFLAGS=-I/opt/homebrew/include -Iinclude -DDEBUG
+CFLAGS=-I/opt/homebrew/include -Iinclude -DDEBUG -DTEST
 LDFLAGS=
 TEST_CFLAGS=-Iinclude -I../chibi_test
 
@@ -13,7 +13,10 @@ ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
 HW_OBJECTS=display.o sprites.o blitter.o audio.o
 EXT_OBJECTS=../ptplayer/ptplayer.o
 
-CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
+#CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
+# no optimizations so we can make sure it's not a compiler
+# optimization related bug
+CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -Iinclude
 LDFLAGS=-lamiga -lauto
 TEST_CFLAGS=-Iinclude -I../chibi_test
 

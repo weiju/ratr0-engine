@@ -42,7 +42,7 @@ struct Ratr0HWSprite *outline_frame[9];
 
 // game board, 0 means empty, if there is a piece it is block type + 1
 // since the block types start at 0 as well
-int gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
+UINT8 gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
 
 /**
  * Draw the ghost piece.
@@ -172,12 +172,12 @@ void spawn_next_piece(void)
  * commands for the current buffer, then draw all queued up draw commands
  * for the current buffer
  */
-void process_blit_queues(void)
+void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
 {
     struct DrawQueueItem item;
     struct RotationSpec *queued_spec;
-    struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
-    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
+    struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
+    int cur_buffer = backbuffer->buffernum;
     // 1. Clear queue to clean up pieces from the previous render pass
     while (clear_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
@@ -243,11 +243,11 @@ void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
                            blit_height_pixels);
 }
 
-void process_move_queue()
+void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
 {
     struct MoveQueueItem item;
-    struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
-    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
+    struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
+    int cur_buffer = backbuffer->buffernum;
     while (move_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
         _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
@@ -281,7 +281,7 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
         */
         done_debug++;
     }
-    //process_blit_queues();
+    //process_blit_queues(backbuffer);
 }
 
 
@@ -297,7 +297,7 @@ void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
-    process_blit_queues();
+    process_blit_queues(backbuffer);
 }
 
 /**
@@ -322,7 +322,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
                              struct Ratr0DisplayBuffer *backbuffer,
                              UINT8 frames_elapsed)
 {
-    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
+    int cur_buffer = backbuffer->buffernum;
 
     // make sure this only gets executed once !!! Otherwise this will
     // keep queueing clear requests
@@ -355,8 +355,8 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         // the deleted lines down
         delete_rows_from_board(&move_regions, &completed_rows, &gameboard0);
     }
-    process_blit_queues();
-    process_move_queue();
+    process_blit_queues(backbuffer);
+    process_move_queue(backbuffer);
     done_delete_lines++;
     // switch to next state after 2 frames elapsed
     if (done_delete_lines >= 2) {
@@ -374,7 +374,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
                                 struct Ratr0DisplayBuffer *backbuffer,
                                 UINT8 frames_elapsed)
 {
-    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
+    int cur_buffer = backbuffer->buffernum;
     if (!done_establish) {
         // since we have a double buffer, we have to queue up a draw
         // for the following frame, too, but since this is an
@@ -390,10 +390,10 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
         establish_piece(&current_piece, &gameboard0);
         done_establish = TRUE;
     } else {
-        if (get_completed_rows(&completed_rows, current_piece.piece,
-                               current_piece.rotation, current_piece.row,
-                               &gameboard0)) {
-
+        UINT8 num_completed_rows = get_completed_rows(&completed_rows,
+                                                      &current_piece,
+                                                      &gameboard0);
+        if (num_completed_rows > 0) {
             // delay the spawning, and delete completed lines first
             // switch state to deleting lines mode
             // but make sure, we update the drawing
@@ -403,7 +403,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
             this_scene->update = main_scene_update;
         }
     }
-    process_blit_queues();
+    process_blit_queues(backbuffer);
 }
 
 /**
@@ -414,7 +414,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
-    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
+    int cur_buffer = backbuffer->buffernum;
 
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
@@ -470,13 +470,15 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     } else if (engine->input_system->was_action_pressed(action_rotate_right)) {
         // rotate right with wall kick
         if (rotate_cooldown == 0) {
+            int next_rotation = (current_piece.rotation + 1) % 4;
             struct Translate *t = get_srs_translation(&current_piece,
-                                                      (current_piece.rotation + 1) % 4,
+                                                      next_rotation,
                                                       &gameboard0);
             if (t) {
-                current_piece.rotation++;
-                current_piece.rotation %= 4;
-                current_piece.row += t->y;
+                current_piece.rotation = next_rotation;
+                // SRS wall kick data actually denotes y in reverse
+                // so we need to subtract y
+                current_piece.row -= t->y;
                 current_piece.col += t->x;
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
@@ -484,12 +486,12 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     } else if (engine->input_system->was_action_pressed(action_rotate_left)) {
         // rotate left with wall kick
         if (rotate_cooldown == 0) {
+            int next_rotation = (current_piece.rotation - 1) % 4;
             struct Translate *t = get_srs_translation(&current_piece,
-                                                      (current_piece.rotation - 1) % 4,
+                                                      next_rotation,
                                                       &gameboard0);
             if (t) {
-                current_piece.rotation--;
-                current_piece.rotation %= 4;
+                current_piece.rotation = next_rotation;
                 // SRS wall kick data actually denotes y in reverse
                 // so we need to subtract y
                 current_piece.row -= t->y;
@@ -528,7 +530,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
         drop_timer--;
     }
 
-    process_blit_queues();
+    process_blit_queues(backbuffer);
     // Ghost piece is drawn with sprite, no background restore needed
     int qdr = get_quickdrop_row(&current_piece,
                                 &gameboard0);

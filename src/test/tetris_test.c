@@ -4,7 +4,7 @@
 #include "../tetris/game_data.h"
 #include "../../chibi_test/chibi.h"
 
-int gameboard[BOARD_HEIGHT][BOARD_WIDTH];
+UINT8 gameboard[BOARD_HEIGHT][BOARD_WIDTH];
 struct MoveRegions move_regions;
 
 void init_move_regions(struct MoveRegions *regions)
@@ -35,16 +35,6 @@ CHIBI_TEST(TestGetSRSTranslation_O)
     chibi_assert_eq_int(0, translation->y);
 }
 
-void print_wallkick_data(int from, int to)
-{
-    to = (to - 1) - from % 2;
-    printf("WALLKICK DATA (%d>>%d)\n", from, to);
-    for (int i = 0; i < NUM_WALLKICK_TESTS; i++) {
-        printf("(%d, %d)\n", WALLKICK_JLTSZ[from][to][i].x,
-               WALLKICK_JLTSZ[from][to][i].y);
-    }
-}
-
 CHIBI_TEST(TestGetSRSTranslation_Z)
 {
     struct PieceState from1 = {PIECE_Z, 0, 3, 0};
@@ -71,21 +61,19 @@ CHIBI_TEST(TestCanMoveLeft_LeftBorder)
 CHIBI_TEST(TestGetCompletedRows_BottomRow)
 {
     struct CompletedRows res;
-    BOOL status = get_completed_rows(&res,
-                                     PIECE_I, 0, BOARD_HEIGHT - 2,
-                                     &gameboard);
+    struct PieceState piece = {PIECE_I, 0, BOARD_HEIGHT - 2, 0};
+    UINT8 num_completed = get_completed_rows(&res, &piece, &gameboard);
     // first is empty
-    chibi_assert(!status);
+    chibi_assert_eq_int(0, num_completed);
 
     // fill the bottom row
     for (int i = 0; i < BOARD_WIDTH; i++) {
         gameboard[BOARD_HEIGHT - 1][i] = 1;
     }
-    status = get_completed_rows(&res,
-                                PIECE_I, 0, BOARD_HEIGHT - 2,
-                                &gameboard);
+    num_completed = get_completed_rows(&res, &piece, &gameboard);
+
     // now the bottom row is detected as completed
-    chibi_assert(status);
+    chibi_assert_eq_int(1, num_completed);
     chibi_assert_eq_int(1, res.count);
     chibi_assert_eq_int(BOARD_HEIGHT - 1, res.rows[0]);
 }
@@ -103,11 +91,11 @@ CHIBI_TEST(TestGetCompletedRows_ThreeRows)
         gameboard[BOARD_HEIGHT - 4][i] = 1;
     }
 
-    BOOL status = get_completed_rows(&res,
-                                     PIECE_I, 1, BOARD_HEIGHT - 4,
-                                     &gameboard);
+    struct PieceState piece = {PIECE_I, 1, BOARD_HEIGHT - 4, 0};
+    UINT8 num_completed = get_completed_rows(&res, &piece, &gameboard);
+
     // now the bottom row is detected as completed
-    chibi_assert(status);
+    chibi_assert_eq_int(3, num_completed);
     chibi_assert_eq_int(3, res.count);
     // completed rows are returned in increasing order
     chibi_assert_eq_int(BOARD_HEIGHT - 4, res.rows[0]);

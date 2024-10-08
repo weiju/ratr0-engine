@@ -18,6 +18,11 @@
  */
 #define BOARD_WIDTH (10)
 #define BOARD_HEIGHT (20)
+#define NUM_PIECES (7)
+#define NUM_ROTATIONS (4)
+#define NUM_BLOCKS_PER_PIECE (4)
+#define MAX_COMPLETED_ROWS (4)
+#define MAX_MOVE_REGIONS (2)
 
 /** \brief Piece types */
 typedef enum {
@@ -27,15 +32,15 @@ typedef enum {
 
 /** \brief Position on the game board */
 struct Position {
-    char x, y;
+    INT8 x, y;
 };
 
 struct Translate {
-    char x, y;
+    INT8 x, y;
 };
 
 struct PieceState {
-    int piece, rotation, row, col;
+    INT8 piece, rotation, row, col;
 };
 
 typedef enum {
@@ -51,23 +56,23 @@ struct DrawRect {
 
 /** \brief a sprite outline description. 2 sprites are needed for consistency */
 struct SpriteOutline {
-    char framenum0, row0, col0;
-    char framenum1, row1, col1;
+    INT8 framenum0, row0, col0;
+    INT8 framenum1, row1, col1;
 };
 
 /** \brief Draw specification, number, position and shape of rectangles. */
 struct DrawSpec {
-    char num_rects;
+    INT8 num_rects;
     struct DrawRect draw_rects[2];
 };
 
 struct Side {
-    char num_pos;
-    char indexes[4];
+    INT8 num_pos;
+    INT8 indexes[NUM_BLOCKS_PER_PIECE];
 };
 
 struct Rotation {
-    struct Position pos[4];
+    struct Position pos[NUM_BLOCKS_PER_PIECE];
 
     // check these positions when dropping to the bottom
     // These can significantly reduce the number of checks
@@ -82,22 +87,20 @@ struct RotationSpec {
 
 struct PieceSpec {
     char color;
-    struct RotationSpec rotations[4];
+    struct RotationSpec rotations[NUM_ROTATIONS];
 };
 
-extern struct PieceSpec PIECE_SPECS[7];
+extern struct PieceSpec PIECE_SPECS[NUM_PIECES];
 
 struct CompletedRows {
     UINT8 count;
-    UINT8 rows[4];
+    UINT8 rows[MAX_COMPLETED_ROWS];
 };
 
 struct MoveRegion {
-    int start, end;
-    int move_by;
+    UINT8 start, end;
+    UINT8 move_by;
 };
-
-#define MAX_MOVE_REGIONS (2)
 
 struct MoveRegions {
     UINT8 count;
@@ -116,13 +119,13 @@ extern struct Translate WALLKICK_JLTSZ[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM
 
 extern struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_TESTS];
 
-extern struct Translate *get_srs_translation(struct PieceState *from, int to,
-                                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+extern struct Translate *get_srs_translation(struct PieceState *from, UINT8 to,
+                                             UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 extern void dump_board(FILE *debug_fp,
-                       int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                       UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
-extern void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+extern void clear_board(UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 /**
  * Determines the row where the quick drop can happen at the current
@@ -137,31 +140,29 @@ extern void clear_board(int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
  *     the short piece right above it. We handle this with special cases
  */
 extern int get_quickdrop_row(struct PieceState *piece,
-                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                             UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
 extern BOOL piece_landed(struct PieceState *piece,
-                         int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                         UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
 /**
  * Establish the player piece on the board.
  */
 extern void establish_piece(struct PieceState *piece,
-                            int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                            UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
-
-extern BOOL get_completed_rows(struct CompletedRows *completed_rows,
-                               int piece, int rotation,
-                               int piece_row,
-                               int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+extern UINT8 get_completed_rows(struct CompletedRows *completed_rows,
+                                struct PieceState *piece,
+                                UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
 extern BOOL can_move_right(struct PieceState *piece,
-                           int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                           UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 extern BOOL can_move_left(struct  PieceState *piece,
-                          int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                          UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 
 /**
@@ -176,10 +177,10 @@ extern BOOL can_move_left(struct  PieceState *piece,
  */
 extern BOOL get_move_regions(struct MoveRegions *move_regions,
                              struct CompletedRows *completed_rows,
-                             int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                             UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 extern BOOL delete_rows_from_board(struct MoveRegions *move_regions,
                                    struct CompletedRows *completed_rows,
-                                   int (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
+                                   UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
 #endif // !__GAME_DATA_H__

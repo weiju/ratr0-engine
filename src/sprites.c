@@ -50,7 +50,7 @@ UINT16 *ratr0_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
     int imgdata_words = (tilesheet->header.width / 8) * (tilesheet->header.bmdepth / 2) *
         tilesheet->header.height;
     int words_to_reserve = imgdata_words + 4;
-    PRINT_DEBUG("# frames: %d, WORDS TO RESERVE: %d",
+    PRINT_DEBUG("# frames: %uc, WORDS TO RESERVE: %d",
                 num_frames, words_to_reserve);
     UINT16 *imgdata = (UINT16 *) engine->memory_system->block_address(tilesheet->h_imgdata);
 

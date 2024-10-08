@@ -29,16 +29,6 @@ static void ratr0_scenes_shutdown(void);
 static void ratr0_scenes_update(struct Ratr0DisplayBuffer *, UINT8);
 static void ratr0_scenes_set_current_scene(struct Ratr0Scene *);
 
-void ratr0_scenes_add_child(struct Ratr0Node *parent, struct Ratr0Node *child)
-{
-    if (!parent->children) parent->children = child;
-   else {
-        struct Ratr0Node *cur = parent->children;
-        while (cur->next) cur = cur->next;
-        cur->next = child;
-    }
-}
-
 /**
  * Node factory
  */
@@ -51,15 +41,6 @@ struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
 
 static struct Ratr0NodeFactory *ratr0_scenes_get_node_factory(void) { return &node_factory; }
-
-/**
- * Base node initialization
- */
-void ratr0_scenes_init_base_node(struct Ratr0Node *node, UINT16 clsid)
-{
-    node->class_id = clsid;
-    node->children = node->next = NULL;
-}
 
 static struct Ratr0Scene *ratr0_scenes_create_scene(void)
 {
@@ -85,7 +66,6 @@ struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng)
     scenes_system.update = &ratr0_scenes_update;
     scenes_system.shutdown = &ratr0_scenes_shutdown;
     scenes_system.set_current_scene = &ratr0_scenes_set_current_scene;
-    scenes_system.add_child = &ratr0_scenes_add_child;
 
     // Node factory
     node_factory.create_scene = &ratr0_scenes_create_scene;
@@ -145,7 +125,6 @@ static struct Ratr0Sprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *tileshe
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
 {
     struct Ratr0Backdrop *result = &_backdrops[next_backdrop++];
-    ratr0_scenes_init_base_node((struct Ratr0Node *) result, BACKGROUND);
 
     // Initialize the backdrop
     result->surface.width = tilesheet->header.width;
@@ -220,18 +199,6 @@ void move_bob(struct Ratr0Bob *bob)
     bob->base_obj.bounds.y += bob->base_obj.translate.y;
     bob->base_obj.translate.x = 0;
     bob->base_obj.translate.y = 0;
-}
-
-/**
- * Process all nodes in the scene tree.
- */
-static void ratr0_update_scene_node(struct Ratr0Node *node, struct Ratr0Scene *scene)
-{
-    if (node) {
-        if (node->update) node->update(scene, node);
-        ratr0_update_scene_node(node->children, scene);
-        ratr0_update_scene_node(node->next, scene);
-    }
 }
 
 static current_frame_sprites = 0;
@@ -328,8 +295,6 @@ static void ratr0_scenes_update(struct Ratr0DisplayBuffer *backbuffer,
         // update the scene
         if (current_scene->update) {
             current_scene->update(current_scene, backbuffer, frames_elapsed);
-            // Update the children of the scene
-            ratr0_update_scene_node(current_scene->children, current_scene);
         }
         // process all the BOBS
         back_buffer = &ratr0_display_get_back_buffer()->surface;
