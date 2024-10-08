@@ -28,7 +28,9 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 #define SPR0_COLOR00_IDX (16)
 
 
-void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+void main_scene_update(struct Ratr0Scene *this_scene,
+                       struct Ratr0DisplayBuffer *backbuffer,
+                       UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_fire)) {
@@ -46,8 +48,7 @@ void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
 
     // TEST: blit
     OwnBlitter();
-    struct Ratr0DisplayBuffer *back_buffer = ratr0_get_back_buffer();
-    ratr0_blit_rect_1plane(&back_buffer->surface, &bobs2_sheet, 0, 0, 0, 0);
+    ratr0_blit_rect_1plane(&backbuffer->surface, &bobs2_sheet, 0, 0, 0, 0);
     DisownBlitter();
 }
 
@@ -142,8 +143,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     main_scene->num_bobs = NUM_BOBS;
 
     struct Ratr0DisplayBuffer *back_buffer, *front_buffer;
-    front_buffer = ratr0_get_front_buffer();
-    back_buffer = ratr0_get_back_buffer();
+    front_buffer = ratr0_display_get_front_buffer();
+    back_buffer = ratr0_display_get_back_buffer();
     main_scene->backdrop = node_factory->create_backdrop(&grid_sheet);
     printf("BACKDROP WIDTH: %d fb width: %d bb width: %d\n",\
            (int) main_scene->backdrop->surface.width,

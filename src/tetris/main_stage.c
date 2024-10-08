@@ -176,8 +176,8 @@ void process_blit_queues(void)
 {
     struct DrawQueueItem item;
     struct RotationSpec *queued_spec;
-    struct Ratr0Surface *backbuffer_surface = &ratr0_get_back_buffer()->surface;
-    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
+    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
     // 1. Clear queue to clean up pieces from the previous render pass
     while (clear_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
@@ -218,7 +218,9 @@ void process_blit_queues(void)
  */
 struct CompletedRows completed_rows;
 int done = 0;
-void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
+void main_scene_update(struct Ratr0Scene *this_scene,
+                       struct Ratr0DisplayBuffer *backbuffer,
+                       UINT8 frames_elapsed);
 
 /**
  * Move the specified rectangular region
@@ -244,8 +246,8 @@ void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
 void process_move_queue()
 {
     struct MoveQueueItem item;
-    struct Ratr0Surface *backbuffer_surface = &ratr0_get_back_buffer()->surface;
-    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
+    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
     while (move_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
         _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
@@ -257,9 +259,10 @@ void process_move_queue()
 // Delete this function, it's only here for reference
 int done_debug = 0;
 void main_scene_debug(struct Ratr0Scene *this_scene,
+                      struct Ratr0DisplayBuffer *backbuffer,
                       UINT8 frame_elapsed) {
-    struct Ratr0Surface *backbuffer_surface = &ratr0_get_back_buffer()->surface;
-    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
+    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
@@ -288,6 +291,7 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
  * dropping all logical blocks down to the correct level
  */
 void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
+                                 struct Ratr0DisplayBuffer *backbuffer,
                                  UINT8 frame_elapsed) {
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
@@ -314,9 +318,11 @@ void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
  *   distance between
  */
 BOOL done_delete_lines = 0;
-void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+void main_scene_delete_lines(struct Ratr0Scene *this_scene,
+                             struct Ratr0DisplayBuffer *backbuffer,
+                             UINT8 frames_elapsed)
 {
-    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
 
     // make sure this only gets executed once !!! Otherwise this will
     // keep queueing clear requests
@@ -365,9 +371,10 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene, UINT8 frames_elapsed
  */
 BOOL done_establish = FALSE;
 void main_scene_establish_piece(struct Ratr0Scene *this_scene,
+                                struct Ratr0DisplayBuffer *backbuffer,
                                 UINT8 frames_elapsed)
 {
-    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
     if (!done_establish) {
         // since we have a double buffer, we have to queue up a draw
         // for the following frame, too, but since this is an
@@ -403,9 +410,11 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
  * This is the main gameplay loop state. Handle input, rotate, move and place
  * blocks. The state is switched when there are completed lines
  */
-void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+void main_scene_update(struct Ratr0Scene *this_scene,
+                       struct Ratr0DisplayBuffer *backbuffer,
+                       UINT8 frames_elapsed)
 {
-    int cur_buffer = ratr0_get_back_buffer()->buffernum;
+    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
 
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {

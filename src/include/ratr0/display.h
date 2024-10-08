@@ -158,8 +158,10 @@ extern void ratr0_display_shutdown(void);
 
 /**
  * Swap back buffer with the front buffer.
+ *
+ * @return pointer to current back buffer
  */
-extern void ratr0_display_swap_buffers(void);
+extern struct Ratr0DisplayBuffer *ratr0_display_swap_buffers(void);
 
 //
 // Quick access functions to the copper list.
@@ -202,14 +204,14 @@ extern void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
  *
  * @return pointer to the current front buffer
  */
-extern struct Ratr0DisplayBuffer *ratr0_get_front_buffer(void);
+extern struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(void);
 
 /**
  * Returns a pointer to the current back buffer.
  *
  * @return pointer to the current back buffer
  */
-extern struct Ratr0DisplayBuffer *ratr0_get_back_buffer(void);
+extern struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void);
 
 //
 // Current front and back buffer numbers, these are made global for efficiency,

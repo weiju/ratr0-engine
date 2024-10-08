@@ -37,14 +37,15 @@ void ratr0_engine_shutdown(void);
 static volatile UINT16 *custom_color00 = (volatile UINT16 *) 0xdff180;
 void ratr0_engine_game_loop(void)
 {
+    struct Ratr0DisplayBuffer *back_buffer = ratr0_display_get_back_buffer();
     while (game_state != GAMESTATE_QUIT) {
         WaitTOF();
         //*custom_color00 = 0xf00;
         // comment in for visual timing the loop iteration
-        engine.scenes_system->update(frames_elapsed);
+        engine.scenes_system->update(back_buffer ,frames_elapsed);
         //*custom_color00 = 0x000;
         // we are done with the back buffer. now swap it to the front
-        ratr0_display_swap_buffers();
+        back_buffer = ratr0_display_swap_buffers();
         frames_elapsed = 0;  // Reset the update frame counter
     }
 }

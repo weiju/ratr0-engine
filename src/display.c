@@ -121,10 +121,10 @@ void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y))
 }
 
 // Swap back and front buffers
-void ratr0_display_swap_buffers(void)
+struct Ratr0DisplayBuffer *ratr0_display_swap_buffers(void)
 {
-    //  NOP for single buffering
-    if (display_info.num_buffers == 1) return;
+    //  just the first buffer single buffering
+    if (display_info.num_buffers == 1) return &display_buffer[0];
 
     // 1. swap front and back indexes
     int tmp = ratr0_front_buffer;
@@ -134,6 +134,7 @@ void ratr0_display_swap_buffers(void)
     set_display_surface(current_coplist, current_coplist_size,
                         current_copper_info,
                         &display_buffer[ratr0_front_buffer].surface);
+    return &display_buffer[ratr0_back_buffer];
 }
 
 // Our vertical blank server only implements a simple frame counter
@@ -185,11 +186,11 @@ static void set_display_mode(UINT16 coplist[],
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-struct Ratr0DisplayBuffer *ratr0_get_front_buffer(void)
+struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(void)
 {
     return &display_buffer[ratr0_front_buffer];
 }
-struct Ratr0DisplayBuffer *ratr0_get_back_buffer(void)
+struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void)
 {
     return &display_buffer[ratr0_back_buffer];
 }

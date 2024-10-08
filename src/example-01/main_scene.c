@@ -22,7 +22,9 @@ struct Ratr0SpriteSheet fox_sprite_sheet;
 UINT8 fox_frames[] = {0, 1, 2, 3, 4};
 struct Ratr0HWSprite *fox;
 
-void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+void main_scene_update(struct Ratr0Scene *this_scene,
+                       struct Ratr0DisplayBuffer *backbuffer,
+                       UINT8 frames_elapsed)
 {
     // TODO: Animate BOBs
     // For now, end when the mouse was clicked. This is just for testing

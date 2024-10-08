@@ -25,7 +25,9 @@ UINT8 centi_head_lr_frames[] = {0, 1, 2, 3, 4};
 struct Ratr0HWSprite *centi;
 int centi_dir = 2;
 
-void main_scene_update(struct Ratr0Scene *this_scene, UINT8 frames_elapsed)
+void main_scene_update(struct Ratr0Scene *this_scene,
+                       struct Ratr0DisplayBuffer *backbuffer,
+                       UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_fire)) {

@@ -140,9 +140,12 @@ struct Ratr0Scene {
      * is the current active scene.
      *
      * @param this_scene pointer to this scene
+     * @param backbuffer pointer to the display back buffer
      * @param frames_elapsed the number of elapsed frames since the last call of update
      */
-    void (*update)(struct Ratr0Scene *this_scene, UINT8 frames_elapsed);
+    void (*update)(struct Ratr0Scene *this_scene,
+                   struct Ratr0DisplayBuffer *backbuffer,
+                   UINT8 frames_elapsed);
 
 };
 
@@ -195,9 +198,10 @@ struct Ratr0ScenesSystem {
     /**
      * Called every game loop iteration to update the Scenes system.
      *
+     * @param backbuffer the backbuffer of the display
      * @param frames_elapsed frames elapsed since last invocation
      */
-    void (*update)(UINT8 frames_elapsed);
+    void (*update)(struct Ratr0DisplayBuffer *backbuffer, UINT8 frames_elapsed);
 
     /**
      * Shutdown the Scenes subsystem.
