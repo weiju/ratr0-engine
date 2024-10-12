@@ -19,6 +19,11 @@ struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
     TETRIS_COPPER_SPR0PTH_INDEX, TETRIS_COPPER_COLOR00_INDEX
 };
 
+// to debug the double buffer, we keep track of the current
+// frame number. This will overflow and wrap to 0 at some
+// point, but that's good enough
+static UINT32 debug_current_frame = 0;
+
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down,
@@ -63,6 +68,11 @@ void draw_ghost_piece(struct Ratr0Scene *scene,
     scene->sprites[0] = spr0;
     scene->sprites[1] = spr1;
     scene->num_sprites = 2;
+}
+
+void hide_ghost_piece(struct Ratr0Scene *scene)
+{
+    scene->sprites[0] = scene->sprites[1] = &NULL_HW_SPRITE;
 }
 
 #define NUM_DISPLAY_BUFFERS (2)
@@ -298,6 +308,7 @@ void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
         ratr0_engine_exit();
     }
     process_blit_queues(backbuffer);
+    debug_current_frame++;
 }
 
 /**
@@ -362,6 +373,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     if (done_delete_lines >= 2) {
         this_scene->update = main_scene_reorganize_board;
     }
+    debug_current_frame++;
 }
 
 /**
@@ -404,6 +416,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
         }
     }
     process_blit_queues(backbuffer);
+    debug_current_frame++;
 }
 
 /**
@@ -531,11 +544,16 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     }
 
     process_blit_queues(backbuffer);
-    // Ghost piece is drawn with sprite, no background restore needed
-    int qdr = get_quickdrop_row(&current_piece,
-                                &gameboard0);
-    struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece.piece].rotations[current_piece.rotation];
-    draw_ghost_piece(this_scene, &rot_spec->outline, qdr, current_piece.col);
+    if (landed) {
+        hide_ghost_piece(this_scene);
+    } else {
+        // Ghost piece is drawn with sprite, no background restore needed
+        int qdr = get_quickdrop_row(&current_piece,
+                                    &gameboard0);
+        struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece.piece].rotations[current_piece.rotation];
+        draw_ghost_piece(this_scene, &rot_spec->outline, qdr, current_piece.col);
+    }
+    debug_current_frame++;
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)

@@ -372,6 +372,8 @@ struct Ratr0HWSprite {
     UINT16 *sprite_data;
 };
 
+extern struct Ratr0HWSprite NULL_HW_SPRITE;
+
 /**
  * Representation of a BOB.
  */

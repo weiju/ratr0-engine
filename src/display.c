@@ -158,6 +158,14 @@ UINT16 __chip NULL_SPRITE_DATA[] = {
     0x0000, 0x0000
 };
 
+struct Ratr0HWSprite NULL_HW_SPRITE = {
+    {
+        {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0},
+        {0, {0,0,0,0, 0,0,0,0}, 0, 0, 0, 0, 0}
+    },
+    FALSE, NULL_SPRITE_DATA
+};
+
 /**
  * We need to adjust the BPLCONx and BPLxMOD values after changing the
  * display mode.
