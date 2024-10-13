@@ -24,26 +24,23 @@ static UINT32 byteswap32(UINT32 value)
 }
 
 void ratr0_resources_shutdown(void);
-UINT32 ratr0_read_tilesheet(const char *filename, struct Ratr0TileSheet *sheet);
-void ratr0_free_tilesheet_data(struct Ratr0TileSheet *sheet);
-UINT32 ratr0_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *sheet);
-void ratr0_free_spritesheet_data(struct Ratr0SpriteSheet *sheet);
+BOOL ratr0_resources_read_tilesheet(const char *filename,
+                                    struct Ratr0TileSheet *sheet);
+void ratr0_resources_free_tilesheet_data(struct Ratr0TileSheet *sheet);
+BOOL ratr0_resources_read_spritesheet(const char *filename,
+                                      struct Ratr0SpriteSheet *sheet);
+void ratr0_resources_free_spritesheet_data(struct Ratr0SpriteSheet *sheet);
 
 static struct Ratr0ResourceSystem resource_system;
 static Ratr0Engine *engine;
 #define MAX_INFO_WORDS (40)
 UINT16 info_words[MAX_INFO_WORDS];
-int num_info_words;
+UINT16 num_info_words;
 
 struct Ratr0ResourceSystem *ratr0_resources_startup(Ratr0Engine *eng)
 {
     engine = eng;
     resource_system.shutdown = &ratr0_resources_shutdown;
-    resource_system.read_tilesheet = &ratr0_read_tilesheet;
-    resource_system.free_tilesheet_data = &ratr0_free_tilesheet_data;
-    resource_system.read_spritesheet = &ratr0_read_spritesheet;
-    resource_system.free_spritesheet_data = &ratr0_free_spritesheet_data;
-
     num_info_words = 0;
 
     PRINT_DEBUG("Startup finished.");
@@ -55,11 +52,10 @@ void ratr0_resources_shutdown(void)
     PRINT_DEBUG("Shutdown finished.");
 }
 
-UINT32 ratr0_read_tilesheet(const char *filename, struct Ratr0TileSheet *sheet)
+BOOL ratr0_resources_read_tilesheet(const char *filename,
+                                    struct Ratr0TileSheet *sheet)
 {
     int elems_read;
-    UINT32 retval = 0;
-
     FILE *fp = fopen(filename, "rb");
 
     if (fp) {
@@ -80,26 +76,24 @@ UINT32 ratr0_read_tilesheet(const char *filename, struct Ratr0TileSheet *sheet)
         UINT8 *imgdata = engine->memory_system->block_address(handle);
         elems_read = fread(imgdata, sizeof(unsigned char), imgdata_size, fp);
         fclose(fp);
-        return 1;
+        return TRUE;
     } else {
         printf("ratr0_read_tilesheet() error: file '%s' not found\n", filename);
-        return 0;
+        return FALSE;
     }
 }
 
 /**
  * Frees the memory that was allocated for the specified RATR0 tile sheet.
  */
-void ratr0_free_tilesheet_data(struct Ratr0TileSheet *sheet)
+void ratr0_resources_free_tilesheet_data(struct Ratr0TileSheet *sheet)
 {
     if (sheet && sheet->h_imgdata) engine->memory_system->free_block(sheet->h_imgdata);
 }
 
-UINT32 ratr0_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *sheet)
+BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *sheet)
 {
     int elems_read;
-    UINT32 retval = 0;
-
     FILE *fp = fopen(filename, "rb");
 
     if (fp) {
@@ -132,17 +126,25 @@ UINT32 ratr0_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *she
         UINT8 *imgdata = engine->memory_system->block_address(handle);
         elems_read = fread(imgdata, sizeof(unsigned char), imgdata_size, fp);
         fclose(fp);
-        return 1;
+        return TRUE;
     } else {
         printf("ratr0_read_spritesheet() error: file '%s' not found\n", filename);
-        return 0;
+        return FALSE;
     }
 }
 
 /**
  * Frees the memory that was allocated for the specified RATR0 sprite sheet.
  */
-void ratr0_free_spritesheet_data(struct Ratr0SpriteSheet *sheet)
+void ratr0_resources_free_spritesheet_data(struct Ratr0SpriteSheet *sheet)
 {
     if (sheet && sheet->h_imgdata) engine->memory_system->free_block(sheet->h_imgdata);
 }
+
+BOOL ratr0_resources_read_audiosample(const char *filename,
+                                      struct Ratr0AudioSample *sample)
+{
+    return TRUE;
+}
+
+void ratr0_resources_free_audiosample_data(struct Ratr0AudioSample *sample);

@@ -35,6 +35,7 @@ FILE *debug_fp;
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 //#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines.ts")
+//#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines2.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
@@ -178,9 +179,9 @@ void spawn_next_piece(void)
 }
 
 /**
- * This is the drawing section: clear all queued up clear
- * commands for the current buffer, then draw all queued up draw commands
- * for the current buffer
+ * This is the drawing section:
+ * 1. process all queued up clear commands for the current buffer
+ * 2. then draw all queued up draw command for the current buffer
  */
 void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
 {
@@ -273,7 +274,6 @@ void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
     }
 }
 
-
 /**
  * DEBUG STATE. Use this state to quickly simulate game situations
  * that would otherwise require playing to this state.
@@ -304,23 +304,6 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
     process_blit_queues(backbuffer);
 }
 
-
-/**
- * The state to reorganize the board after lines were completed
- * That means collapsing all visible block to the bottom and
- * dropping all logical blocks down to the correct level
- */
-void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
-                                 struct Ratr0DisplayBuffer *backbuffer,
-                                 UINT8 frame_elapsed) {
-    // For now, end when the mouse was clicked. This is just for testing
-    if (engine->input_system->was_action_pressed(action_quit)) {
-        ratr0_engine_exit();
-    }
-    process_blit_queues(backbuffer);
-    debug_current_frame++;
-}
-
 /**
  * This state cleans up the artifacts from establishing the dropped piece.
  * And then it deletes the lines that were marked
@@ -337,6 +320,12 @@ void main_scene_reorganize_board(struct Ratr0Scene *this_scene,
  *   together
  * - if there are 2 deleted rows, they are either together or 1 or 2 rows
  *   distance between
+ *
+ * ENHANCEMENT (OPTIONAL)
+ * We could optional delete the lines: this could be combined with
+ * some animation effect. Note that because our rendering is queue-based
+ * we would need to do it in a a different state function, otherwise
+ * our queue processing ordering will interfere
  */
 BOOL done_delete_lines = 0;
 void main_scene_delete_lines(struct Ratr0Scene *this_scene,
@@ -351,54 +340,55 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         struct DrawQueueItem clear_row = {
             DRAW_TYPE_ROWS, { 0, 0 }
         };
-        // 1. optional delete the lines: this could be combined with
-        // some animation effect
-        fprintf(debug_fp, "# completed rows: %d\n", completed_rows.count);
-        for (int i = 0; i < completed_rows.count; i++) {
-            fprintf(debug_fp, "# completed row #%d: %d\n",
-                    i, completed_rows.rows[i]);
-            //clear_row.item.rows.row = completed_rows.rows[i];
-            //RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
-            //RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
-        }
-        // 2. move the regions above the deleted lines down graphically
+        fprintf(debug_fp, "# completed rows: %u\n", completed_rows.count);
+
+        // 1. move the regions above the deleted lines down graphically
         struct MoveRegions move_regions;
         get_move_regions(&move_regions, &completed_rows, &gameboard0);
-        fprintf(debug_fp, "# move regions: %d\n", move_regions.count);
+        fprintf(debug_fp, "# move regions: %u\n", move_regions.count);
         for (int i = 0; i < move_regions.count; i++) {
             struct MoveQueueItem move_item = {
                 move_regions.regions[i].start,
                 move_regions.regions[i].start + move_regions.regions[i].move_by,
                 move_regions.regions[i].end - move_regions.regions[i].start + 1
             };
-            fprintf(debug_fp, "# move_region #%i: start:%d end: %d by: %d\n",
+            fprintf(debug_fp, "# move_region #%i: start: %u end: %u by: %u\n",
                     i, move_regions.regions[i].start,
                     move_regions.regions[i].end, move_regions.regions[i].move_by);
             RATR0_ENQUEUE_ARR(move_queue, cur_buffer, move_item);
             RATR0_ENQUEUE_ARR(move_queue, ((cur_buffer + 1) % 2), move_item);
         }
-        // 3. Delete the rows at the top, since moving won't get rid
+        // 2. Delete the rows at the top, since moving won't get rid
         // of those
-        // TODO: I took this out for now for debugging because deleting
-        // rows has a bug
-        /*
         int move_top = move_regions.regions[move_regions.count - 1].start;
         clear_row.item.rows.row = move_top;
         clear_row.item.rows.num_rows = completed_rows.count;
+
+        // debug output
+        fprintf(debug_fp, "clearing %u rows off the top starting from: %d\n",
+                completed_rows.count, move_top);
+
         RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
         RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
-        */
 
-        // 4. compact the board logically by moving every block above
+        // 3. compact the board logically by moving every block above
         // the deleted lines down
+        fprintf(debug_fp, "BOARD BEFORE compacting\n");
+        dump_board(debug_fp, &gameboard0);
         delete_rows_from_board(&move_regions, &completed_rows, &gameboard0);
+        fprintf(debug_fp, "BOARD AFTER compacting\n");
+        dump_board(debug_fp, &gameboard0);
     }
-    process_blit_queues(backbuffer);
+    // move must come before blit, because the blit queues will delete rows !!!
     process_move_queue(backbuffer);
+    process_blit_queues(backbuffer);
     done_delete_lines++;
     // switch to next state after 2 frames elapsed
     if (done_delete_lines >= 2) {
-        this_scene->update = main_scene_reorganize_board;
+        spawn_next_piece(); // spawn next piece, but don't draw yet
+        done_delete_lines = 0; // reset frame counter for the next time
+        // back to main update state
+        this_scene->update = main_scene_update;
     }
     debug_current_frame++;
 }
@@ -602,7 +592,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
                                  &TETRIS_COPPER_INFO);
 
     // Load background
-    engine->resource_system->read_tilesheet(BG_PATH_PAL, &background_ts);
+    ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
     main_scene->backdrop = node_factory->create_backdrop(&background_ts);
     ratr0_display_set_palette(background_ts.palette,
                               32, 0);
@@ -610,7 +600,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // Load tileset for the blocks
     // NOTE: the tilesheet remains in memory, so it could be used
     // as a backing buffer of sorts
-    engine->resource_system->read_tilesheet(TILES_PATH, &tiles_ts);
+    ratr0_resources_read_tilesheet(TILES_PATH, &tiles_ts);
     tiles_surface.width = tiles_ts.header.width;
     tiles_surface.height = tiles_ts.header.height;
     tiles_surface.depth = tiles_ts.header.bmdepth;
@@ -618,7 +608,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     tiles_surface.buffer = engine->memory_system->block_address(tiles_ts.h_imgdata);
 
     // load block outlines as sprite for the ghost piece
-    engine->resource_system->read_spritesheet(OUTLINES_PATH, &outlines_sheet);
+    ratr0_resources_read_spritesheet(OUTLINES_PATH, &outlines_sheet);
     for (int i = 0; i < outlines_sheet.header.num_sprites; i++) {
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
     }

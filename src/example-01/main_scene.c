@@ -50,10 +50,10 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     struct Ratr0Scene *main_scene = node_factory->create_scene();
     main_scene->update = main_scene_update;
 
-    engine->resource_system->read_tilesheet(GRID_PATH, &grid);
+    ratr0_resources_read_tilesheet(GRID_PATH, &grid);
     ratr0_display_set_palette(grid.palette, 8, 0);
 
-    engine->resource_system->read_tilesheet(BOBS_PATH_IL, &bobs_il);
+    ratr0_resources_read_tilesheet(BOBS_PATH_IL, &bobs_il);
     bobs[0] = (struct Ratr0Bob *) node_factory->create_sprite(&bobs_il, bob_frames, 6, 5, FALSE);
     bobs[0]->base_obj.bounds.x = 50;
     bobs[0]->base_obj.bounds.y = 16;
@@ -77,7 +77,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     main_scene->backdrop = node_factory->create_backdrop(&grid);
 
     // 1. Read animated sprites from sprite sheet
-    engine->resource_system->read_spritesheet(SPRITES_PATH, &fox_sprite_sheet);
+    ratr0_resources_read_spritesheet(SPRITES_PATH, &fox_sprite_sheet);
     fox = ratr0_create_sprite_from_sprite_sheet(&fox_sprite_sheet, (UINT8) 6, RATR0_ANIM_LOOP_TYPE_NONE);
     main_scene->sprites[main_scene->num_sprites++] = fox;
     fox->base_obj.bounds.x = 0;

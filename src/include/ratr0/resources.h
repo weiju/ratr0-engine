@@ -107,42 +107,68 @@ struct Ratr0SpriteSheet {
     Ratr0MemHandle h_imgdata;
 };
 
+struct Ratr0AudioSample {
+    /** \brief number of bytes in the sample */
+    UINT32 length; // round up to even number of  bytes
+
+    /** \brief handle to audio sample data */
+    Ratr0MemHandle h_data;
+};
+
+/**
+ * Reads a tilesheet from the file system.
+ *
+ * @param filename the path to the tilesheet file
+ * @param sheet pointer to an unitialized tilesheet structure
+ * @return FALSE if error, TRUE if success
+ */
+extern BOOL ratr0_resources_read_tilesheet(const char *filename,
+                                           struct Ratr0TileSheet *sheet);
+/**
+ * Frees the data in a tilesheet and returns it to the memory system.
+ *
+ * @param sheet pointer to an initialized tilesheet
+ */
+extern void ratr0_resources_free_tilesheet_data(struct Ratr0TileSheet *sheet);
+
+/**
+ * Reads a sprite sheet from the file system.
+ *
+ * @param filename the path to the sprite sheet file
+ * @param sheet pointer to an unitialized sprite sheet structure
+ * @return FALSE if error, TRUE if success
+ */
+extern BOOL ratr0_resources_read_spritesheet(const char *filename,
+                                             struct Ratr0SpriteSheet *sheet);
+
+/**
+ * Frees the data in a sprite sheet and returns it to the memory system.
+ *
+ * @param sheet pointer to an initialized sprite sheet
+ */
+extern void ratr0_resources_free_spritesheet_data(struct Ratr0SpriteSheet *sheet);
+
+/**
+ * Reads a raw audio sample from the file system.
+ *
+ * @param filename the path to the sound sample file
+ * @param sampel pointer to an uninitialized sample structure
+ * @return 0 if error, 1 if success
+ */
+extern BOOL ratr0_resources_read_audiosample(const char *filename,
+                                             struct Ratr0AudioSample *sample);
+
+/**
+ * Frees the data in a audio sample and returns it to the memory system.
+ *
+ * @param sample pointer to an initialized audio sample
+ */
+extern void ratr0_resources_free_audiosample_data(struct Ratr0AudioSample *sample);
+
 /**
  * Interface to resource subsystem.
  */
 struct Ratr0ResourceSystem {
-    /**
-     * Reads a tilesheet from the file system.
-     *
-     * @param filename the path to the tilesheet file
-     * @param sheet pointer to an unitialized tilesheet structure
-     * @return 0 if error, 1 if success
-     */
-    UINT32 (*read_tilesheet)(const char *filename, struct Ratr0TileSheet *sheet);
-
-    /**
-     * Frees the data in a tilesheet and returns it to the memory system.
-     *
-     * @param sheet pointer to an initialized tilesheet
-     */
-    void (*free_tilesheet_data)(struct Ratr0TileSheet *sheet);
-
-    /**
-     * Reads a sprite sheet from the file system.
-     *
-     * @param filename the path to the sprite sheet file
-     * @param sheet pointer to an unitialized sprite sheet structure
-     * @return 0 if error, 1 if success
-     */
-    UINT32 (*read_spritesheet)(const char *filename, struct Ratr0SpriteSheet *sheet);
-
-    /**
-     * Frees the data in a sprite sheet and returns it to the memory system.
-     *
-     * @param sheet pointer to an initialized sprite sheet
-     */
-    void (*free_spritesheet_data)(struct Ratr0SpriteSheet *sheet);
-
     /**
      * Shuts down the resources subsystem.
      */

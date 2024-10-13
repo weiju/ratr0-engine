@@ -22,7 +22,7 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 
 endif  # ifdef AMIGA
 
-EXES=main invaders centi tetra_zone
+EXES=example-01_game invaders_game centipede_game tetrazone_game
 TEST_PRGS=timer_test fixed_point_test bitset_test treeset_test quadtree_test vector_test queue_test tetris_test
 
 # programs for benchmarks
@@ -42,18 +42,18 @@ ENGINE_OBJECTS=engine.o timers.o memory.o input.o \
 	resources.o scenes.o default_copper.o $(DATA_OBJECTS) $(HW_OBJECTS) $(EXT_OBJECTS)
 
 # game objects
-MAIN_OBJECTS=example-01/main.o example-01/main_scene.o
+EXAMPLE01_OBJECTS=example-01/main.o example-01/main_scene.o
 
 INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
 
 CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/main_stage.o
 
-TETRIS_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o tetris/game_data.o tetris/draw_primitives.o
+TETRAZONE_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o tetris/game_data.o tetris/draw_primitives.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm
 
-all: main
+all: example-01_game
 
 check: $(TEST_PRGS)
 	./timer_test
@@ -78,16 +78,16 @@ clean:
 .asm.o:
 	$(ASM) $^ -o $@
 
-main: $(ENGINE_OBJECTS) $(MAIN_OBJECTS)
+example-01_game: $(ENGINE_OBJECTS) $(EXAMPLE01_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-invaders: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
+invaders_game: $(ENGINE_OBJECTS) $(INVADERS_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-centi: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
+centipede_game: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-tetra_zone: $(ENGINE_OBJECTS) $(TETRIS_OBJECTS)
+tetrazone_game: $(ENGINE_OBJECTS) $(TETRAZONE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 default_copper.c: default.copper

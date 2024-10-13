@@ -54,7 +54,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
                                    &CENTI_COPPER_INFO);
 
     // 1. Read animated sprites from sprite sheet
-    engine->resource_system->read_spritesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
+    ratr0_resources_read_spritesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
     centi = ratr0_create_sprite_from_sprite_sheet(&centi_head_lr_sheet, (UINT8) 5, RATR0_ANIM_LOOP_TYPE_PINGPONG);
     // add this sprite to the scene
     centi->base_obj.bounds.x = 0;

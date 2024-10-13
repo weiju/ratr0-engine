@@ -482,7 +482,7 @@ void dump_board(FILE *debug_fp, UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     for (int i = 0; i < BOARD_HEIGHT; i++) {
         for (int j = 0; j < BOARD_WIDTH; j++) {
-            fprintf(debug_fp, "%uc ", (*gameboard)[i][j]);
+            fprintf(debug_fp, "%u ", (*gameboard)[i][j]);
         }
         fputs("\n", debug_fp);
     }
