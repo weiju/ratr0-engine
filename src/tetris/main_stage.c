@@ -193,10 +193,14 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
         RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
         if (item.draw_type == DRAW_TYPE_ROWS) {
             // clear a row
-            fprintf(debug_fp, "clear row %d on buffer %d\n",
+            fprintf(debug_fp, "clear %d rows starting with %d on buffer %d\n",
+                    item.item.rows.num_rows,
                     item.item.rows.row,
                     cur_buffer);
-            clear_rect(backbuffer_surface, item.item.rows.row, 0, 1, BOARD_WIDTH);
+            clear_rect(backbuffer_surface, item.item.rows.row,
+                       0,
+                       item.item.rows.num_rows,
+                       BOARD_WIDTH);
         } else {
             queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
             clear_piece(backbuffer_surface,
@@ -242,6 +246,11 @@ void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
         dstx = BOARD_X0, dsty = BOARD_Y0 + to_row * 8;
     int blit_width_pixels = BOARD_WIDTH * 8;
     int blit_height_pixels = num_rows * 8;
+    if (num_rows == 0 > num_rows > 15) {
+        fprintf(debug_fp,
+                "ERROR: _move_board_rect(), sketchy num_rows value: %d\n", num_rows);
+        fflush(debug_fp);
+    }
 
     // this is most likely overlapping, ratr0_blit_rect_simple()
     // will perform reverse copying if that is the case
@@ -265,33 +274,34 @@ void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
 }
 
 
-// This state shifts down the blocks that are left from deleting the lines
-// Delete this function, it's only here for reference
+/**
+ * DEBUG STATE. Use this state to quickly simulate game situations
+ * that would otherwise require playing to this state.
+ */
 int done_debug = 0;
 void main_scene_debug(struct Ratr0Scene *this_scene,
                       struct Ratr0DisplayBuffer *backbuffer,
                       UINT8 frame_elapsed) {
+    // This state shifts down the blocks that are left from deleting the lines
+    // Delete this function, it's only here for reference
     struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
     int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
-    clear_rect(backbuffer_surface, 16, 0, 2, BOARD_WIDTH);
-    clear_rect(backbuffer_surface, 17, 0, 2, BOARD_WIDTH);
-    clear_rect(backbuffer_surface, 18, 0, 2, BOARD_WIDTH);
-    if (done_debug < 4) {
-        /*
+    // clear_rect works great !!!
+    //clear_rect(backbuffer_surface, 15, 0, 4, BOARD_WIDTH);
+    if (done_debug < 2) {
         struct DrawQueueItem clear_row = {
             DRAW_TYPE_ROWS, { 0, 0 }
         };
-        clear_row.item.rows.row = BOARD_HEIGHT - 2;
-        clear_row.item.rows.num_rows = 1;
+        clear_row.item.rows.row = 15;
+        clear_row.item.rows.num_rows = 3;
         RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
         RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
-        */
         done_debug++;
     }
-    //process_blit_queues(backbuffer);
+    process_blit_queues(backbuffer);
 }
 
 
@@ -338,31 +348,48 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     // make sure this only gets executed once !!! Otherwise this will
     // keep queueing clear requests
     if (done_delete_lines == 0) {
-        // 1. delete the lines: this could be combined with
-        // some animation effect
         struct DrawQueueItem clear_row = {
             DRAW_TYPE_ROWS, { 0, 0 }
         };
+        // 1. optional delete the lines: this could be combined with
+        // some animation effect
+        fprintf(debug_fp, "# completed rows: %d\n", completed_rows.count);
         for (int i = 0; i < completed_rows.count; i++) {
-            clear_row.item.rows.row = completed_rows.rows[i];
-            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
-            RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
+            fprintf(debug_fp, "# completed row #%d: %d\n",
+                    i, completed_rows.rows[i]);
+            //clear_row.item.rows.row = completed_rows.rows[i];
+            //RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
+            //RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
         }
         // 2. move the regions above the deleted lines down graphically
         struct MoveRegions move_regions;
         get_move_regions(&move_regions, &completed_rows, &gameboard0);
+        fprintf(debug_fp, "# move regions: %d\n", move_regions.count);
         for (int i = 0; i < move_regions.count; i++) {
             struct MoveQueueItem move_item = {
                 move_regions.regions[i].start,
                 move_regions.regions[i].start + move_regions.regions[i].move_by,
-                move_regions.regions[i].end - move_regions.regions[i].start
+                move_regions.regions[i].end - move_regions.regions[i].start + 1
             };
+            fprintf(debug_fp, "# move_region #%i: start:%d end: %d by: %d\n",
+                    i, move_regions.regions[i].start,
+                    move_regions.regions[i].end, move_regions.regions[i].move_by);
             RATR0_ENQUEUE_ARR(move_queue, cur_buffer, move_item);
             RATR0_ENQUEUE_ARR(move_queue, ((cur_buffer + 1) % 2), move_item);
         }
-        // 3. TODO: Delete the rows at the top, since moving won't get rid
+        // 3. Delete the rows at the top, since moving won't get rid
         // of those
-        // 4. TODO: compact the board logically by moving every block above
+        // TODO: I took this out for now for debugging because deleting
+        // rows has a bug
+        /*
+        int move_top = move_regions.regions[move_regions.count - 1].start;
+        clear_row.item.rows.row = move_top;
+        clear_row.item.rows.num_rows = completed_rows.count;
+        RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
+        RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
+        */
+
+        // 4. compact the board logically by moving every block above
         // the deleted lines down
         delete_rows_from_board(&move_regions, &completed_rows, &gameboard0);
     }
