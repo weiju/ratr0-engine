@@ -35,11 +35,7 @@ static UINT32 first_free_chip, first_free_general;
 static UINT32 first_free_chip_table, first_free_general_table;
 
 // Forward declarations for the generic memory allocator
-Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size);
-void ratr0_memory_free_block(Ratr0MemHandle handle);
-void *ratr0_memory_block_address(Ratr0MemHandle handle);
 void ratr0_memory_shutdown(void);
-
 
 struct Ratr0MemorySystem *ratr0_memory_startup(Ratr0Engine *eng, struct Ratr0MemoryConfig *config)
 {
@@ -83,11 +79,6 @@ struct Ratr0MemorySystem *ratr0_memory_startup(Ratr0Engine *eng, struct Ratr0Mem
     first_free_chip = first_free_general = 0;
     first_free_chip_table = first_free_general_table = 0;
 
-    // Assign functions
-    memory_system.allocate_block = &ratr0_memory_allocate_block;
-    memory_system.free_block = &ratr0_memory_free_block;
-    memory_system.block_address = &ratr0_memory_block_address;
-
     PRINT_DEBUG("Startup finished.");
     return &memory_system;
 }
@@ -100,7 +91,6 @@ void ratr0_memory_shutdown(void)
     FreeMem(chip_mem_pool, chip_pool_size);
     PRINT_DEBUG("Shutdown finished.");
 }
-
 
 Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size)
 {
@@ -130,7 +120,6 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         return result;
     }
 }
-
 
 void ratr0_memory_free_block(Ratr0MemHandle handle)
 {

@@ -363,7 +363,7 @@ void ratr0_blit_object(struct Ratr0Surface *dst,
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst->width / 8 * dsty * dst->depth) + dstx / 8;
 
     int bobs_plane_size = bobs->header.width / 8 * bobs->header.height;
-    UINT8 *bobs_addr = engine->memory_system->block_address(bobs->h_imgdata);
+    UINT8 *bobs_addr = ratr0_memory_block_address(bobs->h_imgdata);
     // non-interleaved -> Offset within the first plane
     UINT32 src_addr = ((UINT32) bobs_addr) + (bobs->header.width / 8 * srcy) + srcx / 8;
 
@@ -459,7 +459,7 @@ void ratr0_blit_object_il(struct Ratr0Surface *dst,
     UINT16 dst_row_bytes = dst->width >> 3;
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_row_bytes * dsty * dst->depth) + (dstx >> 3);
 
-    UINT8 *bobs_addr = engine->memory_system->block_address(bobs->h_imgdata);
+    UINT8 *bobs_addr = ratr0_memory_block_address(bobs->h_imgdata);
     // interleaved
     UINT16 tile_offset = (bobs_row_bytes * srcy * bobs->header.bmdepth) + (srcx >> 3);
     UINT32 src_addr = ((UINT32) bobs_addr) + tile_offset;
@@ -607,7 +607,7 @@ void ratr0_blit_rect_1plane(struct Ratr0Surface *dst,
     UINT16 dst_row_bytes = dst->width >> 3;
     UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_row_bytes * dsty * dst->depth) + (dstx >> 3);
 
-    UINT8 *bobs_addr = engine->memory_system->block_address(bobs->h_imgdata);
+    UINT8 *bobs_addr = ratr0_memory_block_address(bobs->h_imgdata);
     // interleaved
     UINT16 tile_offset = (bobs_row_bytes * srcy * bobs->header.bmdepth) + (srcx >> 3);
     UINT32 src_addr = ((UINT32) bobs_addr) + tile_offset;

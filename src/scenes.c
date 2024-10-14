@@ -131,7 +131,7 @@ struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
     result->surface.height = tilesheet->header.height;
     result->surface.depth = tilesheet->header.bmdepth;
     result->surface.is_interleaved = tilesheet->header.flags & TSFLAGS_NON_INTERLEAVED == 0;
-    result->surface.buffer = engine->memory_system->block_address(tilesheet->h_imgdata);
+    result->surface.buffer = ratr0_memory_block_address(tilesheet->h_imgdata);
     result->was_drawn = FALSE;
 
     return result;

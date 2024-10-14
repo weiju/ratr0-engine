@@ -52,11 +52,11 @@ UINT16 *ratr0_make_sprite_data(struct Ratr0TileSheet *tilesheet, UINT8 frames[],
     int words_to_reserve = imgdata_words + 4;
     PRINT_DEBUG("# frames: %uc, WORDS TO RESERVE: %d",
                 num_frames, words_to_reserve);
-    UINT16 *imgdata = (UINT16 *) engine->memory_system->block_address(tilesheet->h_imgdata);
+    UINT16 *imgdata = (UINT16 *) ratr0_memory_block_address(tilesheet->h_imgdata);
 
-    Ratr0MemHandle sprite_handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
-                                                                         words_to_reserve * sizeof(UINT16));
-    UINT16 *sprite_data = engine->memory_system->block_address(sprite_handle);
+    Ratr0MemHandle sprite_handle = ratr0_memory_allocate_block(RATR0_MEM_CHIP,
+                                                               words_to_reserve * sizeof(UINT16));
+    UINT16 *sprite_data = ratr0_memory_block_address(sprite_handle);
 
     /*
     */

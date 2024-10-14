@@ -71,7 +71,7 @@ void copy_spritesheet_to_sprite()
 {
     // copy sprite sheet to test sprite
     UINT16 offset = sprite_sheet.sprite_offsets[0];
-    UINT16 *sprdata = (UINT16 *) engine->memory_system->block_address(sprite_sheet.h_imgdata);
+    UINT16 *sprdata = (UINT16 *) ratr0_memory_block_address(sprite_sheet.h_imgdata);
     sprdata += offset;
     UINT16 spr_height = sprdata[offset];
     UINT16 spr_attached = sprdata[offset + 1];
@@ -81,14 +81,14 @@ void copy_spritesheet_to_sprite()
     // source and target actually have different layouts: in the source every sprite has its own start
     // and end words, while in our destination we combine the start and end blocks for multiplexing
     UINT16 sprite_block_words = spr_height * 2 + 2;
-    Ratr0MemHandle h_newsprite = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
-                                                                       sprite_block_words * sizeof(UINT16) *
-                                                                       NUM_SPRITES +
-                                                                       NUM_SPRITE_CONTROL_WORDS * sizeof(UINT16));
+    Ratr0MemHandle h_newsprite = ratr0_memory_allocate_block(RATR0_MEM_CHIP,
+                                                             sprite_block_words * sizeof(UINT16) *
+                                                             NUM_SPRITES +
+                                                             NUM_SPRITE_CONTROL_WORDS * sizeof(UINT16));
 
     UINT16 *new_sprite[3];
     UINT16 sprite_pos[3][2] = { {160, 100}, {160, 110}, {160, 120} };
-    new_sprite[0] = engine->memory_system->block_address(h_newsprite);
+    new_sprite[0] = ratr0_memory_block_address(h_newsprite);
 
     int dst_idx = 2, src_idx = 2;
     copy_sprite(&new_sprite[0][dst_idx], &sprdata[src_idx], spr_height);
@@ -122,12 +122,12 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     struct Ratr0Scene *main_scene = node_factory->create_scene();
     main_scene->update = main_scene_update;
 
-    engine->resource_system->read_tilesheet(GRID_PATH, &grid_sheet);
+    ratr0_resources_read_tilesheet(GRID_PATH, &grid_sheet);
     ratr0_display_set_palette(grid_sheet.palette, 4, 0);
 
-    engine->resource_system->read_tilesheet(BOBS_PATH, &bobs_sheet);
-    engine->resource_system->read_tilesheet(BOBS2_PATH, &bobs2_sheet);
-    engine->resource_system->read_spritesheet(SPRITES_PATH, &sprite_sheet);
+    ratr0_resources_read_tilesheet(BOBS_PATH, &bobs_sheet);
+    ratr0_resources_read_tilesheet(BOBS2_PATH, &bobs2_sheet);
+    ratr0_resources_read_spritesheet(SPRITES_PATH, &sprite_sheet);
 
     copy_spritesheet_to_sprite();
     // SETUP BOBS

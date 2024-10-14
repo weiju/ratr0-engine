@@ -24,12 +24,6 @@ static UINT32 byteswap32(UINT32 value)
 }
 
 void ratr0_resources_shutdown(void);
-BOOL ratr0_resources_read_tilesheet(const char *filename,
-                                    struct Ratr0TileSheet *sheet);
-void ratr0_resources_free_tilesheet_data(struct Ratr0TileSheet *sheet);
-BOOL ratr0_resources_read_spritesheet(const char *filename,
-                                      struct Ratr0SpriteSheet *sheet);
-void ratr0_resources_free_spritesheet_data(struct Ratr0SpriteSheet *sheet);
 
 static struct Ratr0ResourceSystem resource_system;
 static Ratr0Engine *engine;
@@ -71,9 +65,9 @@ BOOL ratr0_resources_read_tilesheet(const char *filename,
         printf("palette size: %d imgdata_size: %d\n", palette_size, imgdata_size);
 #endif
         elems_read = fread(&sheet->palette, sizeof(UINT16), palette_size, fp);
-        Ratr0MemHandle handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP, imgdata_size);
+        Ratr0MemHandle handle = ratr0_memory_allocate_block(RATR0_MEM_CHIP, imgdata_size);
         sheet->h_imgdata = handle;
-        UINT8 *imgdata = engine->memory_system->block_address(handle);
+        UINT8 *imgdata = ratr0_memory_block_address(handle);
         elems_read = fread(imgdata, sizeof(unsigned char), imgdata_size, fp);
         fclose(fp);
         return TRUE;
@@ -88,7 +82,7 @@ BOOL ratr0_resources_read_tilesheet(const char *filename,
  */
 void ratr0_resources_free_tilesheet_data(struct Ratr0TileSheet *sheet)
 {
-    if (sheet && sheet->h_imgdata) engine->memory_system->free_block(sheet->h_imgdata);
+    if (sheet && sheet->h_imgdata) ratr0_memory_free_block(sheet->h_imgdata);
 }
 
 BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSheet *sheet)
@@ -120,10 +114,10 @@ BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSh
         elems_read = fread(sheet->colors, sizeof(UINT16), palette_size, fp);
 
         // 3. read image data
-        Ratr0MemHandle handle = engine->memory_system->allocate_block(RATR0_MEM_CHIP,
-                                                                      imgdata_size);
+        Ratr0MemHandle handle = ratr0_memory_allocate_block(RATR0_MEM_CHIP,
+                                                            imgdata_size);
         sheet->h_imgdata = handle;
-        UINT8 *imgdata = engine->memory_system->block_address(handle);
+        UINT8 *imgdata = ratr0_memory_block_address(handle);
         elems_read = fread(imgdata, sizeof(unsigned char), imgdata_size, fp);
         fclose(fp);
         return TRUE;
@@ -138,13 +132,21 @@ BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSh
  */
 void ratr0_resources_free_spritesheet_data(struct Ratr0SpriteSheet *sheet)
 {
-    if (sheet && sheet->h_imgdata) engine->memory_system->free_block(sheet->h_imgdata);
+    if (sheet && sheet->h_imgdata) ratr0_memory_free_block(sheet->h_imgdata);
 }
 
 BOOL ratr0_resources_read_audiosample(const char *filename,
                                       struct Ratr0AudioSample *sample)
 {
-    return TRUE;
+    FILE *fp = fopen(filename, "rb");
+    if (fp) {
+        return TRUE;
+    } else{
+        return FALSE;
+    }
 }
 
-void ratr0_resources_free_audiosample_data(struct Ratr0AudioSample *sample);
+void ratr0_resources_free_audiosample_data(struct Ratr0AudioSample *sample)
+{
+    if (sample && sample->h_data) ratr0_memory_free_block(sample->h_data);
+}

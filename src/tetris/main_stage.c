@@ -605,7 +605,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     tiles_surface.height = tiles_ts.header.height;
     tiles_surface.depth = tiles_ts.header.bmdepth;
     tiles_surface.is_interleaved = TRUE;
-    tiles_surface.buffer = engine->memory_system->block_address(tiles_ts.h_imgdata);
+    tiles_surface.buffer = ratr0_memory_block_address(tiles_ts.h_imgdata);
 
     // load block outlines as sprite for the ghost piece
     ratr0_resources_read_spritesheet(OUTLINES_PATH, &outlines_sheet);

@@ -94,9 +94,9 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size
 
     // Initialize the timer pool
     max_timers = pool_size;
-    h_timers = engine->memory_system->allocate_block(RATR0_MEM_DEFAULT,
-                                                     sizeof(Ratr0Timer) * pool_size);
-    timers = engine->memory_system->block_address(h_timers);
+    h_timers = ratr0_memory_allocate_block(RATR0_MEM_DEFAULT,
+                                           sizeof(Ratr0Timer) * pool_size);
+    timers = ratr0_memory_block_address(h_timers);
     for (int i = 0; i < pool_size; i++) {
         timers[i].running = FALSE;
         timers[i].next = timers[i].prev = -1;
@@ -111,6 +111,6 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size
 
 void ratr0_timers_shutdown(void)
 {
-    engine->memory_system->free_block(h_timers);
+    ratr0_memory_free_block(h_timers);
     PRINT_DEBUG("Shutdown finished.");
 }

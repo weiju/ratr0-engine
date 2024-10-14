@@ -47,28 +47,6 @@ struct Ratr0MemoryConfig {
 struct Ratr0MemorySystem {
 
     /**
-     * Allocates a memory block.
-     *
-     * @param mem_type memory type
-     * @param size size of the memory block
-     */
-    Ratr0MemHandle (*allocate_block)(Ratr0MemoryType mem_type, UINT32 size);
-
-    /**
-     * Free the specified memory block.
-     *
-     * @param handle handle to the memory block that should be freed
-     */
-    void (*free_block)(Ratr0MemHandle handle);
-
-    /**
-     * Returns the physical memory address given a handle.
-     *
-     * @param handle
-     * @return physical memory address
-     */
-    void *(*block_address)(Ratr0MemHandle handle);
-    /**
      * Shuts down the memory subsystem.
      */
     void (*shutdown)(void);
@@ -82,5 +60,29 @@ struct Ratr0MemorySystem {
  */
 extern struct Ratr0MemorySystem *ratr0_memory_startup(Ratr0Engine *engine,
                                                       struct Ratr0MemoryConfig *config);
+
+/**
+ * Allocates a memory block.
+ *
+ * @param mem_type memory type
+ * @param size size of the memory block
+ */
+extern Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type,
+                                                  UINT32 size);
+
+/**
+ * Free the specified memory block.
+ *
+ * @param handle handle to the memory block that should be freed
+ */
+extern void ratr0_memory_free_block(Ratr0MemHandle handle);
+
+/**
+ * Returns the physical memory address given a handle.
+ *
+ * @param handle
+ * @return physical memory address
+ */
+extern void *ratr0_memory_block_address(Ratr0MemHandle handle);
 
 #endif /* __RATR0_MEMORY_H__ */

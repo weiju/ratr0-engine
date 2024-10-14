@@ -429,7 +429,7 @@ struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet(struct Ratr0SpriteSh
 {
     struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
     // Data and frame information
-    result->sprite_data = (UINT16 *) engine->memory_system->block_address(sheet->h_imgdata);
+    result->sprite_data = (UINT16 *) ratr0_memory_block_address(sheet->h_imgdata);
 
     // remember the attachment state here
     result->is_attached = ((result->sprite_data[1] & 0x80) == 0x80);
@@ -459,7 +459,7 @@ struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet_frame(struct Ratr0Sp
 {
     struct Ratr0HWSprite *result = &hw_sprite_table[next_hw_sprite++];
     // Data and frame information
-    result->sprite_data = (UINT16 *) engine->memory_system->block_address(sheet->h_imgdata);
+    result->sprite_data = (UINT16 *) ratr0_memory_block_address(sheet->h_imgdata);
 
     // remember the attachment state here
     result->is_attached = ((result->sprite_data[1] & 0x80) == 0x80);
