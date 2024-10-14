@@ -109,9 +109,14 @@ struct Ratr0SpriteSheet {
 
 struct Ratr0AudioSample {
     /** \brief number of bytes in the sample */
-    UINT32 length; // round up to even number of  bytes
+    UINT32 num_bytes; // round up to even number of  bytes
 
     /** \brief handle to audio sample data */
+    Ratr0MemHandle h_data;
+};
+
+struct Ratr0AudioProtrackerMod {
+    /** \brief handle to Protracker mod data */
     Ratr0MemHandle h_data;
 };
 
@@ -152,18 +157,35 @@ extern void ratr0_resources_free_spritesheet_data(struct Ratr0SpriteSheet *sheet
  * Reads a raw audio sample from the file system.
  *
  * @param filename the path to the sound sample file
- * @param sampel pointer to an uninitialized sample structure
- * @return 0 if error, 1 if success
+ * @param sample pointer to an uninitialized sample structure
+ * @return FALSE if error, TRUE if success
  */
 extern BOOL ratr0_resources_read_audiosample(const char *filename,
                                              struct Ratr0AudioSample *sample);
 
 /**
- * Frees the data in a audio sample and returns it to the memory system.
+ * Frees the data in an audio sample and returns it to the memory system.
  *
  * @param sample pointer to an initialized audio sample
  */
 extern void ratr0_resources_free_audiosample_data(struct Ratr0AudioSample *sample);
+
+/**
+ * Reads a protracker module from the file system.
+ *
+ * @param filename the path to the Protracker module
+ * @param sample pointer to an uninitialized mod structure
+ * @return FALSE if error, TRUE if success
+ */
+extern BOOL ratr0_resources_read_protracker(const char *filename,
+                                            struct Ratr0AudioProtrackerMod *mod);
+
+/**
+ * Frees the data in a protracker module  and returns it to the memory system.
+ *
+ * @param mod pointer to an initialized Protracker module
+ */
+extern void ratr0_resources_free_protracker_data(struct Ratr0AudioProtrackerMod *mod);
 
 /**
  * Interface to resource subsystem.

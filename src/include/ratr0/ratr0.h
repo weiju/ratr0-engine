@@ -15,5 +15,6 @@
 
 #include <ratr0/blitter.h>
 #include <ratr0/sprites.h>
+#include <ratr0/audio.h>
 
 #endif /* __RATR0_RATR0_H */

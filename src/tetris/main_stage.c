@@ -39,8 +39,18 @@ FILE *debug_fp;
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
+// Sounds effects
+#define SOUND_ROTATE_PATH ("tetris/assets/bb-bathit.raw8")
+#define SOUND_DROP_PATH "tetris/assets/beep8bit.raw8"
+#define SOUND_DELETELINES_PATH "tetris/assets/laser_zap.raw8"
+#define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
+
 struct Ratr0TileSheet background_ts, tiles_ts;
 struct Ratr0Surface tiles_surface;
+
+// sound and music
+struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound;
+struct Ratr0AudioProtrackerMod main_music;
 
 // ghost piece outline
 struct Ratr0SpriteSheet outlines_sheet;
@@ -194,10 +204,12 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
         RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
         if (item.draw_type == DRAW_TYPE_ROWS) {
             // clear a row
+#ifdef DEBUG_TETRIS
             fprintf(debug_fp, "clear %d rows starting with %d on buffer %d\n",
                     item.item.rows.num_rows,
                     item.item.rows.row,
                     cur_buffer);
+#endif
             clear_rect(backbuffer_surface, item.item.rows.row,
                        0,
                        item.item.rows.num_rows,
@@ -208,7 +220,9 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
                         &queued_spec->draw_spec, item.item.piece.row,
                         item.item.piece.col);
         }
+#ifdef DEBUG_TETRIS
         fflush(debug_fp);
+#endif
     }
     // 2. draw all enqueued items
     while (draw_queue_num_elems[cur_buffer] > 0) {
@@ -248,9 +262,11 @@ void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
     int blit_width_pixels = BOARD_WIDTH * 8;
     int blit_height_pixels = num_rows * 8;
     if (num_rows == 0 > num_rows > 15) {
+#ifdef DEBUG_TETRIS
         fprintf(debug_fp,
                 "ERROR: _move_board_rect(), sketchy num_rows value: %d\n", num_rows);
         fflush(debug_fp);
+#endif
     }
 
     // this is most likely overlapping, ratr0_blit_rect_simple()
@@ -340,21 +356,28 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         struct DrawQueueItem clear_row = {
             DRAW_TYPE_ROWS, { 0, 0 }
         };
+#ifdef DEBUG_TETRIS
         fprintf(debug_fp, "# completed rows: %u\n", completed_rows.count);
-
+#endif
+        // play completed sound
+        ratr0_audio_play_sound(&completed_sound);
         // 1. move the regions above the deleted lines down graphically
         struct MoveRegions move_regions;
         get_move_regions(&move_regions, &completed_rows, &gameboard0);
+#ifdef DEBUG_TETRIS
         fprintf(debug_fp, "# move regions: %u\n", move_regions.count);
+#endif
         for (int i = 0; i < move_regions.count; i++) {
             struct MoveQueueItem move_item = {
                 move_regions.regions[i].start,
                 move_regions.regions[i].start + move_regions.regions[i].move_by,
                 move_regions.regions[i].end - move_regions.regions[i].start + 1
             };
+#ifdef DEBUG_TETRIS
             fprintf(debug_fp, "# move_region #%i: start: %u end: %u by: %u\n",
                     i, move_regions.regions[i].start,
                     move_regions.regions[i].end, move_regions.regions[i].move_by);
+#endif
             RATR0_ENQUEUE_ARR(move_queue, cur_buffer, move_item);
             RATR0_ENQUEUE_ARR(move_queue, ((cur_buffer + 1) % 2), move_item);
         }
@@ -365,19 +388,24 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         clear_row.item.rows.num_rows = completed_rows.count;
 
         // debug output
+#ifdef DEBUG_TETRIS
         fprintf(debug_fp, "clearing %u rows off the top starting from: %d\n",
                 completed_rows.count, move_top);
-
+#endif
         RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
         RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
 
         // 3. compact the board logically by moving every block above
         // the deleted lines down
+#ifdef DEBUG_TETRIS
         fprintf(debug_fp, "BOARD BEFORE compacting\n");
         dump_board(debug_fp, &gameboard0);
+#endif
         delete_rows_from_board(&move_regions, &completed_rows, &gameboard0);
+#ifdef DEBUG_TETRIS
         fprintf(debug_fp, "BOARD AFTER compacting\n");
         dump_board(debug_fp, &gameboard0);
+#endif
     }
     // move must come before blit, because the blit queues will delete rows !!!
     process_move_queue(backbuffer);
@@ -405,6 +433,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
 {
     int cur_buffer = backbuffer->buffernum;
     if (!done_establish) {
+        ratr0_audio_play_sound(&drop_sound);
         // since we have a double buffer, we have to queue up a draw
         // for the following frame, too, but since this is an
         // etablished piece, don't clear it in the following frames
@@ -510,6 +539,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                 // so we need to subtract y
                 current_piece.row -= t->y;
                 current_piece.col += t->x;
+                ratr0_audio_play_sound(&rotate_sound);
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
@@ -613,9 +643,23 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
     }
 
+    // read sound effects and music
+    ratr0_resources_read_audiosample(SOUND_DROP_PATH, &drop_sound);
+    ratr0_resources_read_audiosample(SOUND_ROTATE_PATH, &rotate_sound);
+    ratr0_resources_read_audiosample(SOUND_DELETELINES_PATH, &completed_sound);
+
+    BOOL ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
+    if (!ret) {
+        fprintf(debug_fp, "could not read protracker module '%s'\n",
+                MUSIC_MAIN_PATH);
+    }
+
     // initialize board and  piece queue
     clear_board(&gameboard0);
     init_piece_queue();
     spawn_next_piece();
+
+    // start bg music
+    ratr0_audio_play_mod(&main_music);
     return main_scene;
 }

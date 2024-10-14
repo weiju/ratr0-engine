@@ -140,8 +140,22 @@ BOOL ratr0_resources_read_audiosample(const char *filename,
 {
     FILE *fp = fopen(filename, "rb");
     if (fp) {
+        UINT32 file_offset = fseek(fp, 0, SEEK_END);
+        UINT32 filesize = ftell(fp);
+        if ((filesize % 2) == 1) {
+            filesize++;
+        }
+        sample->h_data = ratr0_memory_allocate_block(RATR0_MEM_CHIP,
+                                                     filesize);
+        sample->num_bytes = filesize;
+
+        // read sample data into memory
+        UINT8 *sampledata = ratr0_memory_block_address(sample->h_data);
+        file_offset = fseek(fp, 0, SEEK_SET);
+        UINT32 elems_read = fread(sampledata, sizeof(UINT8), filesize, fp);
+        fclose(fp);
         return TRUE;
-    } else{
+    } else {
         return FALSE;
     }
 }
@@ -149,4 +163,30 @@ BOOL ratr0_resources_read_audiosample(const char *filename,
 void ratr0_resources_free_audiosample_data(struct Ratr0AudioSample *sample)
 {
     if (sample && sample->h_data) ratr0_memory_free_block(sample->h_data);
+}
+
+BOOL ratr0_resources_read_protracker(const char *filename,
+                                     struct Ratr0AudioProtrackerMod *mod)
+{
+    FILE *fp = fopen(filename, "rb");
+    if (fp) {
+        UINT32 file_offset = fseek(fp, 0, SEEK_END);
+        UINT32 filesize = ftell(fp);
+        mod->h_data = ratr0_memory_allocate_block(RATR0_MEM_CHIP,
+                                                     filesize);
+
+        // read sample data into memory
+        UINT8 *moddata = ratr0_memory_block_address(mod->h_data);
+        file_offset = fseek(fp, 0, SEEK_SET);
+        UINT32 elems_read = fread(moddata, sizeof(UINT8), filesize, fp);
+        fclose(fp);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+void ratr0_resources_free_protracker_data(struct Ratr0AudioProtrackerMod *mod)
+{
+    if (mod && mod->h_data) ratr0_memory_free_block(mod->h_data);
 }
