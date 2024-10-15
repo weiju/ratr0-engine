@@ -34,8 +34,6 @@ FILE *debug_fp;
 
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
-//#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines.ts")
-//#define BG_PATH_PAL ("tetris/assets/bg_320x256x32_lines2.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
@@ -164,7 +162,9 @@ int rotate_cooldown = 0;
 int drop_timer = DROP_TIMER_VALUE;
 #define QUICKDROP_COOLDOWN_TIME (10)
 int quickdrop_cooldown = 0;
-#define MOVE_COOLDOWN_TIME (3)
+// TODO: this should be dependent on frame rate, so 6 for NTSC and 5 for
+// PAL
+#define MOVE_COOLDOWN_TIME (5)
 int move_cooldown = 0;
 
 #define PIECE_QUEUE_LEN (10)
