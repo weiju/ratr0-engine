@@ -39,10 +39,14 @@ FILE *debug_fp;
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
-// Sounds effects
+// Sounds effects:
+// we need rotate, drop and line deleted sounds
+// TODO: maybe we should also have a sound for moving and for
+// next level
 #define SOUND_ROTATE_PATH ("tetris/assets/bb-bathit.raw8")
 #define SOUND_DROP_PATH "tetris/assets/beep8bit.raw8"
 #define SOUND_DELETELINES_PATH "tetris/assets/laser_zap.raw8"
+
 #define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
 
 struct Ratr0TileSheet background_ts, tiles_ts;
@@ -55,6 +59,8 @@ struct Ratr0AudioProtrackerMod main_music;
 // ghost piece outline
 struct Ratr0SpriteSheet outlines_sheet;
 struct Ratr0HWSprite *outline_frame[9];
+
+struct PlayerStats player_stats;
 
 // game board, 0 means empty, if there is a piece it is block type + 1
 // since the block types start at 0 as well
@@ -151,7 +157,6 @@ struct PieceState current_piece = {
 };
 
 /** TIMERS THAT ARE CRITICAL TO GAME FEEL */
-#define DROP_TIMER_VALUE (40)
 // rotation cooldown. We introduce a cooldown, to avoid the player
 // piece rotating way too fast
 #define ROTATE_COOLDOWN_TIME (10)
@@ -359,6 +364,13 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
 #ifdef DEBUG_TETRIS
         fprintf(debug_fp, "# completed rows: %u\n", completed_rows.count);
 #endif
+        // add score for deleted lines
+        BOOL level_increased = score_rows_cleared(&player_stats,
+                                                  completed_rows.count);
+        if (level_increased) {
+            // TODO: update level and drop speed
+        }
+
         // play completed sound
         ratr0_audio_play_sound(&completed_sound);
         // 1. move the regions above the deleted lines down graphically
@@ -500,8 +512,11 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     } else if (engine->input_system->was_action_pressed(action_move_down)) {
         // ACCELERATE MOVE DOWN
         if (!piece_landed(&current_piece, &gameboard0)) {
+            score_soft_drop(&player_stats);
             current_piece.row++;
-            drop_timer = DROP_TIMER_VALUE; // reset drop timer
+            drop_timer = player_stats.drop_timer_value; // reset drop timer
+
+            // TODO: update score panel
         }
     } else if (engine->input_system->was_action_pressed(action_drop)) {
         // QUICK DROP
@@ -521,10 +536,15 @@ void main_scene_update(struct Ratr0Scene *this_scene,
             RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, quick_drop_piece);
 
             // now we update to the drop/establish condition
+            int old_row = current_piece.row;
             current_piece.row = get_quickdrop_row(&current_piece,
                                                   &gameboard0);
+            score_hard_drop(&player_stats, current_piece.row - old_row);
+
+            // this means we drop immediately
             drop_timer = 0;
             quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
+            // TODO: update score panel
         }
     } else if (engine->input_system->was_action_pressed(action_rotate_right)) {
         // rotate right with wall kick
@@ -565,7 +585,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     BOOL landed = FALSE;
     // automatic drop
     if (drop_timer == 0) {
-        drop_timer = DROP_TIMER_VALUE;
+        drop_timer = player_stats.drop_timer_value;
         landed = piece_landed(&current_piece, &gameboard0);
         if (landed) {
             done_establish = FALSE;
@@ -656,6 +676,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // initialize board and  piece queue
     clear_board(&gameboard0);
+    reset_player_stats(&player_stats);
     init_piece_queue();
     spawn_next_piece();
 

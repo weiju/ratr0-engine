@@ -183,4 +183,40 @@ extern BOOL delete_rows_from_board(struct MoveRegions *move_regions,
                                    struct CompletedRows *completed_rows,
                                    UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH]);
 
+
+
+/**
+ * PLAYER STATS OPERATIONS
+ * Scoring rules and level ups are implemented here.
+ * Points are
+ *   - +1 for each accelerated move down
+ *   - +2 * row for each hard drop
+ *   - +100 * level for 1 line cleared
+ *   - +300 * level for 2 lines cleared
+ *   - +500 * level for 3 lines cleared
+ *   - +800 * level for 4 lines cleared (Tetris)
+ *   - combo: 50 * combo count * level
+ *
+ * The Level increases each 10 cleared lines
+
+ * TODO: advanced scoring (https://tetris.wiki/Scoring)
+ */
+#define DROP_TIMER_VALUE (40)
+
+struct PlayerStats {
+    UINT8 difficulty_level, level_cleared_rows;
+    UINT8 drop_timer_value;
+    UINT32 total_cleared_rows;
+    UINT32 score;
+    UINT32 seconds_played;
+};
+
+extern void reset_player_stats(struct PlayerStats *player_stats);
+extern void score_soft_drop(struct PlayerStats *player_stats);
+extern void score_hard_drop(struct PlayerStats *player_stats, int num_rows);
+/**
+ * returns true if level increased
+ */
+extern BOOL score_rows_cleared(struct PlayerStats *player_stats, int num_rows);
+
 #endif // !__GAME_DATA_H__

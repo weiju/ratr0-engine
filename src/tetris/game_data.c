@@ -819,3 +819,58 @@ BOOL delete_rows_from_board(struct MoveRegions *move_regions,
     }
     return TRUE;
 }
+
+void reset_player_stats(struct PlayerStats *player_stats)
+{
+    player_stats->difficulty_level = 1;
+    player_stats->level_cleared_rows = 0;
+    player_stats->total_cleared_rows = 0;
+    player_stats->score = 0;
+    player_stats->drop_timer_value = DROP_TIMER_VALUE;
+    player_stats->seconds_played = 0;
+}
+
+void score_soft_drop(struct PlayerStats *player_stats)
+{
+    player_stats->score++;
+}
+
+void score_hard_drop(struct PlayerStats *player_stats, int num_rows)
+{
+    player_stats->score += 2 * num_rows;
+}
+
+BOOL score_rows_cleared(struct PlayerStats *player_stats, int num_rows)
+{
+    switch (num_rows) {
+    case 1:
+        player_stats->score += 100 * player_stats->difficulty_level;
+        break;
+    case 2:
+        player_stats->score += 300 * player_stats->difficulty_level;
+        break;
+    case 3:
+        player_stats->score += 500 * player_stats->difficulty_level;
+        break;
+    case 4:
+        player_stats->score += 800 * player_stats->difficulty_level;
+        break;
+    default:
+        break;
+    }
+    player_stats->level_cleared_rows += num_rows;
+    player_stats->total_cleared_rows += num_rows;
+    if (player_stats->level_cleared_rows >= 10) {
+        player_stats->difficulty_level++;
+
+        // make drop faster, but never make it negative
+        player_stats->drop_timer_value -= 5;
+        if (player_stats->drop_timer_value < 2) {
+            player_stats->drop_timer_value = 2;
+        }
+        player_stats->level_cleared_rows -= 10;
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
