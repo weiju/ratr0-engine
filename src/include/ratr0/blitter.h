@@ -86,14 +86,14 @@ extern void ratr0_blit_rect_simple2(struct Ratr0Surface *dst,
  * @param blit_width_words blit width in words
  * @param blit_height_pixels blit height in pixels
  */
-extern void ratr0_blit_ab(struct Ratr0Surface *dst,
-                          struct Ratr0Surface *src,
-                          UINT16 dstx, UINT16 dsty,
-                          UINT16 srcx, UINT16 srcy,
-                          UINT8 lf, INT8 a_shift,
-                          UINT16 afwm, UINT16 alwm,
-                          UINT16 blit_width_words,
-                          UINT16 blit_height_pixels);
+extern void ratr0_blit_ad_d(struct Ratr0Surface *d_surface,
+                            struct Ratr0Surface *a_surface,
+                            UINT16 ax, UINT16 ay,
+                            UINT16 dx, UINT16 dy,
+                            UINT8 lf, INT8 a_shift,
+                            UINT16 afwm, UINT16 alwm,
+                            UINT16 blit_width_words,
+                            UINT16 blit_height_pixels);
 
 /**
  * Common case 3: Clears a rectangular area that is a multiple of 8 pixels
@@ -109,22 +109,6 @@ extern void ratr0_blit_clear8(struct Ratr0Surface *dst,
                               UINT16 dstx, UINT16 dsty,
                               UINT16 blit_width_pixels,
                               UINT16 blit_height_pixels);
-
-/**
- * Default font blitting function.
- *
- * @param dst destination surface
- * @param font font sheet
- * @param dstx destination x-coordinate
- * @param dsty destination y-coordinate
- * @param c character to blit
- * @param plane_num destination plane to blit into
- */
-extern UINT16 ratr0_blit_8x8(struct Ratr0Surface *dst,
-                             struct Ratr0Surface *font,
-                             UINT16 dstx, UINT16 dsty,
-                             char c,
-                             UINT8 plane_num);
 
 
 /**
@@ -161,10 +145,10 @@ void ratr0_blit_rect_1plane(struct Ratr0Surface *dst,
  * @param dstx destination x-coordinate
  * @param dsty destination y-coordinate
  */
-extern void ratr0_blit_object(struct Ratr0Surface *dst,
-                              struct Ratr0TileSheet *bobs,
-                              int tilex, int tiley,
-                              int dstx, int dsty);
+extern void ratr0_blit_object_nonil(struct Ratr0Surface *dst,
+                                    struct Ratr0TileSheet *bobs,
+                                    int tilex, int tiley,
+                                    int dstx, int dsty);
 
 
 /**

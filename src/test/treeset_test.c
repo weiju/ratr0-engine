@@ -9,28 +9,30 @@ static Ratr0Engine mock_engine;
 static struct Ratr0MemorySystem memsys;
 static void *mock_mem;
 
-Ratr0MemHandle mock_allocate_block(Ratr0MemoryType mem_type, UINT32 size)
+Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size)
 {
     mock_mem = malloc(size);
     return 0;
 }
-void mock_free_block(Ratr0MemHandle handle) {
+void ratr0_memory_free_block(Ratr0MemHandle handle) {
     if (mock_mem) {
         free(mock_mem);
         mock_mem = NULL;
     }
 }
-void *mock_block_address(Ratr0MemHandle handle) { return mock_mem; }
+void *ratr0_memory_block_address(Ratr0MemHandle handle) { return mock_mem; }
 
 struct Ratr0TreeSets *tree_sets;
 
 void treeset_test_setup(void *userdata)
 {
     mock_mem = NULL;
+    /*
     memsys.allocate_block = &mock_allocate_block;
     memsys.free_block = &mock_free_block;
     memsys.block_address = &mock_block_address;
     mock_engine.memory_system = &memsys;
+    */
     tree_sets = ratr0_init_tree_sets(&mock_engine);
 }
 void treeset_test_teardown(void *userdata) {

@@ -13,25 +13,27 @@ static struct Ratr0MemorySystem memsys;
 static void *mock_mem[10];
 int num_mem_entries;
 
-Ratr0MemHandle mock_allocate_block(Ratr0MemoryType mem_type, UINT32 size)
+Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size)
 {
     Ratr0MemHandle handle = num_mem_entries;
     mock_mem[num_mem_entries++] = malloc(size);
     return handle;
 }
-void mock_free_block(Ratr0MemHandle handle) {
+void ratr0_memory_free_block(Ratr0MemHandle handle) {
     free(mock_mem[handle]);
     mock_mem[handle] = NULL;
 }
-void *mock_block_address(Ratr0MemHandle handle) { return mock_mem[handle]; }
+void *ratr0_memory_block_address(Ratr0MemHandle handle) { return mock_mem[handle]; }
 
 void quadtreetest_setup(void *userdata)
 {
     num_mem_entries = 0;
+    /*
     memsys.allocate_block = &mock_allocate_block;
     memsys.free_block = &mock_free_block;
     memsys.block_address = &mock_block_address;
     mock_engine.memory_system = &memsys;
+    */
     ratr0_vector_startup(&mock_engine);
 }
 

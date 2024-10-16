@@ -154,6 +154,10 @@ BOOL ratr0_resources_read_audiosample(const char *filename,
         file_offset = fseek(fp, 0, SEEK_SET);
         UINT32 elems_read = fread(sampledata, sizeof(UINT8), filesize, fp);
         fclose(fp);
+        // Make sure the first 2 bytes are 0 for PTPlayer to properly work
+        if (filesize >  2) {
+            sampledata[0] = sampledata[1] = 0;
+        }
         return TRUE;
     } else {
         return FALSE;

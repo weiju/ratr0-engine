@@ -1,7 +1,5 @@
 #include "draw_primitives.h"
 
-//extern struct Ratr0Surface *backbuffer_surface, tiles_surface;
-
 void draw_1x3(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
               int color, int row, int col)
@@ -23,12 +21,12 @@ void draw_1x3(struct Ratr0Surface *backbuffer_surface,
     }
 
     // 3x1 block
-    ratr0_blit_ab(backbuffer_surface, tiles_surface,
-                  0, color * 32,
-                  x, y,
-                  0xfc, 0,
-                  afwm, alwm,
-                  blit_width_words, 8);
+    ratr0_blit_ad_d(backbuffer_surface, tiles_surface,
+                    0, color * 32,
+                    x, y,
+                    0xfc, 0,
+                    afwm, alwm,
+                    blit_width_words, 8);
 }
 
 void draw_1x2(struct Ratr0Surface *backbuffer_surface,
@@ -52,11 +50,11 @@ void draw_1x2(struct Ratr0Surface *backbuffer_surface,
     }
 
     // 2x1 block
-    ratr0_blit_ab(backbuffer_surface, tiles_surface,
-                  0, color * 32,
-                  x, y, 0xfc, 0,
-                  afwm, alwm,
-                  blit_width_words, 8);
+    ratr0_blit_ad_d(backbuffer_surface, tiles_surface,
+                    0, color * 32,
+                    x, y, 0xfc, 0,
+                    afwm, alwm,
+                    blit_width_words, 8);
 }
 
 void draw_2x2(struct Ratr0Surface *backbuffer_surface,
@@ -80,11 +78,11 @@ void draw_2x2(struct Ratr0Surface *backbuffer_surface,
     }
 
     // 2x1 block
-    ratr0_blit_ab(backbuffer_surface, tiles_surface,
-                  0, color * 32,
-                  x, y, 0xfc, 0,
-                  afwm, alwm,
-                  blit_width_words, 16);
+    ratr0_blit_ad_d(backbuffer_surface, tiles_surface,
+                    0, color * 32,
+                    x, y, 0xfc, 0,
+                    afwm, alwm,
+                    blit_width_words, 16);
 }
 
 /**
@@ -104,14 +102,13 @@ void draw_1x4(struct Ratr0Surface *backbuffer_surface,
     if (shift == 8) {
         blit_width_words++;
     }
-    ratr0_blit_ab(backbuffer_surface, tiles_surface,
-                  0, color * 32,
-                  x, y,
-                  // we actually perform that shift !!!
-                  0xfc, shift,
-                  afwm, alwm,
-                  blit_width_words, 8);
-
+    ratr0_blit_ad_d(backbuffer_surface, tiles_surface,
+                    0, color * 32,
+                    x, y,
+                    // we actually perform that shift !!!
+                    0xfc, shift,
+                    afwm, alwm,
+                    blit_width_words, 8);
 }
 
 void draw_nx1(struct Ratr0Surface *backbuffer_surface,
@@ -133,11 +130,11 @@ void draw_nx1(struct Ratr0Surface *backbuffer_surface,
     }
     // we don't actually need a shift. We just mask either
     // the first or the second block
-    ratr0_blit_ab(backbuffer_surface, tiles_surface,
-                  0, color * 32,
-                  x, y, 0xfc, 0,
-                  afwm, alwm,
-                  1, num_rows * 8);
+    ratr0_blit_ad_d(backbuffer_surface, tiles_surface,
+                    0, color * 32,
+                    x, y, 0xfc, 0,
+                    afwm, alwm,
+                    1, num_rows * 8);
 }
 
 void draw_1x1(struct Ratr0Surface *backbuffer_surface,
@@ -274,4 +271,37 @@ void clear_piece(struct Ratr0Surface *backbuffer_surface,
             break;
         }
     }
+}
+
+extern FILE *debug_fp;
+BOOL digit_drawn = FALSE;
+/**
+ * the digit is '0'-'9' or '.' or ':'
+ */
+void draw_digit(struct Ratr0Surface *surface,
+                struct Ratr0Surface *digits_surface,
+                int x, int y, char digit)
+{
+    UINT16 afwm = 0xff00, alwm = 0xffff;
+    UINT16 blit_width_words = 1;
+    UINT16 blit_height_pixels = 8;
+
+    // the position within the 16 pixel 0 means 0, 1 means 8
+    int tiley = (digit - '0')  * 8; // this is the row in the tile set
+    if ((x % 16) == 8) {
+        afwm = 0x00ff; // use the second 8 pixel block
+        x -= 8; // align x to 16 pixel boundary
+    }
+    ratr0_blit_ad_d(surface, digits_surface,
+                    0, tiley, // src
+                    x, y, // dest
+                    0xfc,  // D <- A + D
+                    0, // never shift
+                    afwm, alwm,
+                    1, 8); // always 1 word, always 8 pixels
+
+    if (!digit_drawn) {
+        fflush(debug_fp);
+    }
+    digit_drawn = TRUE;
 }

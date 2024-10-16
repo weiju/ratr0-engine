@@ -17,14 +17,16 @@
  * certain direction.
  */
 #define BOARD_WIDTH (10)
-#define BOARD_HEIGHT (20)
+#define BOARD_HEIGHT (22)
 #define NUM_PIECES (7)
 #define NUM_ROTATIONS (4)
 #define NUM_BLOCKS_PER_PIECE (4)
 #define MAX_COMPLETED_ROWS (4)
 #define MAX_MOVE_REGIONS (2)
+#define PIECE_QUEUE_LEN (40)
 
 /** \brief Piece types */
+#define PIECE_UNDEFINED (-1)
 typedef enum {
     PIECE_I = 0, PIECE_J, PIECE_L, PIECE_O, PIECE_S, PIECE_T,
     PIECE_Z
@@ -209,6 +211,7 @@ struct PlayerStats {
     UINT32 total_cleared_rows;
     UINT32 score;
     UINT32 seconds_played;
+    INT8 hold;  // the held piece, -1 = no hold
 };
 
 extern void reset_player_stats(struct PlayerStats *player_stats);
@@ -218,5 +221,11 @@ extern void score_hard_drop(struct PlayerStats *player_stats, int num_rows);
  * returns true if level increased
  */
 extern BOOL score_rows_cleared(struct PlayerStats *player_stats, int num_rows);
+
+/**
+ * Random generation of all our pieces. This will restart when the end
+ * of the queue is reached
+ */
+extern void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN]);
 
 #endif // !__GAME_DATA_H__

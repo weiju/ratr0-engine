@@ -24,8 +24,13 @@ extern struct ExecBase *SysBase;
 #define RAW_KEY_CURSOR_DOWN  (0x4d)
 #define RAW_KEY_CURSOR_RIGHT (0x4e)
 #define RAW_KEY_CURSOR_LEFT  (0x4f)
+#define RAW_KEY_Q            (0x10)
 #define RAW_KEY_W            (0x11)
+#define RAW_KEY_E            (0x12)
 #define RAW_KEY_S            (0x21)
+#define RAW_KEY_Z            (0x31)
+#define RAW_KEY_X            (0x32)
+#define RAW_KEY_C            (0x33)
 
 void ratr0_input_shutdown(void);
 void ratr0_input_update(void);
@@ -108,6 +113,13 @@ static int is_keydown(BYTE keycode) {
 UINT16 ratr0_get_keyboard_state(void)
 {
     read_keyboard();
+    /**
+     * TODO:
+     * Another inefficiency: This mapping is from
+     * Amiga RAW keys to RATR0 logical keys. We should
+     * actually just either have a translation table or
+     * directly use the raw key
+     */
     if (is_keydown(RAW_KEY_ESCAPE)) {
         return RATR0_KEY_ESCAPE;
     } else if (is_keydown(RAW_KEY_CURSOR_LEFT)) {
@@ -189,6 +201,12 @@ RATR0_ACTION_ID input2action[RATR0_NUM_INPUT_CLASSES][RATR0_NUM_INPUT_IDS];
 /** \brief map that indicates the occurence of an action */
 BOOL action_occurred[RATR0_MAX_ACTIONS];
 
+// a list of registered RATR0 keys to make sure we only check
+// the keys we need
+#define NUM_KEYS (32)
+static UINT16 registered_keys[NUM_KEYS];
+static UINT16 num_registered_keys = 0;
+
 /**
  * NOTE: no limit check !!!
  */
@@ -215,6 +233,10 @@ void ratr0_map_input_to_action(RATR0_ACTION_ID action_id, UINT16 input_class, UI
 
     // And the other direction
     input2action[input_class][input_id] = action_id;
+
+    // if this is a keyboard key, add this to the list of
+    // allowed keys
+    registered_keys[num_registered_keys++] = input_id;
 }
 
 BOOL ratr0_was_action_pressed(RATR0_ACTION_ID action_id)
@@ -304,22 +326,19 @@ void poll_joystick(UINT8 device_num)
 
 /**
  * Poll the keyboard and map keys to engine input actions.
+ * Only look for the keys that were actually registered
+ * TODO:
+ *   * we can't handle multiple simultaneous keypresses
+ *   * We need a "catchall" for any key
  */
 void poll_keyboard(void)
 {
     UINT16 keystate = ratr0_get_keyboard_state();
-    if (keystate == RATR0_KEY_ESCAPE) {
-        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_ESCAPE);
-    } else if (keystate == RATR0_KEY_LEFT) {
-        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_LEFT);
-    } else if (keystate == RATR0_KEY_RIGHT) {
-        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_RIGHT);
-    } else if (keystate == RATR0_KEY_UP) {
-        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_UP);
-    } else if (keystate == RATR0_KEY_DOWN) {
-        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_DOWN);
-    } else if (keystate == RATR0_KEY_SPACE) {
-        REGISTER_ACTION(RATR0_IC_KB, RATR0_KEY_SPACE);
+    for (int i = 0; i < num_registered_keys; i++) {
+        if (keystate == registered_keys[i]) {
+            REGISTER_ACTION(RATR0_IC_KB, registered_keys[i]);
+            break;
+        }
     }
 }
 

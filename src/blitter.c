@@ -13,11 +13,11 @@ extern struct Custom custom;
 static Ratr0Engine *engine;
 
 
-void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
-                  UINT16 dstmod, UINT16 srcmod,
-                  UINT8 num_planes,
-                  UINT16 dst_row_bytes, UINT16 src_plane_size,
-                  INT8 dst_shift, UINT16 alwm, UINT16 bltsize);
+void _blit_object_nonil(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
+                        UINT16 dstmod, UINT16 srcmod,
+                        UINT8 num_planes,
+                        UINT16 dst_row_bytes, UINT16 src_plane_size,
+                        INT8 dst_shift, UINT16 alwm, UINT16 bltsize);
 
 void _blit_object_il(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
                      UINT16 dstmod, UINT16 srcmod,
@@ -232,24 +232,28 @@ void ratr0_blit_clear8(struct Ratr0Surface *dst,
     custom.bltsize = bltsize;
 }
 
-// Generic A + B -> D blit with shift
-// For now, we design this with the function
-void ratr0_blit_ab(struct Ratr0Surface *dst,
-                       struct Ratr0Surface *src,
-                       UINT16 srcx, UINT16 srcy,
-                       UINT16 dstx, UINT16 dsty,
-                       UINT8 lf, INT8 a_shift,
-                       UINT16 afwm, UINT16 alwm,
-                       UINT16 blit_width_words,
-                       UINT16 blit_height_pixels)
+// Generic A (+) D -> D blit with shift
+// where
+//   - (+) is a logic function specified by LF
+//   - A is source
+//   - B is the destination
+//   - D is the destination
+void ratr0_blit_ad_d(struct Ratr0Surface *d_surface,
+                     struct Ratr0Surface *a_surface,
+                     UINT16 srcx, UINT16 srcy,
+                     UINT16 dstx, UINT16 dsty,
+                     UINT8 lf, INT8 a_shift,
+                     UINT16 afwm, UINT16 alwm,
+                     UINT16 blit_width_words,
+                     UINT16 blit_height_pixels)
 {
-    UINT16 src_width_bytes = src->width >> 3;
-    UINT16 dst_width_bytes = dst->width >> 3;
+    UINT16 src_width_bytes = a_surface->width >> 3;
+    UINT16 dst_width_bytes = d_surface->width >> 3;
 
     // calculate start addresses in both source and destination
-    UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
-    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
-    int blit_height_total = blit_height_pixels * src->depth;
+    UINT32 src_addr = ((UINT32) a_surface->buffer) + (src_width_bytes * srcy * a_surface->depth) + (srcx >> 3);
+    UINT32 dst_addr = ((UINT32) d_surface->buffer) + (dst_width_bytes * dsty * d_surface->depth) + (dstx >> 3);
+    int blit_height_total = blit_height_pixels * a_surface->depth;
 
     // modulos are in *bytes*
     UINT16 srcmod = src_width_bytes - (blit_width_words << 1);
@@ -293,11 +297,11 @@ void ratr0_blit_ab(struct Ratr0Surface *dst,
  *   at least 16 pixels
  * - Each tile has the width of a multiple of 16 pixels
  */
-void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
-                  UINT16 dstmod, UINT16 srcmod,
-                  UINT8 num_planes,
-                  UINT16 dst_row_bytes, UINT16 src_plane_size,
-                  INT8 dst_shift, UINT16 alwm, UINT16 bltsize)
+void _blit_object_nonil(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
+                        UINT16 dstmod, UINT16 srcmod,
+                        UINT8 num_planes,
+                        UINT16 dst_row_bytes, UINT16 src_plane_size,
+                        INT8 dst_shift, UINT16 alwm, UINT16 bltsize)
 {
     WaitBlit();
 
@@ -326,10 +330,10 @@ void _blit_object(UINT32 dst_addr, UINT32 src_addr, UINT32 mask_addr,
     }
 }
 
-void ratr0_blit_object(struct Ratr0Surface *dst,
-                       struct Ratr0TileSheet *bobs,
-                       int tilex, int tiley,
-                       int dstx, int dsty)
+void ratr0_blit_object_nonil(struct Ratr0Surface *dst,
+                             struct Ratr0TileSheet *bobs,
+                             int tilex, int tiley,
+                             int dstx, int dsty)
 {
     // Source variables
     UINT16 src_blit_width_pixels = bobs->header.tile_width;
@@ -377,8 +381,8 @@ void ratr0_blit_object(struct Ratr0Surface *dst,
     UINT8 num_planes = bobs->header.bmdepth;
     UINT16 src_plane_size = bobs->header.width / 8 * bobs->header.height;
     UINT16 bltsize = (UINT16) (blit_height_pixels << 6) | (final_blit_width & 0x3f);
-    _blit_object(dst_addr, src_addr, mask_addr, dstmod, srcmod, num_planes,
-                 dst_row_bytes, src_plane_size, dst_shift, alwm, bltsize);
+    _blit_object_nonil(dst_addr, src_addr, mask_addr, dstmod, srcmod, num_planes,
+                       dst_row_bytes, src_plane_size, dst_shift, alwm, bltsize);
 }
 
 /**
@@ -474,99 +478,6 @@ void ratr0_blit_object_il(struct Ratr0Surface *dst,
     _blit_object_il(dst_addr, src_addr, mask_addr, dstmod, srcmod,
                     dst_shift, alwm, bltsize);
 }
-
-UINT16 _blit_8x8(UINT32 dst_addr, UINT32 src_addr, UINT16 dstmod, UINT16 srcmod,
-                 UINT8 ashift,
-                 UINT16 afwm, UINT16 alwm,
-                 UINT16 bltsize)
-{
-    WaitBlit();
-    // D = A + D => LF = 0xfc, channels A, B and D turned on => 0x0d
-    custom.bltcon0 = 0x0dfc | (ashift << 12);
-
-    custom.bltafwm = afwm;
-    custom.bltalwm = alwm;
-
-    custom.bltamod = srcmod;
-    custom.bltbmod = dstmod;
-    custom.bltcmod = 0;
-    custom.bltdmod = dstmod;
-
-    custom.bltapt = (UINT8 *) src_addr;
-    custom.bltbpt = (UINT8 *) dst_addr;
-    custom.bltcpt = 0;
-    custom.bltdpt = (UINT8 *) dst_addr;
-    custom.bltsize = bltsize;
-    return bltsize;
-}
-
-/*
- * A text blitting function
- */
-UINT16 ratr0_blit_8x8(struct Ratr0Surface *dst,
-                      struct Ratr0Surface *src,
-                      UINT16 dstx, UINT16 dsty,
-                      char c,
-                      UINT8 plane_num)
-{
-    // 1, if we don't shift or if the shifted part is in the right half
-    // 2, if we shift the left half
-    UINT16 blit_width_words = 1;
-    UINT16 src_width_bytes = src->width >> 3;
-    UINT16 dst_width_bytes = dst->width >> 3;
-    UINT16 alwm = 0xffff, afwm = 0xffff;
-    int c_index = c - ' ';
-    UINT16 srcy = (c_index >> 5) << 3 ;   // div 32 * 8
-    UINT16 srcx = (c_index & 0x1f) << 3;  // mod 32 * 8
-    // A shift needs to happen if the modulos of dst and src mismatch
-    UINT8 ashift = (dstx & 0x0f) != (srcx & 0x0f) ?  8 : 0;
-
-    // Determine which portion of the 16x8 field, left or right
-    BOOL use_left = ((srcx & 0x0f) == 0);
-    srcx &= 0xfff0; // always align to the word
-    if (!use_left && ashift == 8) { // only if we need to shift the right half
-        blit_width_words = 2;
-    }
-
-    // modulos are in *bytes*
-    UINT16 dst_row_bytes = dst->width >> 3;
-    UINT16 srcmod = src_width_bytes - (blit_width_words << 1);
-    UINT16 dstmod = dst_row_bytes * dst->depth - (blit_width_words << 1);
-
-    UINT32 src_addr = ((UINT32) src->buffer) + (src_width_bytes * srcy * src->depth) + (srcx >> 3);
-    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
-    dst_addr += dst_row_bytes * plane_num;  // target plane
-
-    // Shift adjustments
-    // For the left half 8 pixel of the 16 pixel field this always works
-    if (ashift == 8) {
-        if (use_left) { // left half
-            alwm = 0xff00;
-            afwm = 0xff00;
-        } else {
-            // Right half: shift needs to be extended by 1, shift by 8 and
-            // AFWM/ALWM mask
-            dst_addr -= 2;
-            afwm = 0x00ff;
-            alwm = 0x0000;
-        }
-    } else { // no shift
-        if (use_left) { // left half
-            afwm = 0xff00;
-            alwm = 0xff00;
-        } else {
-            afwm = 0x00ff;
-            alwm = 0x00ff;
-        }
-    }
-    // We only blit a single plane
-    UINT16 bltsize = (UINT16) (8 << 6) | blit_width_words;
-    return _blit_8x8(dst_addr, src_addr, dstmod, srcmod,
-                     ashift, afwm, alwm,
-                     bltsize);
-}
-
-
 
 void ratr0_blit_rect_1plane(struct Ratr0Surface *dst,
                             struct Ratr0TileSheet *bobs,

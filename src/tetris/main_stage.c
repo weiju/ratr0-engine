@@ -1,7 +1,6 @@
 /** @file main_stage.c */
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include <ratr0/ratr0.h>
 #include <ratr0/datastructs/queue.h>
@@ -35,6 +34,7 @@ FILE *debug_fp;
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
+#define DIGITS_PATH  ("tetris/assets/calculator_digits.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
 // Sounds effects:
@@ -47,8 +47,8 @@ FILE *debug_fp;
 
 #define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
 
-struct Ratr0TileSheet background_ts, tiles_ts;
-struct Ratr0Surface tiles_surface;
+struct Ratr0TileSheet background_ts, tiles_ts, digits_ts;
+struct Ratr0Surface tiles_surface, digits_surface;
 
 // sound and music
 struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound;
@@ -167,27 +167,13 @@ int quickdrop_cooldown = 0;
 #define MOVE_COOLDOWN_TIME (5)
 int move_cooldown = 0;
 
-#define PIECE_QUEUE_LEN (10)
-int piece_queue[PIECE_QUEUE_LEN];
-int piece_queue_idx = 0;
-
-/**
- * Random generation of all our pieces. This will restart when the end
- * of the queue is reached
- */
-void init_piece_queue(void)
-{
-    for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
-        piece_queue[i] = rand() % 7;
-        //piece_queue[i] = PIECE_T;
-    }
-    piece_queue_idx = 0;
-}
+UINT8 piece_queue[PIECE_QUEUE_LEN];
+UINT8 piece_queue_idx = 0;
 
 void spawn_next_piece(void)
 {
     current_piece.row = 0;
-    current_piece.col = 0;
+    current_piece.col = 4;  // center the piece
     current_piece.rotation = 0;
     current_piece.piece = piece_queue[piece_queue_idx++];
     piece_queue_idx %= PIECE_QUEUE_LEN;
@@ -299,30 +285,13 @@ void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
  * DEBUG STATE. Use this state to quickly simulate game situations
  * that would otherwise require playing to this state.
  */
-int done_debug = 0;
 void main_scene_debug(struct Ratr0Scene *this_scene,
                       struct Ratr0DisplayBuffer *backbuffer,
                       UINT8 frame_elapsed) {
-    // This state shifts down the blocks that are left from deleting the lines
-    // Delete this function, it's only here for reference
-    struct Ratr0Surface *backbuffer_surface = &ratr0_display_get_back_buffer()->surface;
-    int cur_buffer = ratr0_display_get_back_buffer()->buffernum;
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
-    // clear_rect works great !!!
-    //clear_rect(backbuffer_surface, 15, 0, 4, BOARD_WIDTH);
-    if (done_debug < 2) {
-        struct DrawQueueItem clear_row = {
-            DRAW_TYPE_ROWS, { 0, 0 }
-        };
-        clear_row.item.rows.row = 15;
-        clear_row.item.rows.num_rows = 3;
-        RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
-        RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
-        done_debug++;
-    }
-    process_blit_queues(backbuffer);
+    draw_digit(&backbuffer->surface, &digits_surface, 64, 60, '5');
 }
 
 /**
@@ -662,6 +631,14 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     for (int i = 0; i < outlines_sheet.header.num_sprites; i++) {
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
     }
+    // load digit tile set for the score panels
+    // TODO: think about including "." and ":" to the font
+    ratr0_resources_read_tilesheet(DIGITS_PATH, &digits_ts);
+    digits_surface.width = digits_ts.header.width;
+    digits_surface.height = digits_ts.header.height;
+    digits_surface.depth = digits_ts.header.bmdepth;
+    digits_surface.is_interleaved = TRUE;
+    digits_surface.buffer = ratr0_memory_block_address(digits_ts.h_imgdata);
 
     // read sound effects and music
     ratr0_resources_read_audiosample(SOUND_DROP_PATH, &drop_sound);
@@ -677,7 +654,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // initialize board and  piece queue
     clear_board(&gameboard0);
     reset_player_stats(&player_stats);
-    init_piece_queue();
+    init_piece_queue(&piece_queue);
+    piece_queue_idx = 0;
     spawn_next_piece();
 
     // start bg music

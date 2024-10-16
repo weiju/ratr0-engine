@@ -1,4 +1,5 @@
 #include "game_data.h"
+#include <stdlib.h>
 
 // CONFIGURATIONS
 // A block is a 2-dimensional array of configurations on the game board
@@ -828,6 +829,7 @@ void reset_player_stats(struct PlayerStats *player_stats)
     player_stats->score = 0;
     player_stats->drop_timer_value = DROP_TIMER_VALUE;
     player_stats->seconds_played = 0;
+    player_stats->hold = PIECE_UNDEFINED;
 }
 
 void score_soft_drop(struct PlayerStats *player_stats)
@@ -872,5 +874,12 @@ BOOL score_rows_cleared(struct PlayerStats *player_stats, int num_rows)
         return TRUE;
     } else {
         return FALSE;
+    }
+}
+
+void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN])
+{
+    for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
+        (*piece_queue)[i] = rand() % 7;
     }
 }
