@@ -137,6 +137,15 @@ extern BOOL ratr0_resources_read_tilesheet(const char *filename,
 extern void ratr0_resources_free_tilesheet_data(struct Ratr0TileSheet *sheet);
 
 /**
+ * Initializes a surface data structure from a tile sheet.
+ *
+ * @param surface pointer to an uninitialized surface
+ * @param sheet pointer to a tile sheet
+ */
+extern void ratr0_resources_init_surface_from_tilesheet(struct Ratr0Surface *surface,
+                                                        struct Ratr0TileSheet *sheet);
+
+/**
  * Reads a sprite sheet from the file system.
  *
  * @param filename the path to the sprite sheet file

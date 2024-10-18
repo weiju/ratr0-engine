@@ -21,6 +21,16 @@ extern void clear_piece(struct Ratr0Surface *surface,
  */
 extern void draw_digit(struct Ratr0Surface *surface,
                        struct Ratr0Surface *digits_surface,
-                       int x, int y, char digit);
+                       UINT8 digit,
+                       UINT16 x, UINT16 y);
+
+
+/**
+ * Draws a preview piece to an 16 pixel aligned position.
+ */
+extern void draw_preview_piece(struct Ratr0Surface *surface,
+                               struct Ratr0Surface *preview_surface,
+                               UINT8 piece,
+                               UINT16 x, UINT16 y);
 
 #endif /* __DRAW_PRIMITIVES_H__ */

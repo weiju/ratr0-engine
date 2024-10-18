@@ -205,22 +205,23 @@ extern BOOL delete_rows_from_board(struct MoveRegions *move_regions,
  */
 #define DROP_TIMER_VALUE (40)
 
-struct PlayerStats {
+struct PlayerState {
     UINT8 difficulty_level, level_cleared_rows;
     UINT8 drop_timer_value;
     UINT32 total_cleared_rows;
     UINT32 score;
     UINT32 seconds_played;
     INT8 hold;  // the held piece, -1 = no hold
+    BOOL can_swap_hold;
 };
 
-extern void reset_player_stats(struct PlayerStats *player_stats);
-extern void score_soft_drop(struct PlayerStats *player_stats);
-extern void score_hard_drop(struct PlayerStats *player_stats, int num_rows);
+extern void reset_player_state(struct PlayerState *player_state);
+extern void score_soft_drop(struct PlayerState *player_state);
+extern void score_hard_drop(struct PlayerState *player_state, int num_rows);
 /**
  * returns true if level increased
  */
-extern BOOL score_rows_cleared(struct PlayerStats *player_stats, int num_rows);
+extern BOOL score_rows_cleared(struct PlayerState *player_state, int num_rows);
 
 /**
  * Random generation of all our pieces. This will restart when the end

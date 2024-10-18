@@ -10,8 +10,8 @@
 //   - drop piece: fire button 1 / space
 //   - move/swap to hold: fire button 2 / left shift
 RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
-    action_move_down,
-    action_rotate_right, action_rotate_left,
+    action_move_down, action_rotate_right, action_rotate_left,
+    action_hold,
     action_quit;
 
 int main(int argc, char **argv)
@@ -36,6 +36,8 @@ int main(int argc, char **argv)
     action_move_right = engine->input_system->alloc_action();
     action_move_down = engine->input_system->alloc_action();
     action_rotate_right = engine->input_system->alloc_action();
+    action_rotate_left = engine->input_system->alloc_action();
+    action_hold = engine->input_system->alloc_action();
     action_drop = engine->input_system->alloc_action();
     action_quit = engine->input_system->alloc_action();
 
@@ -50,8 +52,13 @@ int main(int argc, char **argv)
     // TODO: consider something like Z or Q to rotate left
     engine->input_system->map_input_to_action(action_drop, RATR0_IC_KB,
                                               RATR0_KEY_SPACE);
+    engine->input_system->map_input_to_action(action_hold, RATR0_IC_KB,
+                                              RATR0_KEY_RAW_Z);
+
+    // non-game actions
     engine->input_system->map_input_to_action(action_quit, RATR0_IC_KB,
                                               RATR0_KEY_ESCAPE);
+
 
     struct Ratr0Scene *main_scene = setup_main_scene(engine);
     engine->scenes_system->set_current_scene(main_scene);

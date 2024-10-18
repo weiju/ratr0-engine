@@ -280,11 +280,10 @@ BOOL digit_drawn = FALSE;
  */
 void draw_digit(struct Ratr0Surface *surface,
                 struct Ratr0Surface *digits_surface,
-                int x, int y, char digit)
+                UINT8 digit,
+                UINT16 x, UINT16 y)
 {
-    UINT16 afwm = 0xff00, alwm = 0xffff;
-    UINT16 blit_width_words = 1;
-    UINT16 blit_height_pixels = 8;
+    UINT16 afwm = 0xff00; //, alwm = 0xffff;
 
     // the position within the 16 pixel 0 means 0, 1 means 8
     int tiley = (digit - '0')  * 8; // this is the row in the tile set
@@ -297,11 +296,25 @@ void draw_digit(struct Ratr0Surface *surface,
                     x, y, // dest
                     0xfc,  // D <- A + D
                     0, // never shift
-                    afwm, alwm,
+                    afwm, 0xffff,
                     1, 8); // always 1 word, always 8 pixels
 
     if (!digit_drawn) {
         fflush(debug_fp);
     }
     digit_drawn = TRUE;
+}
+
+void draw_preview_piece(struct Ratr0Surface *surface,
+                        struct Ratr0Surface *preview_surface,
+                        UINT8 piece,
+                        UINT16 x, UINT16 y)
+{
+    ratr0_blit_ad_d(surface, preview_surface,
+                    0, piece * 16, // src
+                    x, y, // dest
+                    0xf0,  // D <- A
+                    0, // never shift
+                    0xffff, 0xffff,
+                    2, 16); // always 2 words, always 16 pixels
 }

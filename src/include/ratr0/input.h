@@ -41,7 +41,7 @@ enum Ratr0InputClasses {
 /** \brief the supported set of keyboard keys */
 enum Ratr0PhysicalKeys {
     RATR0_KEY_NONE = 0, RATR0_KEY_ESCAPE, RATR0_KEY_SPACE, RATR0_KEY_UP, RATR0_KEY_DOWN,
-    RATR0_KEY_LEFT, RATR0_KEY_RIGHT
+    RATR0_KEY_LEFT, RATR0_KEY_RIGHT, RATR0_KEY_RAW_Z
 };
 
 /** \brief available joystick input actions */

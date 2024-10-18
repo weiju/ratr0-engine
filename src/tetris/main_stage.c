@@ -25,8 +25,9 @@ static UINT32 debug_current_frame = 0;
 
 static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
-    action_move_down,
-    action_rotate_right, action_rotate_left, action_quit;
+    action_move_down, action_rotate_right, action_rotate_left,
+    action_hold,
+    action_quit;
 
 #define DEBUG_FILE "tetris.debug"
 FILE *debug_fp;
@@ -35,6 +36,7 @@ FILE *debug_fp;
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define DIGITS_PATH  ("tetris/assets/calculator_digits.ts")
+#define PREVIEW_PATH  ("tetris/assets/preview_pieces.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
 // Sounds effects:
@@ -47,8 +49,8 @@ FILE *debug_fp;
 
 #define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
 
-struct Ratr0TileSheet background_ts, tiles_ts, digits_ts;
-struct Ratr0Surface tiles_surface, digits_surface;
+struct Ratr0TileSheet background_ts, tiles_ts, digits_ts, preview_ts;
+struct Ratr0Surface tiles_surface, digits_surface, preview_surface;
 
 // sound and music
 struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound;
@@ -58,7 +60,7 @@ struct Ratr0AudioProtrackerMod main_music;
 struct Ratr0SpriteSheet outlines_sheet;
 struct Ratr0HWSprite *outline_frame[9];
 
-struct PlayerStats player_stats;
+struct PlayerState player_state;
 
 // game board, 0 means empty, if there is a piece it is block type + 1
 // since the block types start at 0 as well
@@ -91,9 +93,10 @@ void hide_ghost_piece(struct Ratr0Scene *scene)
 }
 
 #define NUM_DISPLAY_BUFFERS (2)
-#define DRAW_QUEUE_LEN (4)
+#define DRAW_QUEUE_LEN (10)
 enum {
-    DRAW_TYPE_PIECE = 0, DRAW_TYPE_ROWS
+    DRAW_TYPE_PIECE = 0, DRAW_TYPE_ROWS, DRAW_TYPE_HOLD, DRAW_TYPE_NEXT,
+    DRAW_TYPE_SCORE_DIGIT
 };
 
 /*
@@ -101,17 +104,35 @@ enum {
  * of -1 means only row is valid and this deletes an entire row
  */
 struct DrawPiece {
-    int piece, rotation, row, col;
+    INT8 piece, rotation, row, col;
     BOOL clear; // if TRUE, clear after draw
 };
 struct ClearRows {
-    int row, num_rows;
+    UINT8 row, num_rows;
 };
+
+struct HoldPiece {
+    UINT8 piece;
+};
+
+struct NextPiece {
+    UINT8 piece;
+    UINT8 position;
+};
+
+struct ScoreDigit {
+    UINT8 digit;
+    UINT8 rpos;
+};
+
 struct DrawQueueItem {
     int draw_type; // piece or rows
     union {
         struct DrawPiece piece;
         struct ClearRows rows;
+        struct HoldPiece hold;
+        struct NextPiece next;
+        struct ScoreDigit score_digit;
     } item;
 };
 
@@ -179,6 +200,25 @@ void spawn_next_piece(void)
     piece_queue_idx %= PIECE_QUEUE_LEN;
 }
 
+
+void draw_hold_piece(struct Ratr0DisplayBuffer *backbuffer, UINT8 piece)
+{
+    draw_preview_piece(&backbuffer->surface, &preview_surface, piece, 64, 47);
+}
+
+void draw_next_piece(struct Ratr0DisplayBuffer *backbuffer, UINT8 pos,
+                     UINT8 piece)
+{
+    draw_preview_piece(&backbuffer->surface, &preview_surface, piece, 208,
+                       48 + 20 * pos);
+}
+
+void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer, UINT8 rpos,
+                      UINT8 digit)
+{
+    draw_digit(&backbuffer->surface, &digits_surface, digit, 72 - 8 * rpos, 164);
+}
+
 /**
  * This is the drawing section:
  * 1. process all queued up clear commands for the current buffer
@@ -218,17 +258,25 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
     // 2. draw all enqueued items
     while (draw_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, draw_queue, cur_buffer);
-        queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
-        draw_piece(backbuffer_surface, &tiles_surface,
-                   &queued_spec->draw_spec,
+        if (item.draw_type == DRAW_TYPE_PIECE) {
+            queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
+            draw_piece(backbuffer_surface, &tiles_surface,
+                       &queued_spec->draw_spec,
                    item.item.piece.piece,
-                   item.item.piece.row,
-                   item.item.piece.col);
+                       item.item.piece.row,
+                       item.item.piece.col);
 
-        // put this piece in the clear buffer for next time this
-        // frame gets drawn
-        if (item.item.piece.clear) {
-            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, item);
+            // put this piece in the clear buffer for next time this
+            // frame gets drawn
+            if (item.item.piece.clear) {
+                RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, item);
+            }
+        } else if (item.draw_type == DRAW_TYPE_NEXT) {
+            draw_next_piece(backbuffer,
+                            item.item.next.position,
+                            item.item.next.piece);
+        } else if (item.draw_type == DRAW_TYPE_HOLD) {
+            draw_hold_piece(backbuffer, item.item.hold.piece);
         }
     }
 }
@@ -291,7 +339,19 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
-    draw_digit(&backbuffer->surface, &digits_surface, 64, 60, '5');
+    draw_score_digit(backbuffer, 0, '5');
+    draw_score_digit(backbuffer, 1, '1');
+    draw_score_digit(backbuffer, 2, '0');
+    draw_score_digit(backbuffer, 3, '0');
+    draw_score_digit(backbuffer, 4, '0');
+    draw_score_digit(backbuffer, 5, '0');
+    draw_score_digit(backbuffer, 6, '0');
+    draw_score_digit(backbuffer, 7, '0');
+    draw_score_digit(backbuffer, 8, '0');
+    draw_hold_piece(backbuffer, PIECE_J);
+    draw_next_piece(backbuffer, 0, PIECE_T);
+    draw_next_piece(backbuffer, 1, PIECE_I);
+    draw_next_piece(backbuffer, 2, PIECE_O);
 }
 
 /**
@@ -334,7 +394,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         fprintf(debug_fp, "# completed rows: %u\n", completed_rows.count);
 #endif
         // add score for deleted lines
-        BOOL level_increased = score_rows_cleared(&player_stats,
+        BOOL level_increased = score_rows_cleared(&player_state,
                                                   completed_rows.count);
         if (level_increased) {
             // TODO: update level and drop speed
@@ -396,6 +456,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     if (done_delete_lines >= 2) {
         spawn_next_piece(); // spawn next piece, but don't draw yet
         done_delete_lines = 0; // reset frame counter for the next time
+        player_state.can_swap_hold = TRUE;
         // back to main update state
         this_scene->update = main_scene_update;
     }
@@ -439,6 +500,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
             this_scene->update = main_scene_delete_lines;
         } else {
             spawn_next_piece(); // spawn next piece, but don't draw yet
+            player_state.can_swap_hold = TRUE;
             this_scene->update = main_scene_update;
         }
     }
@@ -481,9 +543,9 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     } else if (engine->input_system->was_action_pressed(action_move_down)) {
         // ACCELERATE MOVE DOWN
         if (!piece_landed(&current_piece, &gameboard0)) {
-            score_soft_drop(&player_stats);
+            score_soft_drop(&player_state);
             current_piece.row++;
-            drop_timer = player_stats.drop_timer_value; // reset drop timer
+            drop_timer = player_state.drop_timer_value; // reset drop timer
 
             // TODO: update score panel
         }
@@ -508,7 +570,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
             int old_row = current_piece.row;
             current_piece.row = get_quickdrop_row(&current_piece,
                                                   &gameboard0);
-            score_hard_drop(&player_stats, current_piece.row - old_row);
+            score_hard_drop(&player_state, current_piece.row - old_row);
 
             // this means we drop immediately
             drop_timer = 0;
@@ -548,13 +610,38 @@ void main_scene_update(struct Ratr0Scene *this_scene,
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
+    } else if (engine->input_system->was_action_pressed(action_hold)) {
+        if (player_state.can_swap_hold) {
+            if (player_state.hold == -1) {
+                // just move the current piece to the hold and
+                // and spawn next piece
+                player_state.hold = current_piece.piece;
+                spawn_next_piece();
+
+            } else {
+                // swap the hold pieces and reset the position
+                INT8 tmp = player_state.hold;
+                player_state.hold = current_piece.piece;
+                current_piece.piece = tmp;
+                current_piece.col = 4;
+                current_piece.row = 0;
+                current_piece.rotation = 0;
+
+            }
+            struct DrawQueueItem hold_item;
+            hold_item.draw_type = DRAW_TYPE_HOLD;
+            hold_item.item.hold.piece = player_state.hold;
+            RATR0_ENQUEUE_ARR(draw_queue, 0, hold_item);
+            RATR0_ENQUEUE_ARR(draw_queue, 1, hold_item);
+            player_state.can_swap_hold = FALSE;
+        }
     }
 
     // After input, was processed, we can determine what else is happening
     BOOL landed = FALSE;
     // automatic drop
     if (drop_timer == 0) {
-        drop_timer = player_stats.drop_timer_value;
+        drop_timer = player_state.drop_timer_value;
         landed = piece_landed(&current_piece, &gameboard0);
         if (landed) {
             done_establish = FALSE;
@@ -594,7 +681,9 @@ void main_scene_update(struct Ratr0Scene *this_scene,
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 {
+#ifdef DEBUG
     debug_fp = fopen(DEBUG_FILE, "a");
+#endif
 
     engine = eng;
     // Use the scenes module to create a scene and run that
@@ -611,7 +700,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
                                  &TETRIS_COPPER_INFO);
 
     // Load background
-    ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
+    BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
     main_scene->backdrop = node_factory->create_backdrop(&background_ts);
     ratr0_display_set_palette(background_ts.palette,
                               32, 0);
@@ -619,12 +708,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // Load tileset for the blocks
     // NOTE: the tilesheet remains in memory, so it could be used
     // as a backing buffer of sorts
-    ratr0_resources_read_tilesheet(TILES_PATH, &tiles_ts);
-    tiles_surface.width = tiles_ts.header.width;
-    tiles_surface.height = tiles_ts.header.height;
-    tiles_surface.depth = tiles_ts.header.bmdepth;
-    tiles_surface.is_interleaved = TRUE;
-    tiles_surface.buffer = ratr0_memory_block_address(tiles_ts.h_imgdata);
+    ts_read = ratr0_resources_read_tilesheet(TILES_PATH, &tiles_ts);
+    ratr0_resources_init_surface_from_tilesheet(&tiles_surface, &tiles_ts);
 
     // load block outlines as sprite for the ghost piece
     ratr0_resources_read_spritesheet(OUTLINES_PATH, &outlines_sheet);
@@ -632,13 +717,15 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
     }
     // load digit tile set for the score panels
-    // TODO: think about including "." and ":" to the font
-    ratr0_resources_read_tilesheet(DIGITS_PATH, &digits_ts);
-    digits_surface.width = digits_ts.header.width;
-    digits_surface.height = digits_ts.header.height;
-    digits_surface.depth = digits_ts.header.bmdepth;
-    digits_surface.is_interleaved = TRUE;
-    digits_surface.buffer = ratr0_memory_block_address(digits_ts.h_imgdata);
+    ts_read = ratr0_resources_read_tilesheet(DIGITS_PATH, &digits_ts);
+    ratr0_resources_init_surface_from_tilesheet(&digits_surface, &digits_ts);
+
+    // load preview piece tile set
+    ts_read = ratr0_resources_read_tilesheet(PREVIEW_PATH, &preview_ts);
+    if (!ts_read) {
+        fprintf(debug_fp, "could not read preview tiles !!!\n");
+    }
+    ratr0_resources_init_surface_from_tilesheet(&preview_surface, &preview_ts);
 
     // read sound effects and music
     ratr0_resources_read_audiosample(SOUND_DROP_PATH, &drop_sound);
@@ -653,10 +740,21 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // initialize board and  piece queue
     clear_board(&gameboard0);
-    reset_player_stats(&player_stats);
+    reset_player_state(&player_state);
     init_piece_queue(&piece_queue);
     piece_queue_idx = 0;
     spawn_next_piece();
+    player_state.can_swap_hold = TRUE;
+
+
+    struct DrawQueueItem next_item;
+    next_item.draw_type = DRAW_TYPE_NEXT;
+    for (int i = 0; i < 3; i++) {
+        next_item.item.next.piece = piece_queue[i + 1];
+        next_item.item.next.position = i;
+        RATR0_ENQUEUE_ARR(draw_queue, 0, next_item);
+        RATR0_ENQUEUE_ARR(draw_queue, 1, next_item);
+    }
 
     // start bg music
     ratr0_audio_play_mod(&main_music);

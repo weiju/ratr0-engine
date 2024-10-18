@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/memory.h>
+#include <ratr0/display.h>
 #include <ratr0/resources.h>
 
 #ifdef AMIGA
@@ -193,4 +194,14 @@ BOOL ratr0_resources_read_protracker(const char *filename,
 void ratr0_resources_free_protracker_data(struct Ratr0AudioProtrackerMod *mod)
 {
     if (mod && mod->h_data) ratr0_memory_free_block(mod->h_data);
+}
+
+void ratr0_resources_init_surface_from_tilesheet(struct Ratr0Surface *surface,
+                                                 struct Ratr0TileSheet *sheet)
+{
+    surface->width = sheet->header.width;
+    surface->height = sheet->header.height;
+    surface->depth = sheet->header.bmdepth;
+    surface->is_interleaved = TRUE;
+    surface->buffer = ratr0_memory_block_address(sheet->h_imgdata);
 }

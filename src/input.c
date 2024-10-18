@@ -132,6 +132,8 @@ UINT16 ratr0_get_keyboard_state(void)
         return RATR0_KEY_DOWN;
     } else if (is_keydown(RAW_KEY_SPACE)) {
         return RATR0_KEY_SPACE;
+    } else if (is_keydown(RAW_KEY_Z)) {
+        return RATR0_KEY_RAW_Z;
     }
     return RATR0_KEY_NONE;
 }
@@ -191,7 +193,7 @@ UINT16 ratr0_get_joystick_state(UINT8 device_num)
 int next_input_def = 0;
 
 struct Ratr0InputEvent *action2input[RATR0_MAX_ACTIONS];
-static int next_input_action;
+static UINT8 next_input_action;
 struct Ratr0InputEvent input_def_pool[RATR0_MAX_INPUT_DEFS];
 
 // The other direction is a tree-like structure: it's a 2-level array
