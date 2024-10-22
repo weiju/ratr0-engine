@@ -9,17 +9,10 @@ struct MyStruct {
     int a, b, c;
 };
 
-void init_struct(struct MyStruct *s)
-{
-    struct MyStruct init_elem = { 0, 0, 0 };
-    *s = init_elem;
-
-}
-
 #define ARR_SIZE 2
 #define QUEUE_SIZE 3
 
-RATR0_QUEUE_ARR(myqueue, struct MyStruct, QUEUE_SIZE, init_struct, 2);
+RATR0_QUEUE_ARR(myqueue, struct MyStruct, QUEUE_SIZE, 2);
 
 /*
  * TEST CASES
@@ -85,9 +78,14 @@ CHIBI_TEST(TestRatr0QueueArrEnqueueWrapped)
     RATR0_ENQUEUE_ARR(myqueue, 0, s3);
     RATR0_DEQUEUE_ARR(dequeued, myqueue, 0);
 
-    RATR0_ENQUEUE_ARR(myqueue, 0, s1);
+    RATR0_ENQUEUE_ARR(myqueue, 0, s3);
     chibi_assert_eq_int(1, myqueue_first[0]);
     chibi_assert_eq_int(3, myqueue_num_elems[0]);
+
+    // test the wrapped element
+    chibi_assert_eq_int(s3.a, myqueue[0][0].a);
+    chibi_assert_eq_int(s3.b, myqueue[0][0].b);
+    chibi_assert_eq_int(s3.c, myqueue[0][0].c);
 }
 
 /*

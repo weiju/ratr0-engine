@@ -32,20 +32,33 @@
  * @param init_elem Function that initializes an element
  * @param arr_size Maximum number of queues
  */
-#define RATR0_QUEUE_ARR(name, type, size, init_elem, arr_size) \
-    const int name ## _size = size; \
+#define RATR0_QUEUE_ARR(name, type, size, arr_size) \
+    const UINT16 name ## _size = size; \
     type name[arr_size][size]; \
-    int name ## _first[arr_size]; \
-    int name ## _num_elems[arr_size]; \
+    UINT16 name ## _first[arr_size]; \
+    UINT16 name ## _num_elems[arr_size];                  \
     void init_ ## name ## _queues(void) {          \
         for (int i = 0; i < arr_size; i++) { \
             name ## _first[i] = 0; \
             name ## _num_elems[i] = 0; \
-            for (int j = 0; j < size; j++) { \
-                init_elem(&name[i][j]); \
-            } \
         } \
+        memset((void *) &name, '\0', arr_size * size * sizeof(type)); \
     } // end of queue array macro
+
+/**
+ * Defines the elements of a RATR0_QUEUE_ARR. This is intended for
+ * header files.
+ *
+ * @param name Name of the queue
+ * @param type Type of the elements
+ * @param size Maximum number of elements
+ * @param arr_size Maximum number of queues
+ */
+#define RATR0_QUEUE_ARR_DEF(name, type, size, arr_size) \
+    extern const UINT16 name ## _size; \
+    extern type name[arr_size][size]; \
+    extern UINT16 name ## _first[arr_size]; \
+    extern UINT16 name ## _num_elems[arr_size];                  \
 
 /**
  * Enqueue an element in a queue within the queue array. Note that there
@@ -56,7 +69,7 @@
  * @param elem Element to enqueue
  */
 #define RATR0_ENQUEUE_ARR(q, i, elem) \
-    q[i][q ## _first[i] + q ## _num_elems[i]] = elem;         \
+    q[i][(q ## _first[i] + q ## _num_elems[i]) % q ## _size] = elem; \
     q ## _num_elems[i]++; // end of enqueue array macro
 
 

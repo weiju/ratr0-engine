@@ -883,3 +883,21 @@ void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN])
         (*piece_queue)[i] = rand() % 7;
     }
 }
+
+/**
+ * For each one of the double buffers, create a draw and clear queue
+ */
+RATR0_QUEUE_ARR(draw_piece_queue, struct PieceQueueItem, DRAW_PIECE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(clear_piece_queue, struct PieceQueueItem, DRAW_PIECE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(clear_row_queue, struct RowQueueItem, CLEAR_ROW_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, MOVE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(preview_queue, struct PreviewQueueItem, PREVIEW_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)

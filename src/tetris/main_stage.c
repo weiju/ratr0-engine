@@ -92,85 +92,6 @@ void hide_ghost_piece(struct Ratr0Scene *scene)
     scene->sprites[0] = scene->sprites[1] = &NULL_HW_SPRITE;
 }
 
-#define NUM_DISPLAY_BUFFERS (2)
-#define DRAW_QUEUE_LEN (10)
-enum {
-    DRAW_TYPE_PIECE = 0, DRAW_TYPE_ROWS, DRAW_TYPE_HOLD, DRAW_TYPE_NEXT,
-    DRAW_TYPE_SCORE_DIGIT
-};
-
-/*
- * DrawQueueItem can be a shape, denoted by the piece number. A piece number
- * of -1 means only row is valid and this deletes an entire row
- */
-struct DrawPiece {
-    INT8 piece, rotation, row, col;
-    BOOL clear; // if TRUE, clear after draw
-};
-struct ClearRows {
-    UINT8 row, num_rows;
-};
-
-struct HoldPiece {
-    UINT8 piece;
-};
-
-struct NextPiece {
-    UINT8 piece;
-    UINT8 position;
-};
-
-struct ScoreDigit {
-    UINT8 digit;
-    UINT8 rpos;
-};
-
-struct DrawQueueItem {
-    int draw_type; // piece or rows
-    union {
-        struct DrawPiece piece;
-        struct ClearRows rows;
-        struct HoldPiece hold;
-        struct NextPiece next;
-        struct ScoreDigit score_digit;
-    } item;
-};
-
-struct DrawQueueItem NULL_DRAW_QUEUE_ITEM = {
-    DRAW_TYPE_PIECE, {
-        0, 0, 0, 0,
-        TRUE
-    }
-};
-void init_draw_queue_item(struct DrawQueueItem *item)
-{
-    *item = NULL_DRAW_QUEUE_ITEM;
-}
-
-/**
- * For each one of the double buffers, create a draw and clear queue
- * of 4 elements
- */
-RATR0_QUEUE_ARR(draw_queue, struct DrawQueueItem, DRAW_QUEUE_LEN,
-                init_draw_queue_item, NUM_DISPLAY_BUFFERS)
-RATR0_QUEUE_ARR(clear_queue, struct DrawQueueItem, DRAW_QUEUE_LEN,
-                init_draw_queue_item, NUM_DISPLAY_BUFFERS)
-
-/**
- * The Move queue is to store the actions to move regions of block rows
- * after lines where deleted
- */
-struct MoveQueueItem {
-    int from, to, num_rows;
-};
-struct MoveQueueItem NULL_MOVE_QUEUE_ITEM = { 0, 0, 0 };
-void init_move_queue_item(struct MoveQueueItem *item)
-{
-    *item = NULL_MOVE_QUEUE_ITEM;
-}
-RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, DRAW_QUEUE_LEN,
-                init_move_queue_item, NUM_DISPLAY_BUFFERS)
-
 struct PieceState current_piece = {
     PIECE_Z, 0, 0, 0
 };
@@ -219,6 +140,21 @@ void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer, UINT8 rpos,
     draw_digit(&backbuffer->surface, &digits_surface, digit, 72 - 8 * rpos, 164);
 }
 
+void enqueue_next3(void)
+{
+    int pq_index;
+    struct PreviewQueueItem next_item;
+    next_item.preview_type = PREVIEW_TYPE_NEXT;
+    for (int i = 0; i < 3; i++) {
+        pq_index = (piece_queue_idx + i) % PREVIEW_QUEUE_LEN;
+        next_item.piece = piece_queue[pq_index];
+        next_item.position = i;
+        // Enqueue in both buffers
+        RATR0_ENQUEUE_ARR(preview_queue, 0, next_item);
+        RATR0_ENQUEUE_ARR(preview_queue, 1, next_item);
+    }
+}
+
 /**
  * This is the drawing section:
  * 1. process all queued up clear commands for the current buffer
@@ -226,57 +162,52 @@ void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer, UINT8 rpos,
  */
 void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
 {
-    struct DrawQueueItem item;
+    struct PieceQueueItem piece_queue_item;
+    struct RowQueueItem row_queue_item;
     struct RotationSpec *queued_spec;
     struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
     int cur_buffer = backbuffer->buffernum;
     // 1. Clear queue to clean up pieces from the previous render pass
-    while (clear_queue_num_elems[cur_buffer] > 0) {
-        RATR0_DEQUEUE_ARR(item, clear_queue, cur_buffer);
-        if (item.draw_type == DRAW_TYPE_ROWS) {
-            // clear a row
-#ifdef DEBUG_TETRIS
-            fprintf(debug_fp, "clear %d rows starting with %d on buffer %d\n",
-                    item.item.rows.num_rows,
-                    item.item.rows.row,
-                    cur_buffer);
-#endif
-            clear_rect(backbuffer_surface, item.item.rows.row,
-                       0,
-                       item.item.rows.num_rows,
-                       BOARD_WIDTH);
-        } else {
-            queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
-            clear_piece(backbuffer_surface,
-                        &queued_spec->draw_spec, item.item.piece.row,
-                        item.item.piece.col);
-        }
-#ifdef DEBUG_TETRIS
-        fflush(debug_fp);
-#endif
+    while (clear_piece_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(piece_queue_item, clear_piece_queue, cur_buffer);
+        queued_spec = &PIECE_SPECS[piece_queue_item.piece].rotations[piece_queue_item.rotation];
+        clear_piece(backbuffer_surface,
+                    &queued_spec->draw_spec, piece_queue_item.row,
+                    piece_queue_item.col);
     }
-    // 2. draw all enqueued items
-    while (draw_queue_num_elems[cur_buffer] > 0) {
-        RATR0_DEQUEUE_ARR(item, draw_queue, cur_buffer);
-        if (item.draw_type == DRAW_TYPE_PIECE) {
-            queued_spec = &PIECE_SPECS[item.item.piece.piece].rotations[item.item.piece.rotation];
-            draw_piece(backbuffer_surface, &tiles_surface,
-                       &queued_spec->draw_spec,
-                   item.item.piece.piece,
-                       item.item.piece.row,
-                       item.item.piece.col);
+    while (clear_row_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(row_queue_item, clear_row_queue, cur_buffer);
+        clear_rect(backbuffer_surface, row_queue_item.row,
+                   0, row_queue_item.num_rows, BOARD_WIDTH);
+    }
 
-            // put this piece in the clear buffer for next time this
-            // frame gets drawn
-            if (item.item.piece.clear) {
-                RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, item);
-            }
-        } else if (item.draw_type == DRAW_TYPE_NEXT) {
+    // 2. draw all enqueued items
+    while (draw_piece_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(piece_queue_item, draw_piece_queue, cur_buffer);
+        queued_spec = &PIECE_SPECS[piece_queue_item.piece].rotations[piece_queue_item.rotation];
+        draw_piece(backbuffer_surface, &tiles_surface,
+                   &queued_spec->draw_spec,
+                   piece_queue_item.piece,
+                   piece_queue_item.row,
+                   piece_queue_item.col);
+
+        // put this piece in the clear buffer for next time this
+        // frame gets drawn
+        if (piece_queue_item.clear) {
+            RATR0_ENQUEUE_ARR(clear_piece_queue, cur_buffer, piece_queue_item);
+        }
+    }
+
+    // PREVIEW (NEXT and HOLD)
+    struct PreviewQueueItem preview_item;
+    while (preview_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(preview_item, preview_queue, cur_buffer);
+        if (preview_item.preview_type == PREVIEW_TYPE_NEXT) {
             draw_next_piece(backbuffer,
-                            item.item.next.position,
-                            item.item.next.piece);
-        } else if (item.draw_type == DRAW_TYPE_HOLD) {
-            draw_hold_piece(backbuffer, item.item.hold.piece);
+                            preview_item.position,
+                            preview_item.piece);
+        } else if (preview_item.preview_type == PREVIEW_TYPE_HOLD) {
+            draw_hold_piece(backbuffer, preview_item.piece);
         }
     }
 }
@@ -387,9 +318,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     // make sure this only gets executed once !!! Otherwise this will
     // keep queueing clear requests
     if (done_delete_lines == 0) {
-        struct DrawQueueItem clear_row = {
-            DRAW_TYPE_ROWS, { 0, 0 }
-        };
+        struct RowQueueItem clear_row = { 0, 0};
 #ifdef DEBUG_TETRIS
         fprintf(debug_fp, "# completed rows: %u\n", completed_rows.count);
 #endif
@@ -425,16 +354,16 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         // 2. Delete the rows at the top, since moving won't get rid
         // of those
         int move_top = move_regions.regions[move_regions.count - 1].start;
-        clear_row.item.rows.row = move_top;
-        clear_row.item.rows.num_rows = completed_rows.count;
+        clear_row.row = move_top;
+        clear_row.num_rows = completed_rows.count;
 
         // debug output
 #ifdef DEBUG_TETRIS
         fprintf(debug_fp, "clearing %u rows off the top starting from: %d\n",
                 completed_rows.count, move_top);
 #endif
-        RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, clear_row);
-        RATR0_ENQUEUE_ARR(clear_queue, ((cur_buffer + 1) % 2), clear_row);
+        RATR0_ENQUEUE_ARR(clear_row_queue, cur_buffer, clear_row);
+        RATR0_ENQUEUE_ARR(clear_row_queue, ((cur_buffer + 1) % 2), clear_row);
 
         // 3. compact the board logically by moving every block above
         // the deleted lines down
@@ -455,6 +384,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     // switch to next state after 2 frames elapsed
     if (done_delete_lines >= 2) {
         spawn_next_piece(); // spawn next piece, but don't draw yet
+        enqueue_next3();
         done_delete_lines = 0; // reset frame counter for the next time
         player_state.can_swap_hold = TRUE;
         // back to main update state
@@ -479,15 +409,14 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
         // since we have a double buffer, we have to queue up a draw
         // for the following frame, too, but since this is an
         // etablished piece, don't clear it in the following frames
-        struct DrawQueueItem dropped_item = (struct DrawQueueItem)
-            {
-                DRAW_TYPE_PIECE,
-                {current_piece.piece, current_piece.rotation,
-                 current_piece.row, current_piece.col, FALSE}
-            };
-        RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, dropped_item);
-        RATR0_ENQUEUE_ARR(draw_queue, ((cur_buffer + 1) % 2), dropped_item);
+        struct PieceQueueItem dropped_item = (struct PieceQueueItem) {
+            current_piece.piece, current_piece.rotation,
+            current_piece.row, current_piece.col, FALSE
+        };
+        RATR0_ENQUEUE_ARR(draw_piece_queue, cur_buffer, dropped_item);
+        RATR0_ENQUEUE_ARR(draw_piece_queue, ((cur_buffer + 1) % 2), dropped_item);
         establish_piece(&current_piece, &gameboard0);
+
         done_establish = TRUE;
     } else {
         UINT8 num_completed_rows = get_completed_rows(&completed_rows,
@@ -500,6 +429,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
             this_scene->update = main_scene_delete_lines;
         } else {
             spawn_next_piece(); // spawn next piece, but don't draw yet
+            enqueue_next3();
             player_state.can_swap_hold = TRUE;
             this_scene->update = main_scene_update;
         }
@@ -557,14 +487,12 @@ void main_scene_update(struct Ratr0Scene *this_scene,
         if (quickdrop_cooldown == 0) {
             // we need to enqueue the current position into a clear queue
             // so we delete the graphics of the piece
-            struct DrawQueueItem quick_drop_piece = {
-                DRAW_TYPE_PIECE,
-                {
-                    current_piece.piece, current_piece.rotation,
-                    current_piece.row, current_piece.col, FALSE
-                }
+            struct PieceQueueItem clear_quickdrop_piece = {
+                current_piece.piece, current_piece.rotation,
+                current_piece.row, current_piece.col, FALSE
             };
-            RATR0_ENQUEUE_ARR(clear_queue, cur_buffer, quick_drop_piece);
+            RATR0_ENQUEUE_ARR(clear_piece_queue, cur_buffer,
+                              clear_quickdrop_piece);
 
             // now we update to the drop/establish condition
             int old_row = current_piece.row;
@@ -617,7 +545,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                 // and spawn next piece
                 player_state.hold = current_piece.piece;
                 spawn_next_piece();
-
+                enqueue_next3();
             } else {
                 // swap the hold pieces and reset the position
                 INT8 tmp = player_state.hold;
@@ -628,11 +556,11 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                 current_piece.rotation = 0;
 
             }
-            struct DrawQueueItem hold_item;
-            hold_item.draw_type = DRAW_TYPE_HOLD;
-            hold_item.item.hold.piece = player_state.hold;
-            RATR0_ENQUEUE_ARR(draw_queue, 0, hold_item);
-            RATR0_ENQUEUE_ARR(draw_queue, 1, hold_item);
+            struct PreviewQueueItem hold_item;
+            hold_item.preview_type = PREVIEW_TYPE_HOLD;
+            hold_item.piece = player_state.hold;
+            RATR0_ENQUEUE_ARR(preview_queue, 0, hold_item);
+            RATR0_ENQUEUE_ARR(preview_queue, 1, hold_item);
             player_state.can_swap_hold = FALSE;
         }
     }
@@ -654,15 +582,11 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     // This is the default behavior if there was no establishment
     if (!landed) {
         // just draw the piece at the current position
-        struct DrawQueueItem piece_to_draw = (struct DrawQueueItem)
-            {
-                DRAW_TYPE_PIECE,
-                {
-                    current_piece.piece, current_piece.rotation,
-                    current_piece.row, current_piece.col, TRUE
-                }
-            };
-        RATR0_ENQUEUE_ARR(draw_queue, cur_buffer, piece_to_draw);
+        struct PieceQueueItem piece_to_draw = (struct PieceQueueItem) {
+            current_piece.piece, current_piece.rotation,
+            current_piece.row, current_piece.col, TRUE
+        };
+        RATR0_ENQUEUE_ARR(draw_piece_queue, cur_buffer, piece_to_draw);
         drop_timer--;
     }
 
@@ -744,17 +668,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     init_piece_queue(&piece_queue);
     piece_queue_idx = 0;
     spawn_next_piece();
+    enqueue_next3();
     player_state.can_swap_hold = TRUE;
-
-
-    struct DrawQueueItem next_item;
-    next_item.draw_type = DRAW_TYPE_NEXT;
-    for (int i = 0; i < 3; i++) {
-        next_item.item.next.piece = piece_queue[i + 1];
-        next_item.item.next.position = i;
-        RATR0_ENQUEUE_ARR(draw_queue, 0, next_item);
-        RATR0_ENQUEUE_ARR(draw_queue, 1, next_item);
-    }
 
     // start bg music
     ratr0_audio_play_mod(&main_music);
