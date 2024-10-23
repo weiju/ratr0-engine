@@ -203,6 +203,20 @@ struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void)
     return &display_buffer[ratr0_back_buffer];
 }
 
+BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface)
+{
+    struct Ratr0Surface *back_buffer, *front_buffer;
+    front_buffer = &ratr0_display_get_front_buffer()->surface;
+    back_buffer = &ratr0_display_get_back_buffer()->surface;
+    OwnBlitter();
+    ratr0_blit_rect_simple(front_buffer, surface, 0, 0, 0, 0,
+                           surface->width, surface->height);
+    ratr0_blit_rect_simple(back_buffer, surface, 0, 0, 0, 0,
+                           surface->width, surface->height);
+    DisownBlitter();
+    return TRUE;
+}
+
 /**
  * Private function to apply the render context to the copper list
  */

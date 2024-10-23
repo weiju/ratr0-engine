@@ -628,14 +628,22 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
                                  &TETRIS_COPPER_INFO);
 
     // Load background
+    struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
+    ratr0_resources_init_surface_from_tilesheet(&bg_surf, &background_ts);
+    /*
     // TODO: we don't really need to set a backdrop, we just need to
     // copy the data to the front and back buffers and free the memory
     // so we can use it for something else, that's 50K we can use for
     // music and sound
     main_scene->backdrop = node_factory->create_backdrop(&background_ts);
+    */
+    ratr0_display_blit_surface_to_buffers(&bg_surf);
     ratr0_display_set_palette(background_ts.palette,
                               32, 0);
+    // TODO: from here we don't need to the memory for the background
+    // anymore, we can free the surface and tilesheet
+    ratr0_resources_free_tilesheet_data(&background_ts);
 
     // Load tileset for the blocks
     // NOTE: the tilesheet remains in memory, so it could be used

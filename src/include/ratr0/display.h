@@ -213,6 +213,14 @@ extern struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(void);
  */
 extern struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void);
 
+/**
+ * Blits the specified surface to the front and back buffers. Can be
+ * used to blit a background that will be restored using a custom mechanism.
+ *
+ * @param surface the Ratr0Surface to blit
+ */
+extern BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface);
+
 //
 // Current front and back buffer numbers, these are made global for efficiency,
 // never write directly and use with caution !

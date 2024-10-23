@@ -22,8 +22,8 @@ extern struct Custom custom;
 static struct Ratr0ScenesSystem scenes_system;
 static struct Ratr0NodeFactory node_factory;
 static Ratr0Engine *engine;
-static struct Ratr0Scene *current_scene;
-static struct Ratr0Backdrop *backdrop;
+static struct Ratr0Scene *current_scene = NULL;
+static struct Ratr0Backdrop *backdrop = NULL;
 
 static void ratr0_scenes_shutdown(void);
 static void ratr0_scenes_update(struct Ratr0DisplayBuffer *, UINT8);
@@ -48,8 +48,10 @@ static struct Ratr0Scene *ratr0_scenes_create_scene(void)
     result->engine = engine;
     result->num_bobs = 0;
     result->num_sprites = 0;
+    result->h_copper_list = 0;
+    result->copper_list = NULL;
+    result->backdrop = NULL;
 
-    // TODO: we might want to accept a custom copper list and store it here
     return result;
 }
 
@@ -96,15 +98,7 @@ static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
         // Make this the new backdrop for efficiency this is module global
         backdrop = current_scene->backdrop;
         // Blit the backdrop once if it exists
-        struct Ratr0Surface *back_buffer, *front_buffer;
-        front_buffer = &ratr0_display_get_front_buffer()->surface;
-        back_buffer = &ratr0_display_get_back_buffer()->surface;
-        OwnBlitter();
-        ratr0_blit_rect_simple(front_buffer, &backdrop->surface, 0, 0, 0, 0,
-                               backdrop->surface.width, backdrop->surface.height);
-        ratr0_blit_rect_simple(back_buffer, &backdrop->surface, 0, 0, 0, 0,
-                               backdrop->surface.width, backdrop->surface.height);
-        DisownBlitter();
+        ratr0_display_blit_surface_to_buffers(&backdrop->surface);
     }
     if (current_scene && current_scene->on_enter) {
         current_scene->on_enter(scene);
