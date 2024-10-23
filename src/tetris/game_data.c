@@ -899,5 +899,14 @@ RATR0_QUEUE_ARR(clear_row_queue, struct RowQueueItem, CLEAR_ROW_QUEUE_LEN,
 RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, MOVE_QUEUE_LEN,
                 NUM_DISPLAY_BUFFERS)
 
-RATR0_QUEUE_ARR(preview_queue, struct PreviewQueueItem, PREVIEW_QUEUE_LEN,
+RATR0_QUEUE_ARR(next_queue, struct NextQueueItem, DRAW_NEXT_QUEUE_LEN,
                 NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(hold_queue, struct HoldQueueItem, DRAW_HOLD_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(score_queue, struct DigitQueueItem, SCORE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+RATR0_QUEUE_ARR(level_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
+RATR0_QUEUE_ARR(lines_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
+

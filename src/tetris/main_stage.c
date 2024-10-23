@@ -143,15 +143,14 @@ void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer, UINT8 rpos,
 void enqueue_next3(void)
 {
     int pq_index;
-    struct PreviewQueueItem next_item;
-    next_item.preview_type = PREVIEW_TYPE_NEXT;
+    struct NextQueueItem next_item;
     for (int i = 0; i < 3; i++) {
-        pq_index = (piece_queue_idx + i) % PREVIEW_QUEUE_LEN;
+        pq_index = (piece_queue_idx + i) % PIECE_QUEUE_LEN;
         next_item.piece = piece_queue[pq_index];
         next_item.position = i;
         // Enqueue in both buffers
-        RATR0_ENQUEUE_ARR(preview_queue, 0, next_item);
-        RATR0_ENQUEUE_ARR(preview_queue, 1, next_item);
+        RATR0_ENQUEUE_ARR(next_queue, 0, next_item);
+        RATR0_ENQUEUE_ARR(next_queue, 1, next_item);
     }
 }
 
@@ -160,6 +159,8 @@ void enqueue_next3(void)
  * 1. process all queued up clear commands for the current buffer
  * 2. then draw all queued up draw command for the current buffer
  */
+void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer, int cur_buffer);
+
 void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
 {
     struct PieceQueueItem piece_queue_item;
@@ -198,17 +199,22 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer)
         }
     }
 
+    render_preview_queues(backbuffer, cur_buffer);
+}
+
+void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer, int cur_buffer)
+{
     // PREVIEW (NEXT and HOLD)
-    struct PreviewQueueItem preview_item;
-    while (preview_queue_num_elems[cur_buffer] > 0) {
-        RATR0_DEQUEUE_ARR(preview_item, preview_queue, cur_buffer);
-        if (preview_item.preview_type == PREVIEW_TYPE_NEXT) {
-            draw_next_piece(backbuffer,
-                            preview_item.position,
-                            preview_item.piece);
-        } else if (preview_item.preview_type == PREVIEW_TYPE_HOLD) {
-            draw_hold_piece(backbuffer, preview_item.piece);
-        }
+    struct NextQueueItem next_item;
+    struct HoldQueueItem hold_item;
+
+    while (next_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(next_item, next_queue, cur_buffer);
+        draw_next_piece(backbuffer, next_item.position, next_item.piece);
+    }
+    while (hold_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(hold_item, hold_queue, cur_buffer);
+        draw_hold_piece(backbuffer, hold_item.piece);
     }
 }
 
@@ -556,11 +562,13 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                 current_piece.rotation = 0;
 
             }
-            struct PreviewQueueItem hold_item;
-            hold_item.preview_type = PREVIEW_TYPE_HOLD;
+
+            // enqueue hold piece
+            struct HoldQueueItem hold_item;
             hold_item.piece = player_state.hold;
-            RATR0_ENQUEUE_ARR(preview_queue, 0, hold_item);
-            RATR0_ENQUEUE_ARR(preview_queue, 1, hold_item);
+            RATR0_ENQUEUE_ARR(hold_queue, 0, hold_item);
+            RATR0_ENQUEUE_ARR(hold_queue, 1, hold_item);
+
             player_state.can_swap_hold = FALSE;
         }
     }

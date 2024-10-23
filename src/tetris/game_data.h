@@ -29,7 +29,9 @@
 #define DRAW_PIECE_QUEUE_LEN (10)
 #define CLEAR_ROW_QUEUE_LEN (10)
 #define MOVE_QUEUE_LEN (10)
-#define PREVIEW_QUEUE_LEN (4)
+#define DRAW_NEXT_QUEUE_LEN (4)
+#define DRAW_HOLD_QUEUE_LEN (2)
+#define SCORE_QUEUE_LEN (10)
 
 #define NUM_DISPLAY_BUFFERS (2)
 
@@ -50,7 +52,10 @@ struct Translate {
 };
 
 struct PieceState {
-    INT8 piece, rotation, row, col;
+    UINT8 piece, rotation, row;
+    // we need to be able to set columns in the negative because
+    // the pieces don't always align to the right
+    INT8 col;
 };
 
 typedef enum {
@@ -241,7 +246,8 @@ extern void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN]);
 // DRAW, CLEAR AND MOVE QUEUES
 
 struct PieceQueueItem {
-    UINT8 piece, rotation, row, col;
+    UINT8 piece, rotation, row;
+    INT8 col;  // needs to be able to draw negative !!!
     BOOL clear; // if TRUE, clear after draw
 };
 struct RowQueueItem {
@@ -272,25 +278,29 @@ RATR0_QUEUE_ARR_DEF(move_queue, struct MoveQueueItem, MOVE_QUEUE_LEN,
                     NUM_DISPLAY_BUFFERS)
 
 
-enum {
-    PREVIEW_TYPE_NEXT = 0, PREVIEW_TYPE_HOLD
+struct NextQueueItem {
+    UINT8 piece, position;
 };
 
-struct PreviewQueueItem {
-    UINT8 preview_type, piece, position;
-};
-
-
-RATR0_QUEUE_ARR_DEF(preview_queue, struct PreviewQueueItem, PREVIEW_QUEUE_LEN,
+RATR0_QUEUE_ARR_DEF(next_queue, struct NextQueueItem, DRAW_NEXT_QUEUE_LEN,
                     NUM_DISPLAY_BUFFERS)
 
+struct HoldQueueItem {
+    UINT8 piece;
+};
 
-/*
-struct ScoreDigit {
+RATR0_QUEUE_ARR_DEF(hold_queue, struct HoldQueueItem, DRAW_HOLD_QUEUE_LEN,
+                    NUM_DISPLAY_BUFFERS)
+
+struct DigitQueueItem {
     UINT8 digit;
     UINT8 rpos;
 };
-*/
 
+RATR0_QUEUE_ARR_DEF(score_queue, struct DigitQueueItem, SCORE_QUEUE_LEN,
+                    NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR_DEF(level_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
+RATR0_QUEUE_ARR_DEF(lines_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
 
 #endif // !__GAME_DATA_H__
