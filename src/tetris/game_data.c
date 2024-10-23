@@ -440,7 +440,6 @@ struct Translate WALLKICK_I[NUM_FROM_ROTATIONS][NUM_TO_ROTATIONS][NUM_WALLKICK_T
     }
 };
 
-extern FILE *debug_fp;
 struct Translate NO_TRANSLATE = {0, 0};
 struct Translate *get_srs_translation(struct PieceState *from, UINT8 to,
                                       UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])

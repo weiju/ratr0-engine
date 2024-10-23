@@ -7,9 +7,19 @@
 #ifndef __RATR0_ENGINE_H__
 #define __RATR0_ENGINE_H__
 
+#include <stdio.h>
+
 struct Ratr0MemorySystem;
 struct Ratr0MemoryConfig;
 struct Ratr0DisplayInfo;
+
+/**
+ * If we are in debug mode, debug_fp will be available to write diagnostic
+ * information into a global debug log file.
+ */
+#ifdef DEBUG
+extern FILE *debug_fp;
+#endif
 
 /**
  * Engine interface.

@@ -17,12 +17,20 @@ extern void clear_piece(struct Ratr0Surface *surface,
                         struct DrawSpec *spec, int row, int col);
 
 /**
- * Draw a digit on an 8 pixel aligned position
+ * Draw an 8 pixel  digit on an 8 pixel aligned position
  */
-extern void draw_digit(struct Ratr0Surface *surface,
-                       struct Ratr0Surface *digits_surface,
-                       UINT8 digit,
-                       UINT16 x, UINT16 y);
+extern void draw_digit8(struct Ratr0Surface *surface,
+                        struct Ratr0Surface *digits_surface,
+                        UINT8 digit,
+                        UINT16 x, UINT16 y);
+
+/**
+ * Draw a 16 pixel digit on a 16 pixel aligned position
+ */
+extern void draw_digit16(struct Ratr0Surface *surface,
+                         struct Ratr0Surface *digits_surface,
+                         UINT8 digit,
+                         UINT16 x, UINT16 y);
 
 
 /**

@@ -29,13 +29,11 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_hold,
     action_quit;
 
-#define DEBUG_FILE "tetris.debug"
-FILE *debug_fp;
-
 // Resources
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define DIGITS_PATH  ("tetris/assets/calculator_digits.ts")
+#define DIGITS16_PATH  ("tetris/assets/calculator_digits_16.ts")
 #define PREVIEW_PATH  ("tetris/assets/preview_pieces.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
 
@@ -49,8 +47,10 @@ FILE *debug_fp;
 
 #define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
 
-struct Ratr0TileSheet background_ts, tiles_ts, digits_ts, preview_ts;
-struct Ratr0Surface tiles_surface, digits_surface, preview_surface;
+struct Ratr0TileSheet background_ts, tiles_ts, digits_ts,
+    digits16_ts, preview_ts;
+struct Ratr0Surface tiles_surface, digits_surface, digits16_surface,
+    preview_surface;
 
 // sound and music
 struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound;
@@ -137,7 +137,7 @@ void draw_next_piece(struct Ratr0DisplayBuffer *backbuffer, UINT8 pos,
 void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer, UINT8 rpos,
                       UINT8 digit)
 {
-    draw_digit(&backbuffer->surface, &digits_surface, digit, 72 - 8 * rpos, 164);
+    draw_digit8(&backbuffer->surface, &digits_surface, digit, 72 - 8 * rpos, 164);
 }
 
 void enqueue_next3(void)
@@ -613,10 +613,6 @@ void main_scene_update(struct Ratr0Scene *this_scene,
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 {
-#ifdef DEBUG
-    debug_fp = fopen(DEBUG_FILE, "a");
-#endif
-
     engine = eng;
     // Use the scenes module to create a scene and run that
     struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
@@ -633,6 +629,10 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // Load background
     BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
+    // TODO: we don't really need to set a backdrop, we just need to
+    // copy the data to the front and back buffers and free the memory
+    // so we can use it for something else, that's 50K we can use for
+    // music and sound
     main_scene->backdrop = node_factory->create_backdrop(&background_ts);
     ratr0_display_set_palette(background_ts.palette,
                               32, 0);
@@ -651,6 +651,9 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     // load digit tile set for the score panels
     ts_read = ratr0_resources_read_tilesheet(DIGITS_PATH, &digits_ts);
     ratr0_resources_init_surface_from_tilesheet(&digits_surface, &digits_ts);
+
+    ts_read = ratr0_resources_read_tilesheet(DIGITS16_PATH, &digits16_ts);
+    ratr0_resources_init_surface_from_tilesheet(&digits16_surface, &digits16_ts);
 
     // load preview piece tile set
     ts_read = ratr0_resources_read_tilesheet(PREVIEW_PATH, &preview_ts);

@@ -37,6 +37,11 @@ struct Ratr0Scene {
      *
      * A scene can have a backdrop, if it does not need a tile map, this might
      * be the only thing you need. Can be null if you don't need a backdrop.
+     * The backdrop is essentially the restore buffer. If all you need is
+     * a backdrop this is easy, because BOBs will also just work.
+     * If you need a scrolling level or manage your own restore
+     * method, don't use the backdrop and instead just go and use
+     * the engine's front and back buffers directly
      */
     struct Ratr0Backdrop *backdrop;
 

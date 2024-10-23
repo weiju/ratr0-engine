@@ -13,7 +13,9 @@ A Scene is a container for game objects. The world system inspects the active
 scene in every iteration of the game loop. The most important objects in the
 scene are
 
-  * Backdrop: this could be a background
+  * Backdrop: a backdrop serves as an image buffer that is automatically
+    used to restore rectangles that were obscured by BOBs. Very simple if
+    you have single screen setups.
   * Tilemap(s): this could also be a background, or one or several tilemaps could
     complement a backdrop to build the background
   * Active BOBs and Sprites: The movable and animated objects that are drawn. The

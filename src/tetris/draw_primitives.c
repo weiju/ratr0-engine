@@ -273,17 +273,15 @@ void clear_piece(struct Ratr0Surface *backbuffer_surface,
     }
 }
 
-extern FILE *debug_fp;
-BOOL digit_drawn = FALSE;
 /**
  * the digit is '0'-'9' or '.' or ':'
  */
-void draw_digit(struct Ratr0Surface *surface,
-                struct Ratr0Surface *digits_surface,
-                UINT8 digit,
-                UINT16 x, UINT16 y)
+void draw_digit8(struct Ratr0Surface *surface,
+                 struct Ratr0Surface *digits_surface,
+                 UINT8 digit,
+                 UINT16 x, UINT16 y)
 {
-    UINT16 afwm = 0xff00; //, alwm = 0xffff;
+    UINT16 afwm = 0xff00;
 
     // the position within the 16 pixel 0 means 0, 1 means 8
     int tiley = (digit - '0')  * 8; // this is the row in the tile set
@@ -298,11 +296,22 @@ void draw_digit(struct Ratr0Surface *surface,
                     0, // never shift
                     afwm, 0xffff,
                     1, 8); // always 1 word, always 8 pixels
+}
 
-    if (!digit_drawn) {
-        fflush(debug_fp);
-    }
-    digit_drawn = TRUE;
+void draw_digit16(struct Ratr0Surface *surface,
+                  struct Ratr0Surface *digits_surface,
+                  UINT8 digit,
+                  UINT16 x, UINT16 y)
+{
+    // the position within the 16 pixel 0 means 0, 1 means 8
+    int tiley = (digit - '0')  * 16; // this is the row in the tile set
+    ratr0_blit_ad_d(surface, digits_surface,
+                    0, tiley, // src
+                    x, y, // dest
+                    0xfc,  // D <- A + D
+                    0, // never shift
+                    0xffff, 0xffff,
+                    1, 16); // always 1 word, always 16 pixels
 }
 
 void draw_preview_piece(struct Ratr0Surface *surface,

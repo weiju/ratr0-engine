@@ -26,6 +26,10 @@
 enum { GAMESTATE_QUIT, GAMESTATE_RUNNING };
 static int game_state = GAMESTATE_RUNNING;
 
+#ifdef DEBUG
+FILE *debug_fp;
+#endif
+
 void ratr0_engine_exit(void)
 {
     game_state = GAMESTATE_QUIT;
@@ -53,6 +57,12 @@ void ratr0_engine_game_loop(void)
 Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
                                   struct Ratr0DisplayInfo *display_info)
 {
+    // Make the debug file handle available from the start so
+    // we can write to it during startup
+#ifdef DEBUG
+    debug_fp = fopen("ratr0.debug", "a");
+#endif
+
     // hook in the shutdown function
     engine.shutdown = &ratr0_engine_shutdown;
 
@@ -76,6 +86,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
     engine.audio_system = ratr0_audio_startup();
     engine.resource_system = ratr0_resources_startup(&engine);
     engine.scenes_system = ratr0_scenes_startup(&engine);
+
     PRINT_DEBUG("Startup finished.");
     return &engine;
 }
@@ -92,5 +103,8 @@ void ratr0_engine_shutdown(void)
     //engine.event_system->shutdown();
     engine.memory_system->shutdown();
 
+#ifdef DEBUG
+    if (debug_fp) fclose(debug_fp);
+#endif
     PRINT_DEBUG("Shutdown finished.");
 }

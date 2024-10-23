@@ -98,6 +98,10 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         if (first_free_chip + size > chip_pool_size) {
             // This is a fatal error -> Exit the engine !!
             PRINT_DEBUG("Chip memory exhausted, can't reserve more.");
+#ifdef DEBUG
+            fprintf(debug_fp, "Chip memory exhausted, can't reserve more.\n");
+            fflush(debug_fp);
+#endif
             ratr0_memory_shutdown();
             exit(-1);
         }
@@ -105,11 +109,19 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         void *mem_block = (void *) ((UINT32) chip_mem_pool + first_free_chip);
         chip_mem_table[first_free_chip_table++] = mem_block;
         first_free_chip += size;
+#ifdef DEBUG
+        fprintf(debug_fp, "Allocated %u bytes of chip memory.\n", size);
+        fflush(debug_fp);
+#endif
         return result | 0x80000000;  // add a chip mem tag
     } else {
         if (first_free_general + size > general_pool_size) {
             // This is a fatal error -> Exit the engine !!
             PRINT_DEBUG("General memory exhausted, can't reserve more.");
+#ifdef DEBUG
+            fprintf(debug_fp, "General memory exhausted, can't reserve more.\n");
+            fflush(debug_fp);
+#endif
             ratr0_memory_shutdown();
             exit(-1);
         }
@@ -117,6 +129,10 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         void *mem_block = (void *) ((UINT32)general_mem_pool + first_free_general);
         general_mem_table[first_free_general_table++] = mem_block;
         first_free_general += size;
+#ifdef DEBUG
+        fprintf(debug_fp, "Allocated %u bytes of general purpose memory.\n", size);
+        fflush(debug_fp);
+#endif
         return result;
     }
 }
