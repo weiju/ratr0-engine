@@ -36,19 +36,14 @@ void ratr0_audio_shutdown(void)
     PRINT_DEBUG("Shutdown finished.");
 }
 
-#define AUDIO_DEFAULT_SOUNDFX_VOLUME (64)
-#define AUDIO_DEFAULT_SOUNDFX_CHANNEL (-1)
-#define AUDIO_DEFAULT_SOUNDFX_PRIORITY (1)
-
-void ratr0_audio_play_sound(struct Ratr0AudioSample *sample)
+void ratr0_audio_play_sound(struct Ratr0AudioSample *sample, INT8 channel)
 {
     void *sample_data = ratr0_memory_block_address(sample->h_data);
     struct SfxStructure sound_fx = {
         sample_data,
         sample->num_bytes / 2,
         hardware_replay_period,
-        AUDIO_DEFAULT_SOUNDFX_VOLUME,
-        AUDIO_DEFAULT_SOUNDFX_CHANNEL,
+        AUDIO_DEFAULT_SOUNDFX_VOLUME, channel,
         AUDIO_DEFAULT_SOUNDFX_PRIORITY
     };
     mt_playfx(&custom, &sound_fx);

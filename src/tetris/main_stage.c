@@ -45,7 +45,9 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 #define SOUND_DROP_PATH "tetris/assets/beep8bit.raw8"
 #define SOUND_DELETELINES_PATH "tetris/assets/laser_zap.raw8"
 
-#define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
+#define MUSIC_MAIN_PATH "tetris/soundtrack/onlyamiga.mod"
+//#define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
+#define SOUNDFX_CHANNEL (3)
 
 struct Ratr0TileSheet background_ts, tiles_ts, digits_ts,
     digits16_ts, preview_ts;
@@ -336,7 +338,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         }
 
         // play completed sound
-        ratr0_audio_play_sound(&completed_sound);
+        ratr0_audio_play_sound(&completed_sound, SOUNDFX_CHANNEL);
         // 1. move the regions above the deleted lines down graphically
         struct MoveRegions move_regions;
         get_move_regions(&move_regions, &completed_rows, &gameboard0);
@@ -411,7 +413,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
 {
     int cur_buffer = backbuffer->buffernum;
     if (!done_establish) {
-        ratr0_audio_play_sound(&drop_sound);
+        ratr0_audio_play_sound(&drop_sound, SOUNDFX_CHANNEL);
         // since we have a double buffer, we have to queue up a draw
         // for the following frame, too, but since this is an
         // etablished piece, don't clear it in the following frames
@@ -524,7 +526,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                 // so we need to subtract y
                 current_piece.row -= t->y;
                 current_piece.col += t->x;
-                ratr0_audio_play_sound(&rotate_sound);
+                ratr0_audio_play_sound(&rotate_sound, SOUNDFX_CHANNEL);
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }

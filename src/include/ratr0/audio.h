@@ -7,6 +7,10 @@
 #define __RATR0_AUDIO_H__
 
 #include <ratr0/resources.h>
+#define AUDIO_DEFAULT_SOUNDFX_CHANNEL (-1)
+#define AUDIO_DEFAULT_SOUNDFX_VOLUME (64)
+#define AUDIO_DEFAULT_SOUNDFX_PRIORITY (1)
+
 
 /**
  * Audio system interface.
@@ -31,8 +35,10 @@ extern void ratr0_audio_shutdown(void);
  * Play a sound sample.
  *
  * @param sample address of the sample to play
+ * @param sound channel (0-3), -1 for any available
  */
-extern void ratr0_audio_play_sound(struct Ratr0AudioSample *sample);
+extern void ratr0_audio_play_sound(struct Ratr0AudioSample *sample,
+                                   INT8 channel);
 
 /**
  * Play a Protracker module.
