@@ -2,12 +2,12 @@
 
 void draw_1x3(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 2;
-    int shift = x % 16;
+    UINT16 x = col * 8 + BOARD_X0;
+    UINT16 y = row * 8 + BOARD_Y0;
+    UINT16 blit_width_words = 2;
+    UINT16 shift = x % 16;
     x -= shift;
 
     UINT16 afwm, alwm;
@@ -31,12 +31,12 @@ void draw_1x3(struct Ratr0Surface *backbuffer_surface,
 
 void draw_1x2(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 1;
-    int shift = x % 16;
+    UINT16 x = col * 8 + BOARD_X0;
+    UINT16 y = row * 8 + BOARD_Y0;
+    UINT16 blit_width_words = 1;
+    UINT16 shift = x % 16;
     x -= shift;
 
     UINT16 afwm, alwm;
@@ -59,12 +59,12 @@ void draw_1x2(struct Ratr0Surface *backbuffer_surface,
 
 void draw_2x2(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 1;
-    int shift = x % 16;
+    UINT16 x = col * 8 + BOARD_X0;
+    UINT16 y = row * 8 + BOARD_Y0;
+    UINT16 blit_width_words = 1;
+    UINT16 shift = x % 16;
     x -= shift;
 
     UINT16 afwm, alwm;
@@ -90,12 +90,12 @@ void draw_2x2(struct Ratr0Surface *backbuffer_surface,
  */
 void draw_1x4(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int blit_width_words = 2;
-    int shift = x % 16;
+    UINT16 x = col * 8 + BOARD_X0;
+    UINT16 y = row * 8 + BOARD_Y0;
+    UINT16 blit_width_words = 2;
+    UINT16 shift = x % 16;
     x -= shift;
 
     UINT16 afwm = 0xffff, alwm = 0xffff;
@@ -113,11 +113,11 @@ void draw_1x4(struct Ratr0Surface *backbuffer_surface,
 
 void draw_nx1(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col, int num_rows)
+              UINT8 color, UINT8 row, UINT8 col, UINT8 num_rows)
 {
-    int x = col * 8 + BOARD_X0;
-    int y = row * 8 + BOARD_Y0;
-    int shift = x % 16;
+    UINT16 x = col * 8 + BOARD_X0;
+    UINT16 y = row * 8 + BOARD_Y0;
+    UINT16 shift = x % 16;
     x -= shift;
 
     UINT16 afwm, alwm;
@@ -139,32 +139,32 @@ void draw_nx1(struct Ratr0Surface *backbuffer_surface,
 
 void draw_1x1(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
     draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 1);
 }
 void draw_2x1(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
     draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 2);
 }
 void draw_3x1(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
     draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 3);
 }
 void draw_4x1(struct Ratr0Surface *backbuffer_surface,
               struct Ratr0Surface *tiles_surface,
-              int color, int row, int col)
+              UINT8 color, UINT8 row, UINT8 col)
 {
     draw_nx1(backbuffer_surface, tiles_surface, color, row, col, 4);
 }
 
 void draw_piece(struct Ratr0Surface *backbuffer_surface,
                 struct Ratr0Surface *tiles_surface,
-                struct DrawSpec *spec, int color, int row, int col)
+                struct DrawSpec *spec, UINT8 color, UINT8 row, UINT8 col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {
@@ -215,15 +215,15 @@ void draw_piece(struct Ratr0Surface *backbuffer_surface,
 }
 
 void clear_rect(struct Ratr0Surface *backbuffer_surface,
-                int row, int col, int num_rows, int num_cols)
+                UINT8 row, UINT8 col, UINT8 num_rows, UINT8 num_cols)
 {
-    int x = BOARD_X0 + col * 8;
-    int y = BOARD_Y0 + row * 8;
+    UINT16 x = BOARD_X0 + col * 8;
+    UINT16 y = BOARD_Y0 + row * 8;
     ratr0_blit_clear8(backbuffer_surface, x, y, num_cols * 8,
                       num_rows * 8);
 }
 void clear_piece(struct Ratr0Surface *backbuffer_surface,
-                 struct DrawSpec *spec, int row, int col)
+                 struct DrawSpec *spec, UINT8 row, UINT8 col)
 {
     for (int i = 0; i < spec->num_rects; i++) {
         switch (spec->draw_rects[i].shape) {

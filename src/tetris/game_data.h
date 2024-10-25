@@ -56,13 +56,13 @@ typedef enum {
 /** \brief a draw rectangle specification. */
 struct DrawRect {
     DrawRectShape shape;
-    char row, col;
+    UINT8 row, col;
 };
 
 /** \brief a sprite outline description. 2 sprites are needed for consistency */
 struct SpriteOutline {
-    INT8 framenum0, row0, col0;
-    INT8 framenum1, row1, col1;
+    UINT8 framenum0, row0, col0;
+    UINT8 framenum1, row1, col1;
 };
 
 /** \brief Draw specification, number, position and shape of rectangles. */
@@ -72,7 +72,8 @@ struct DrawSpec {
 };
 
 struct Side {
-    INT8 num_pos;
+    UINT8 num_pos;
+    // -1 means unused index
     INT8 indexes[NUM_BLOCKS_PER_PIECE];
 };
 
@@ -91,7 +92,7 @@ struct RotationSpec {
 };
 
 struct PieceSpec {
-    char color;
+    UINT8 color;
     struct RotationSpec rotations[NUM_ROTATIONS];
 };
 

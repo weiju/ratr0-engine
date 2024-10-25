@@ -10,11 +10,11 @@
 
 extern void draw_piece(struct Ratr0Surface *surface,
                        struct Ratr0Surface *tiles_surface,
-                       struct DrawSpec *spec, int color, int row, int col);
+                       struct DrawSpec *spec, UINT8 color, UINT8 row, UINT8 col);
 extern void clear_rect(struct Ratr0Surface *surface,
-                       int row, int col, int num_rows, int num_cols);
+                       UINT8 row, UINT8 col, UINT8 num_rows, UINT8 num_cols);
 extern void clear_piece(struct Ratr0Surface *surface,
-                        struct DrawSpec *spec, int row, int col);
+                        struct DrawSpec *spec, UINT8 row, UINT8 col);
 
 /**
  * Draw an 8 pixel  digit on an 8 pixel aligned position

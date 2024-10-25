@@ -94,4 +94,6 @@ extern void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
                                 struct Ratr0Surface *preview_surface);
 
 
+extern void process_move_queue(struct Ratr0DisplayBuffer *backbuffer);
+
 #endif // __RENDER_DISPLAY_H__

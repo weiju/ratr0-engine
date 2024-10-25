@@ -131,45 +131,6 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                        UINT8 frames_elapsed);
 
 /**
- * Move the specified rectangular region
- */
-void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
-                      int from_row, int to_row, int num_rows)
-{
-    int srcx = BOARD_X0, srcy = BOARD_Y0 + from_row * 8,
-        dstx = BOARD_X0, dsty = BOARD_Y0 + to_row * 8;
-    int blit_width_pixels = BOARD_WIDTH * 8;
-    int blit_height_pixels = num_rows * 8;
-    if (num_rows == 0 > num_rows > 15) {
-#ifdef DEBUG_TETRIS
-        fprintf(debug_fp,
-                "ERROR: _move_board_rect(), sketchy num_rows value: %d\n", num_rows);
-        fflush(debug_fp);
-#endif
-    }
-
-    // this is most likely overlapping, ratr0_blit_rect_simple()
-    // will perform reverse copying if that is the case
-    ratr0_blit_rect_simple(backbuffer_surface,
-                           backbuffer_surface,
-                           dstx, dsty,
-                           srcx, srcy,
-                           blit_width_pixels,
-                           blit_height_pixels);
-}
-
-void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
-{
-    struct MoveQueueItem item;
-    struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
-    int cur_buffer = backbuffer->buffernum;
-    while (move_queue_num_elems[cur_buffer] > 0) {
-        RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
-        _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
-    }
-}
-
-/**
  * DEBUG STATE. Use this state to quickly simulate game situations
  * that would otherwise require playing to this state.
  */
@@ -179,19 +140,6 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
-    draw_score_digit(backbuffer, &digits_surface, 0, '5');
-    draw_score_digit(backbuffer, &digits_surface, 1, '1');
-    draw_score_digit(backbuffer, &digits_surface, 2, '0');
-    draw_score_digit(backbuffer, &digits_surface, 3, '0');
-    draw_score_digit(backbuffer, &digits_surface, 4, '0');
-    draw_score_digit(backbuffer, &digits_surface, 5, '0');
-    draw_score_digit(backbuffer, &digits_surface, 6, '0');
-    draw_score_digit(backbuffer, &digits_surface, 7, '0');
-    draw_score_digit(backbuffer, &digits_surface, 8, '0');
-    draw_hold_piece(backbuffer, &preview_surface, PIECE_J);
-    draw_next_piece(backbuffer, &preview_surface, 0, PIECE_T);
-    draw_next_piece(backbuffer, &preview_surface, 1, PIECE_I);
-    draw_next_piece(backbuffer, &preview_surface, 2, PIECE_O);
 }
 
 /**
@@ -235,7 +183,8 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         BOOL level_increased = score_rows_cleared(&player_state,
                                                   completed_rows.count);
         if (level_increased) {
-            // TODO: update level and drop speed
+            // TODO: update level and drop speed display in the UI
+            // by adding commands to the queue
         }
 
         // play completed sound
@@ -513,43 +462,21 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     debug_current_frame++;
 }
 
-struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+
+void _load_resources(void)
 {
-    engine = eng;
-    // Use the scenes module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
-    struct Ratr0Scene *main_scene = node_factory->create_scene();
-    //main_scene->update = main_scene_debug;
-    main_scene->update = main_scene_update;
-
-    // set new copper list
-    ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
-                                   &TETRIS_COPPER_INFO);
-
-    ratr0_display_set_copperlist(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
-                                 &TETRIS_COPPER_INFO);
-
     // Load background
     struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
     ratr0_resources_init_surface_from_tilesheet(&bg_surf, &background_ts);
-    /*
-    // TODO: we don't really need to set a backdrop, we just need to
-    // copy the data to the front and back buffers and free the memory
-    // so we can use it for something else, that's 50K we can use for
-    // music and sound
-    main_scene->backdrop = node_factory->create_backdrop(&background_ts);
-    */
     ratr0_display_blit_surface_to_buffers(&bg_surf);
-    ratr0_display_set_palette(background_ts.palette,
-                              32, 0);
-    // TODO: from here we don't need to the memory for the background
+    ratr0_display_set_palette(background_ts.palette, 32, 0);
+
+    // from here we don't need to the memory for the background
     // anymore, we can free the surface and tilesheet
     ratr0_resources_free_tilesheet_data(&background_ts);
 
     // Load tileset for the blocks
-    // NOTE: the tilesheet remains in memory, so it could be used
-    // as a backing buffer of sorts
     ts_read = ratr0_resources_read_tilesheet(TILES_PATH, &tiles_ts);
     ratr0_resources_init_surface_from_tilesheet(&tiles_surface, &tiles_ts);
 
@@ -582,6 +509,25 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
         fprintf(debug_fp, "could not read protracker module '%s'\n",
                 MUSIC_MAIN_PATH);
     }
+}
+
+struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+{
+    engine = eng;
+    // Use the scenes module to create a scene and run that
+    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
+    struct Ratr0Scene *main_scene = node_factory->create_scene();
+    //main_scene->update = main_scene_debug;
+    main_scene->update = main_scene_update;
+
+    // set new copper list
+    ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
+                                   &TETRIS_COPPER_INFO);
+
+    ratr0_display_set_copperlist(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
+                                 &TETRIS_COPPER_INFO);
+
+    _load_resources();
 
     // initialize board and  piece queue
     clear_board(&gameboard0);

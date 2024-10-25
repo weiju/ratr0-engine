@@ -131,3 +131,42 @@ void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
                         hold_item.piece);
     }
 }
+
+/**
+ * Move the specified rectangular region
+ */
+void _move_board_rect(struct Ratr0Surface *backbuffer_surface,
+                      int from_row, int to_row, int num_rows)
+{
+    int srcx = BOARD_X0, srcy = BOARD_Y0 + from_row * 8,
+        dstx = BOARD_X0, dsty = BOARD_Y0 + to_row * 8;
+    int blit_width_pixels = BOARD_WIDTH * 8;
+    int blit_height_pixels = num_rows * 8;
+    if (num_rows == 0 > num_rows > 15) {
+#ifdef DEBUG_TETRIS
+        fprintf(debug_fp,
+                "ERROR: _move_board_rect(), sketchy num_rows value: %d\n", num_rows);
+        fflush(debug_fp);
+#endif
+    }
+
+    // this is most likely overlapping, ratr0_blit_rect_simple()
+    // will perform reverse copying if that is the case
+    ratr0_blit_rect_simple(backbuffer_surface,
+                           backbuffer_surface,
+                           dstx, dsty,
+                           srcx, srcy,
+                           blit_width_pixels,
+                           blit_height_pixels);
+}
+
+void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
+{
+    struct MoveQueueItem item;
+    struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
+    int cur_buffer = backbuffer->buffernum;
+    while (move_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
+        _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
+    }
+}
