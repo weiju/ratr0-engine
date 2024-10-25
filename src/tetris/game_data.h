@@ -3,7 +3,6 @@
 #define __GAME_DATA_H__
 #include <stdio.h>
 #include <ratr0/ratr0.h>
-#include <ratr0/datastructs/queue.h>
 
 /**
  * This module defines the Tetris game's tetromino represetation and
@@ -25,15 +24,6 @@
 #define MAX_COMPLETED_ROWS (4)
 #define MAX_MOVE_REGIONS (2)
 #define PIECE_QUEUE_LEN (40)
-
-#define DRAW_PIECE_QUEUE_LEN (10)
-#define CLEAR_ROW_QUEUE_LEN (10)
-#define MOVE_QUEUE_LEN (10)
-#define DRAW_NEXT_QUEUE_LEN (4)
-#define DRAW_HOLD_QUEUE_LEN (2)
-#define SCORE_QUEUE_LEN (10)
-
-#define NUM_DISPLAY_BUFFERS (2)
 
 /** \brief Piece types */
 #define PIECE_UNDEFINED (-1)
@@ -243,64 +233,7 @@ extern BOOL score_rows_cleared(struct PlayerState *player_state, int num_rows);
 extern void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN]);
 
 
-// DRAW, CLEAR AND MOVE QUEUES
-
-struct PieceQueueItem {
-    UINT8 piece, rotation, row;
-    INT8 col;  // needs to be able to draw negative !!!
-    BOOL clear; // if TRUE, clear after draw
-};
-struct RowQueueItem {
-    UINT8 row, num_rows;
-};
-
-RATR0_QUEUE_ARR_DEF(draw_piece_queue, struct PieceQueueItem,
-                    DRAW_PIECE_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR_DEF(clear_piece_queue, struct PieceQueueItem,
-                    DRAW_PIECE_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR_DEF(clear_row_queue, struct RowQueueItem,
-                    CLEAR_ROW_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-/**
- * The Move queue is to store the actions to move regions of block rows
- * after lines where deleted
- */
-struct MoveQueueItem {
-    int from, to, num_rows;
-};
-
-RATR0_QUEUE_ARR_DEF(move_queue, struct MoveQueueItem, MOVE_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-
-struct NextQueueItem {
-    UINT8 piece, position;
-};
-
-RATR0_QUEUE_ARR_DEF(next_queue, struct NextQueueItem, DRAW_NEXT_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-struct HoldQueueItem {
-    UINT8 piece;
-};
-
-RATR0_QUEUE_ARR_DEF(hold_queue, struct HoldQueueItem, DRAW_HOLD_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-struct DigitQueueItem {
-    UINT8 digit;
-    UINT8 rpos;
-};
-
-RATR0_QUEUE_ARR_DEF(score_queue, struct DigitQueueItem, SCORE_QUEUE_LEN,
-                    NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR_DEF(level_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
-RATR0_QUEUE_ARR_DEF(lines_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
+extern UINT8 piece_queue[PIECE_QUEUE_LEN];
+extern UINT8 piece_queue_idx;
 
 #endif // !__GAME_DATA_H__

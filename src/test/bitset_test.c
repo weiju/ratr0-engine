@@ -73,13 +73,7 @@ int main(int argc, char **argv)
     chibi_summary_data summary;
     chibi_suite *suite = CoreSuite();
 
-    if (argc > 1 && !strncmp("xml", argv[1], 3)) {
-        chibi_suite_run_xml(suite, &summary, "test-reports");
-    } else if (argc > 1 && !strncmp("tap", argv[1], 3)) {
-        chibi_suite_run_tap(suite, &summary);
-    } else {
-        chibi_suite_run(suite, &summary);
-    }
+    chibi_suite_run(suite, &summary);
     chibi_suite_delete(suite);
     return summary.num_failures;
 }

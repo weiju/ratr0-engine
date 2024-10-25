@@ -12,7 +12,7 @@ struct MyStruct {
 #define ARR_SIZE 2
 #define QUEUE_SIZE 3
 
-RATR0_QUEUE_ARR(myqueue, struct MyStruct, QUEUE_SIZE, 2);
+RATR0_QUEUE_ARR(myqueue, struct MyStruct, QUEUE_SIZE, 2)
 
 /*
  * TEST CASES

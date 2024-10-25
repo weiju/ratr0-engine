@@ -883,29 +883,6 @@ void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN])
     }
 }
 
-/**
- * For each one of the double buffers, create a draw and clear queue
- */
-RATR0_QUEUE_ARR(draw_piece_queue, struct PieceQueueItem, DRAW_PIECE_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR(clear_piece_queue, struct PieceQueueItem, DRAW_PIECE_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR(clear_row_queue, struct RowQueueItem, CLEAR_ROW_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, MOVE_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR(next_queue, struct NextQueueItem, DRAW_NEXT_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR(hold_queue, struct HoldQueueItem, DRAW_HOLD_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-
-RATR0_QUEUE_ARR(score_queue, struct DigitQueueItem, SCORE_QUEUE_LEN,
-                NUM_DISPLAY_BUFFERS)
-RATR0_QUEUE_ARR(level_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
-RATR0_QUEUE_ARR(lines_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
-
+// Game Global piece queue
+UINT8 piece_queue[PIECE_QUEUE_LEN];
+UINT8 piece_queue_idx = 0;

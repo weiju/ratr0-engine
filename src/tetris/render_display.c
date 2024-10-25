@@ -1,0 +1,133 @@
+#include <ratr0/ratr0.h>
+#include "render_display.h"
+#include "draw_primitives.h"
+
+/**
+ * For each one of the double buffers, create a draw and clear queue
+ */
+RATR0_QUEUE_ARR(draw_piece_queue, struct PieceQueueItem, DRAW_PIECE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(clear_piece_queue, struct PieceQueueItem, DRAW_PIECE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(clear_row_queue, struct RowQueueItem, CLEAR_ROW_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(move_queue, struct MoveQueueItem, MOVE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(next_queue, struct NextQueueItem, DRAW_NEXT_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(hold_queue, struct HoldQueueItem, DRAW_HOLD_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+
+RATR0_QUEUE_ARR(score_queue, struct DigitQueueItem, SCORE_QUEUE_LEN,
+                NUM_DISPLAY_BUFFERS)
+RATR0_QUEUE_ARR(level_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
+RATR0_QUEUE_ARR(lines_queue, struct DigitQueueItem, 2, NUM_DISPLAY_BUFFERS)
+
+
+void draw_hold_piece(struct Ratr0DisplayBuffer *backbuffer,
+                     struct Ratr0Surface *preview_surface,
+                     UINT8 piece)
+{
+    draw_preview_piece(&backbuffer->surface, preview_surface, piece, 64, 47);
+}
+
+void draw_next_piece(struct Ratr0DisplayBuffer *backbuffer,
+                     struct Ratr0Surface *preview_surface,
+                     UINT8 pos, UINT8 piece)
+{
+    draw_preview_piece(&backbuffer->surface, preview_surface, piece, 208,
+                       48 + 20 * pos);
+}
+
+void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer,
+                      struct Ratr0Surface *digits_surface,
+                      UINT8 rpos, UINT8 digit)
+{
+    draw_digit8(&backbuffer->surface, digits_surface, digit, 72 - 8 * rpos, 164);
+}
+
+void enqueue_next3(void)
+{
+    int pq_index;
+    struct NextQueueItem next_item;
+    for (int i = 0; i < 3; i++) {
+        pq_index = (piece_queue_idx + i) % PIECE_QUEUE_LEN;
+        next_item.piece = piece_queue[pq_index];
+        next_item.position = i;
+        // Enqueue in both buffers
+        RATR0_ENQUEUE_ARR(next_queue, 0, next_item);
+        RATR0_ENQUEUE_ARR(next_queue, 1, next_item);
+    }
+}
+
+/**
+ * This is the drawing section:
+ * 1. process all queued up clear commands for the current buffer
+ * 2. then draw all queued up draw command for the current buffer
+ */
+void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
+                         struct Ratr0Surface *tiles_surface,
+                         struct Ratr0Surface *preview_surface)
+{
+    struct PieceQueueItem piece_queue_item;
+    struct RowQueueItem row_queue_item;
+    struct RotationSpec *queued_spec;
+    struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
+    int cur_buffer = backbuffer->buffernum;
+    // 1. Clear queue to clean up pieces from the previous render pass
+    while (clear_piece_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(piece_queue_item, clear_piece_queue, cur_buffer);
+        queued_spec = &PIECE_SPECS[piece_queue_item.piece].rotations[piece_queue_item.rotation];
+        clear_piece(backbuffer_surface,
+                    &queued_spec->draw_spec, piece_queue_item.row,
+                    piece_queue_item.col);
+    }
+    while (clear_row_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(row_queue_item, clear_row_queue, cur_buffer);
+        clear_rect(backbuffer_surface, row_queue_item.row,
+                   0, row_queue_item.num_rows, BOARD_WIDTH);
+    }
+
+    // 2. draw all enqueued items
+    while (draw_piece_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(piece_queue_item, draw_piece_queue, cur_buffer);
+        queued_spec = &PIECE_SPECS[piece_queue_item.piece].rotations[piece_queue_item.rotation];
+        draw_piece(backbuffer_surface, tiles_surface,
+                   &queued_spec->draw_spec,
+                   piece_queue_item.piece,
+                   piece_queue_item.row,
+                   piece_queue_item.col);
+
+        // put this piece in the clear buffer for next time this
+        // frame gets drawn
+        if (piece_queue_item.clear) {
+            RATR0_ENQUEUE_ARR(clear_piece_queue, cur_buffer, piece_queue_item);
+        }
+    }
+    render_preview_queues(backbuffer, preview_surface, cur_buffer);
+}
+
+void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
+                           struct Ratr0Surface *preview_surface,
+                           int cur_buffer)
+{
+    // PREVIEW (NEXT and HOLD)
+    struct NextQueueItem next_item;
+    struct HoldQueueItem hold_item;
+
+    while (next_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(next_item, next_queue, cur_buffer);
+        draw_next_piece(backbuffer, preview_surface,
+                        next_item.position, next_item.piece);
+    }
+    while (hold_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(hold_item, hold_queue, cur_buffer);
+        draw_hold_piece(backbuffer, preview_surface,
+                        hold_item.piece);
+    }
+}
