@@ -85,13 +85,27 @@ extern void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer,
                              struct Ratr0Surface *digits_surface,
                              UINT8 rpos, UINT8 digit);
 
+extern void draw_level_digit(struct Ratr0DisplayBuffer *backbuffer,
+                             struct Ratr0Surface *digits_surface,
+                             UINT8 rpos, UINT8 digit);
+
+extern void draw_lines_digit(struct Ratr0DisplayBuffer *backbuffer,
+                             struct Ratr0Surface *digits_surface,
+                             UINT8 rpos, UINT8 digit);
+
 extern void enqueue_next3(void);
 extern void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
                                   struct Ratr0Surface *preview_surface,
                                   int cur_buffer);
+extern void render_score_queues(struct Ratr0DisplayBuffer *backbuffer,
+                                struct Ratr0Surface *digits16_surface,
+                                int cur_buffer);
+
+
 extern void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
                                 struct Ratr0Surface *tiles_surface,
-                                struct Ratr0Surface *preview_surface);
+                                struct Ratr0Surface *preview_surface,
+                                struct Ratr0Surface *digits16_surface);
 
 
 extern void process_move_queue(struct Ratr0DisplayBuffer *backbuffer);

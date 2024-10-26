@@ -140,6 +140,23 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
     if (engine->input_system->was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
+    draw_level_digit(backbuffer, &digits16_surface, 0, '2');
+    draw_lines_digit(backbuffer, &digits16_surface, 0, '3');
+}
+
+
+void _update_level(void)
+{
+    struct DigitQueueItem digit = {player_state.difficulty_level, 0};
+    RATR0_ENQUEUE_ARR(level_queue, 0, digit);
+    RATR0_ENQUEUE_ARR(level_queue, 1, digit);
+}
+
+void _update_lines(void)
+{
+    struct DigitQueueItem digit = {player_state.level_cleared_rows, 0};
+    RATR0_ENQUEUE_ARR(lines_queue, 0, digit);
+    RATR0_ENQUEUE_ARR(lines_queue, 1, digit);
 }
 
 /**
@@ -185,7 +202,9 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         if (level_increased) {
             // TODO: update level and drop speed display in the UI
             // by adding commands to the queue
+            _update_level();
         }
+        _update_lines();
 
         // play completed sound
         ratr0_audio_play_sound(&completed_sound, SOUNDFX_CHANNEL);
@@ -237,7 +256,8 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     }
     // move must come before blit, because the blit queues will delete rows !!!
     process_move_queue(backbuffer);
-    process_blit_queues(backbuffer, &tiles_surface, &preview_surface);
+    process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
+                        &digits16_surface);
     done_delete_lines++;
     // switch to next state after 2 frames elapsed
     if (done_delete_lines >= 2) {
@@ -292,7 +312,8 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
             this_scene->update = main_scene_update;
         }
     }
-    process_blit_queues(backbuffer, &tiles_surface, &preview_surface);
+    process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
+                        &digits16_surface);
     debug_current_frame++;
 }
 
@@ -449,7 +470,8 @@ void main_scene_update(struct Ratr0Scene *this_scene,
         RATR0_ENQUEUE_ARR(draw_piece_queue, cur_buffer, piece_to_draw);
         drop_timer--;
     }
-    process_blit_queues(backbuffer, &tiles_surface, &preview_surface);
+    process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
+                        &digits16_surface);
     if (landed) {
         hide_ghost_piece(this_scene);
     } else {
@@ -536,6 +558,8 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     piece_queue_idx = 0;
     spawn_next_piece();
     enqueue_next3();
+    _update_level();
+    _update_lines();
     player_state.can_swap_hold = TRUE;
 
     // start bg music

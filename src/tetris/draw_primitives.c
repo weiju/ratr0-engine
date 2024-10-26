@@ -292,7 +292,7 @@ void draw_digit8(struct Ratr0Surface *surface,
     ratr0_blit_ad_d(surface, digits_surface,
                     0, tiley, // src
                     x, y, // dest
-                    0xfc,  // D <- A + D
+                    0xf0,  // D <- A
                     0, // never shift
                     afwm, 0xffff,
                     1, 8); // always 1 word, always 8 pixels
@@ -308,7 +308,7 @@ void draw_digit16(struct Ratr0Surface *surface,
     ratr0_blit_ad_d(surface, digits_surface,
                     0, tiley, // src
                     x, y, // dest
-                    0xfc,  // D <- A + D
+                    0xf0,  // D <- A
                     0, // never shift
                     0xffff, 0xffff,
                     1, 16); // always 1 word, always 16 pixels

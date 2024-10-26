@@ -44,6 +44,20 @@ void draw_next_piece(struct Ratr0DisplayBuffer *backbuffer,
                        48 + 20 * pos);
 }
 
+void draw_level_digit(struct Ratr0DisplayBuffer *backbuffer,
+                      struct Ratr0Surface *digits_surface,
+                      UINT8 rpos, UINT8 digit)
+{
+    draw_digit16(&backbuffer->surface, digits_surface, digit, 88 - 16 * rpos, 116);
+}
+
+void draw_lines_digit(struct Ratr0DisplayBuffer *backbuffer,
+                      struct Ratr0Surface *digits_surface,
+                      UINT8 rpos, UINT8 digit)
+{
+    draw_digit16(&backbuffer->surface, digits_surface, digit, 88 - 16 * rpos, 89);
+}
+
 void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer,
                       struct Ratr0Surface *digits_surface,
                       UINT8 rpos, UINT8 digit)
@@ -72,7 +86,8 @@ void enqueue_next3(void)
  */
 void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
                          struct Ratr0Surface *tiles_surface,
-                         struct Ratr0Surface *preview_surface)
+                         struct Ratr0Surface *preview_surface,
+                         struct Ratr0Surface *digits16_surface)
 {
     struct PieceQueueItem piece_queue_item;
     struct RowQueueItem row_queue_item;
@@ -110,6 +125,7 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
         }
     }
     render_preview_queues(backbuffer, preview_surface, cur_buffer);
+    render_score_queues(backbuffer, digits16_surface, cur_buffer);
 }
 
 void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
@@ -129,6 +145,24 @@ void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
         RATR0_DEQUEUE_ARR(hold_item, hold_queue, cur_buffer);
         draw_hold_piece(backbuffer, preview_surface,
                         hold_item.piece);
+    }
+}
+
+void render_score_queues(struct Ratr0DisplayBuffer *backbuffer,
+                         struct Ratr0Surface *digits16_surface,
+                         int cur_buffer)
+{
+    struct DigitQueueItem digit_item;
+
+    while (level_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(digit_item, level_queue, cur_buffer);
+        draw_level_digit(backbuffer, digits16_surface,
+                         digit_item.rpos, '0' + digit_item.digit);
+    }
+    while (lines_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(digit_item, lines_queue, cur_buffer);
+        draw_lines_digit(backbuffer, digits16_surface,
+                         digit_item.rpos, '0' + digit_item.digit);
     }
 }
 
