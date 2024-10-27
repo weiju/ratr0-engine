@@ -45,9 +45,9 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 #define SOUND_ROTATE_PATH ("tetris/assets/bb-bathit.raw8")
 #define SOUND_DROP_PATH "tetris/assets/beep8bit.raw8"
 #define SOUND_DELETELINES_PATH "tetris/assets/laser_zap.raw8"
+#define SOUND_GAMEOVER_PATH "tetris/assets/sad_wah.raw8"
 
 #define MUSIC_MAIN_PATH "tetris/soundtrack/onlyamiga.mod"
-//#define MUSIC_MAIN_PATH "tetris/assets/youtube.mod"
 #define SOUNDFX_CHANNEL (3)
 
 struct Ratr0TileSheet background_ts, tiles_ts, digits_ts,
@@ -56,7 +56,8 @@ struct Ratr0Surface tiles_surface, digits_surface, digits16_surface,
     preview_surface;
 
 // sound and music
-struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound;
+struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound,
+    gameover_sound;
 struct Ratr0AudioProtrackerMod main_music;
 
 // ghost piece outline
@@ -129,6 +130,41 @@ int done = 0;
 void main_scene_update(struct Ratr0Scene *this_scene,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed);
+
+
+BOOL done_gameover_once = FALSE;
+void main_scene_gameover(struct Ratr0Scene *this_scene,
+                         struct Ratr0DisplayBuffer *backbuffer,
+                         UINT8 frame_elapsed) {
+    if (engine->input_system->was_action_pressed(action_quit)) {
+        ratr0_engine_exit();
+    }
+
+    if (!done_gameover_once) {
+        // 1. establish the piece in the board by enqueueing the dropped
+        // piece, this makes sure it does not blink
+        int cur_buffer = backbuffer->buffernum;
+        struct PieceQueueItem dropped_item = (struct PieceQueueItem) {
+            current_piece.piece, current_piece.rotation,
+            current_piece.row, current_piece.col, FALSE
+        };
+        RATR0_ENQUEUE_ARR(draw_piece_queue, cur_buffer, dropped_item);
+        RATR0_ENQUEUE_ARR(draw_piece_queue, ((cur_buffer + 1) % 2), dropped_item);
+
+        // 2. play game over sound
+        ratr0_audio_play_sound(&gameover_sound, SOUNDFX_CHANNEL);
+
+        // 3. stop music
+        ratr0_audio_stop_mod();
+
+        // 4. TODO: display the game over message.
+
+        done_gameover_once = TRUE;
+    }
+
+    process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
+                        &digits16_surface);
+}
 
 /**
  * DEBUG STATE. Use this state to quickly simulate game situations
@@ -454,7 +490,9 @@ void main_scene_update(struct Ratr0Scene *this_scene,
         landed = piece_landed(&current_piece, &gameboard0);
         if (landed) {
             done_establish = FALSE;
-            this_scene->update = main_scene_establish_piece;
+            this_scene->update = (current_piece.row == 0) ?
+                this_scene->update = main_scene_gameover :
+                main_scene_establish_piece;
         } else {
             current_piece.row++;
         }
@@ -525,6 +563,7 @@ void _load_resources(void)
     ratr0_resources_read_audiosample(SOUND_DROP_PATH, &drop_sound);
     ratr0_resources_read_audiosample(SOUND_ROTATE_PATH, &rotate_sound);
     ratr0_resources_read_audiosample(SOUND_DELETELINES_PATH, &completed_sound);
+    ratr0_resources_read_audiosample(SOUND_GAMEOVER_PATH, &gameover_sound);
 
     BOOL ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
     if (!ret) {
@@ -561,6 +600,7 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     _update_level();
     _update_lines();
     player_state.can_swap_hold = TRUE;
+    done_gameover_once = FALSE;
 
     // start bg music
     ratr0_audio_play_mod(&main_music);
