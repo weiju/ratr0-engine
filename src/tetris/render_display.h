@@ -110,4 +110,6 @@ extern void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
 
 extern void process_move_queue(struct Ratr0DisplayBuffer *backbuffer);
 
+extern void clear_render_queues(void);
+
 #endif // __RENDER_DISPLAY_H__

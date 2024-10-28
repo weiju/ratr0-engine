@@ -204,3 +204,18 @@ void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
         _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
     }
 }
+
+void clear_render_queues(void)
+{
+    for (int i = 0; i < 2; i++) {
+        RATR0_CLEAR_QUEUE_ARR(draw_piece_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(clear_piece_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(clear_row_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(move_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(next_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(hold_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(score_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(level_queue, i)
+        RATR0_CLEAR_QUEUE_ARR(lines_queue, i)
+    }
+}

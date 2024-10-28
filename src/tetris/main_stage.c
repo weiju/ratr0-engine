@@ -600,7 +600,25 @@ void main_stage_on_enter(struct Ratr0Scene *this_scene)
 
 void main_stage_on_exit(struct Ratr0Scene *this_scene)
 {
-    // TODO: free all memory from the assets
+    // free all memory from the assets in reverse order
+    // to make sure it all becomes available again
+    // note: we could have RATR0 have a deallocation marker
+    // so the memory could be freed all at once
+    ratr0_resources_free_protracker_data(&main_music);
+    ratr0_resources_free_audiosample_data(&gameover_sound);
+    ratr0_resources_free_audiosample_data(&completed_sound);
+    ratr0_resources_free_audiosample_data(&rotate_sound);
+    ratr0_resources_free_audiosample_data(&drop_sound);
+
+    ratr0_resources_free_tilesheet_data(&preview_ts);
+    ratr0_resources_free_tilesheet_data(&digits16_ts);
+    ratr0_resources_free_tilesheet_data(&digits_ts);
+
+    ratr0_resources_free_spritesheet_data(&outlines_sheet);
+    ratr0_resources_free_tilesheet_data(&tiles_ts);
+
+    // clear all rendering related queues
+    clear_render_queues();
 }
 
 struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)

@@ -87,4 +87,15 @@
     q ## _first[i] = (q ## _first[i] + 1) % q ## _size ; \
     q ## _num_elems[i]--; // end of dequeue array macro
 
+
+/**
+ * Clears a queue array.
+ *
+ * @param q Name of the queue array
+ * @param i Index of the queue
+ */
+#define RATR0_CLEAR_QUEUE_ARR(q, i) \
+    q ## _first[i] = 0; \
+    q ## _num_elems[i] = 0; // end of clear queue array macro
+
 #endif /* __RATR0_QUEUE_H__ */
