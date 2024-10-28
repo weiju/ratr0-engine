@@ -522,8 +522,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     debug_current_frame++;
 }
 
-
-void _load_resources(void)
+static void _load_resources(void)
 {
     // Load background
     struct Ratr0Surface bg_surf;
@@ -572,15 +571,8 @@ void _load_resources(void)
     }
 }
 
-struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+void main_stage_on_enter(struct Ratr0Scene *this_scene)
 {
-    engine = eng;
-    // Use the scenes module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
-    struct Ratr0Scene *main_scene = node_factory->create_scene();
-    //main_scene->update = main_scene_debug;
-    main_scene->update = main_scene_update;
-
     // set new copper list
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
                                    &TETRIS_COPPER_INFO);
@@ -604,5 +596,23 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
 
     // start bg music
     ratr0_audio_play_mod(&main_music);
+}
+
+void main_stage_on_exit(struct Ratr0Scene *this_scene)
+{
+    // TODO: free all memory from the assets
+}
+
+struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+{
+    engine = eng;
+    // Use the scenes module to create a scene and run that
+    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
+    struct Ratr0Scene *main_scene = node_factory->create_scene();
+    //main_scene->update = main_scene_debug;
+    main_scene->update = main_scene_update;
+    main_scene->on_enter = main_stage_on_enter;
+    main_scene->on_exit = main_stage_on_exit;
+
     return main_scene;
 }

@@ -18,8 +18,6 @@ struct Ratr0Scene;
  * A scene is a component of a game. It contains the movable and static game objects
  * and the assets. The game can also provide functions for transitions and scene specific
  * updates.
- *
- * TODO: We should strongly consider having a copper list per scene
  */
 struct Ratr0Scene {
 
@@ -70,7 +68,6 @@ struct Ratr0Scene {
      * @param bob the BOB to add to the scene
      */
     void (*add_bob)(struct Ratr0Scene *this_scene, struct Ratr0Bob *bob);
-
 
     /**
      * User provided function that is called when this scene is set to the current scene.

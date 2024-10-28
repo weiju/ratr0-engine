@@ -1,6 +1,6 @@
 /** @file main_stage.h
  *
- * Centipede main scene.
+ * Tetra Zone main stage.
  */
 #pragma once
 #ifndef __MAIN_STAGE_H__

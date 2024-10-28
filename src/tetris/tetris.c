@@ -1,6 +1,7 @@
 /** @file centipede.c - a demo centipede  */
 #include <ratr0/ratr0.h>
 #include "main_stage.h"
+#include "title_screen.h"
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mTETRIS\033[0m", __VA_ARGS__)
 
@@ -60,7 +61,8 @@ int main(int argc, char **argv)
                                               RATR0_KEY_ESCAPE);
 
 
-    struct Ratr0Scene *main_scene = setup_main_scene(engine);
+    //struct Ratr0Scene *main_scene = setup_main_scene(engine);
+    struct Ratr0Scene *main_scene = setup_titlescreen_scene(engine);
     engine->scenes_system->set_current_scene(main_scene);
 
     // START THE ENGINE !!!!
