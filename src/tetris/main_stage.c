@@ -164,7 +164,7 @@ void main_scene_gameover(struct Ratr0Scene *this_scene,
     }
 
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
-                        &digits16_surface);
+                        &digits16_surface, &digits_surface);
 }
 
 /**
@@ -179,6 +179,10 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
     }
     draw_level_digit(backbuffer, &digits16_surface, 0, '2');
     draw_lines_digit(backbuffer, &digits16_surface, 0, '3');
+    draw_score_digit(backbuffer, &digits_surface, 3, '1');
+    draw_score_digit(backbuffer, &digits_surface, 2, '4');
+    draw_score_digit(backbuffer, &digits_surface, 1, '2');
+    draw_score_digit(backbuffer, &digits_surface, 0, '3');
 }
 
 
@@ -207,6 +211,29 @@ void _update_lines(void)
         digit.rpos = i;
         RATR0_ENQUEUE_ARR(lines_queue, 0, digit);
         RATR0_ENQUEUE_ARR(lines_queue, 1, digit);
+    }
+}
+
+void _enqueue_score_digits(UINT16 oldscore, UINT16 newscore)
+{
+    if (oldscore != newscore) {
+        UINT8 digit_buffer[10];
+        UINT8 num_digits = extract_digits(digit_buffer, 8, newscore);
+        if (num_digits % 2 == 1) {
+            digit_buffer[num_digits++] = '0';
+        }
+        struct DigitQueueItem digit = { '0', 0 };
+        for (int i = 0; i < num_digits; i += 2) {
+            digit.rpos = i + 1;
+            digit.digit = digit_buffer[i + 1];
+            RATR0_ENQUEUE_ARR(score_queue, 0, digit);
+            RATR0_ENQUEUE_ARR(score_queue, 1, digit);
+
+            digit.rpos = i;
+            digit.digit = digit_buffer[i];
+            RATR0_ENQUEUE_ARR(score_queue, 0, digit);
+            RATR0_ENQUEUE_ARR(score_queue, 1, digit);
+        }
     }
 }
 
@@ -239,6 +266,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
                              UINT8 frames_elapsed)
 {
     int cur_buffer = backbuffer->buffernum;
+    UINT16 original_score = player_state.score;
 
     // make sure this only gets executed once !!! Otherwise this will
     // keep queueing clear requests
@@ -251,11 +279,12 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         BOOL level_increased = score_rows_cleared(&player_state,
                                                   completed_rows.count);
         if (level_increased) {
-            // TODO: update level and drop speed display in the UI
+            // update level and drop speed display in the UI
             // by adding commands to the queue
             _update_level();
         }
         _update_lines();
+        _enqueue_score_digits(original_score, player_state.score);
 
         // play completed sound
         ratr0_audio_play_sound(&completed_sound, SOUNDFX_CHANNEL);
@@ -308,7 +337,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
     // move must come before blit, because the blit queues will delete rows !!!
     process_move_queue(backbuffer);
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
-                        &digits16_surface);
+                        &digits16_surface, &digits_surface);
     done_delete_lines++;
     // switch to next state after 2 frames elapsed
     if (done_delete_lines >= 2) {
@@ -364,7 +393,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
         }
     }
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
-                        &digits16_surface);
+                        &digits16_surface, &digits_surface);
     debug_current_frame++;
 }
 
@@ -377,6 +406,7 @@ void main_scene_update(struct Ratr0Scene *this_scene,
                        UINT8 frames_elapsed)
 {
     int cur_buffer = backbuffer->buffernum;
+    int original_score = player_state.score;
 
     // For now, end when the mouse was clicked. This is just for testing
     if (engine->input_system->was_action_pressed(action_quit)) {
@@ -406,8 +436,6 @@ void main_scene_update(struct Ratr0Scene *this_scene,
             score_soft_drop(&player_state);
             current_piece.row++;
             drop_timer = player_state.drop_timer_value; // reset drop timer
-
-            // TODO: update score panel
         }
     } else if (engine->input_system->was_action_pressed(action_drop)) {
         // QUICK DROP
@@ -433,7 +461,6 @@ void main_scene_update(struct Ratr0Scene *this_scene,
             // this means we drop immediately
             drop_timer = 0;
             quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
-            // TODO: update score panel
         }
     } else if (engine->input_system->was_action_pressed(action_rotate_right)) {
         // rotate right with wall kick
@@ -523,8 +550,11 @@ void main_scene_update(struct Ratr0Scene *this_scene,
         RATR0_ENQUEUE_ARR(draw_piece_queue, cur_buffer, piece_to_draw);
         drop_timer--;
     }
+
+    _enqueue_score_digits(original_score, player_state.score);
+
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
-                        &digits16_surface);
+                        &digits16_surface, &digits_surface);
     if (landed) {
         hide_ghost_piece(this_scene);
     } else {
@@ -586,6 +616,20 @@ static void _load_resources(void)
     }
 }
 
+void _clear_score_panel(void)
+{
+    struct DigitQueueItem digit = { '0', 0 };
+    for (int i = 0; i < 8; i += 2) {
+        digit.rpos = i + 1;
+        RATR0_ENQUEUE_ARR(score_queue, 0, digit);
+        RATR0_ENQUEUE_ARR(score_queue, 1, digit);
+
+        digit.rpos = i;
+        RATR0_ENQUEUE_ARR(score_queue, 0, digit);
+        RATR0_ENQUEUE_ARR(score_queue, 1, digit);
+    }
+}
+
 void main_stage_on_enter(struct Ratr0Scene *this_scene)
 {
     // set new copper list
@@ -607,6 +651,7 @@ void main_stage_on_enter(struct Ratr0Scene *this_scene)
 
     _update_level();
     _update_lines();
+    _clear_score_panel();
     player_state.can_swap_hold = TRUE;
     done_gameover_once = FALSE;
 

@@ -87,7 +87,8 @@ void enqueue_next3(void)
 void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
                          struct Ratr0Surface *tiles_surface,
                          struct Ratr0Surface *preview_surface,
-                         struct Ratr0Surface *digits16_surface)
+                         struct Ratr0Surface *digits16_surface,
+                         struct Ratr0Surface *digits_surface)
 {
     struct PieceQueueItem piece_queue_item;
     struct RowQueueItem row_queue_item;
@@ -125,7 +126,7 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
         }
     }
     render_preview_queues(backbuffer, preview_surface, cur_buffer);
-    render_score_queues(backbuffer, digits16_surface, cur_buffer);
+    render_score_queues(backbuffer, digits16_surface, digits_surface, cur_buffer);
 }
 
 void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
@@ -150,6 +151,7 @@ void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
 
 void render_score_queues(struct Ratr0DisplayBuffer *backbuffer,
                          struct Ratr0Surface *digits16_surface,
+                         struct Ratr0Surface *digits_surface,
                          int cur_buffer)
 {
     struct DigitQueueItem digit_item;
@@ -162,6 +164,11 @@ void render_score_queues(struct Ratr0DisplayBuffer *backbuffer,
     while (lines_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(digit_item, lines_queue, cur_buffer);
         draw_lines_digit(backbuffer, digits16_surface,
+                         digit_item.rpos, digit_item.digit);
+    }
+    while (score_queue_num_elems[cur_buffer] > 0) {
+        RATR0_DEQUEUE_ARR(digit_item, score_queue, cur_buffer);
+        draw_score_digit(backbuffer, digits_surface,
                          digit_item.rpos, digit_item.digit);
     }
 }

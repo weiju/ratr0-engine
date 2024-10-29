@@ -275,6 +275,14 @@ void clear_piece(struct Ratr0Surface *backbuffer_surface,
 
 /**
  * the digit is '0'-'9' or '.' or ':'
+ * In order to minimize blits, we need to be aware of the fact that
+ * the lf byte is different at the even position from the odd position
+ * The even position will blit D <- A, meaning the odd position will be
+ * cleared out, and in order to blit the odd position correctly, we need
+ * to blit that position with an LF byte of D <- A + D, and requiring the
+ * even position has already been blitted.
+ * The consequence of that is that we always need to blit 2 positions
+ * together to have a correct display
  */
 void draw_digit8(struct Ratr0Surface *surface,
                  struct Ratr0Surface *digits_surface,
@@ -282,17 +290,19 @@ void draw_digit8(struct Ratr0Surface *surface,
                  UINT16 x, UINT16 y)
 {
     UINT16 afwm = 0xff00;
+    UINT8 lf = 0xf0; // D <- A
 
     // the position within the 16 pixel 0 means 0, 1 means 8
     int tiley = (digit - '0')  * 8; // this is the row in the tile set
     if ((x % 16) == 8) {
         afwm = 0x00ff; // use the second 8 pixel block
         x -= 8; // align x to 16 pixel boundary
+        lf = 0xfc; // draw the position using D <- A + D
     }
     ratr0_blit_ad_d(surface, digits_surface,
                     0, tiley, // src
                     x, y, // dest
-                    0xf0,  // D <- A
+                    lf,
                     0, // never shift
                     afwm, 0xffff,
                     1, 8); // always 1 word, always 8 pixels

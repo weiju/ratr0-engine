@@ -81,6 +81,11 @@ extern void draw_hold_piece(struct Ratr0DisplayBuffer *backbuffer,
 extern void draw_next_piece(struct Ratr0DisplayBuffer *backbuffer,
                             struct Ratr0Surface *preview_surface,
                             UINT8 pos, UINT8 piece);
+
+/**
+ * Draws an 8 pixel wide digit. Be aware that if rpos % 8 == 0,
+ * then x % 8 will be != 0
+ */
 extern void draw_score_digit(struct Ratr0DisplayBuffer *backbuffer,
                              struct Ratr0Surface *digits_surface,
                              UINT8 rpos, UINT8 digit);
@@ -99,13 +104,15 @@ extern void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
                                   int cur_buffer);
 extern void render_score_queues(struct Ratr0DisplayBuffer *backbuffer,
                                 struct Ratr0Surface *digits16_surface,
+                                struct Ratr0Surface *digits_surface,
                                 int cur_buffer);
 
 
 extern void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
                                 struct Ratr0Surface *tiles_surface,
                                 struct Ratr0Surface *preview_surface,
-                                struct Ratr0Surface *digits16_surface);
+                                struct Ratr0Surface *digits16_surface,
+                                struct Ratr0Surface *digits_surface);
 
 
 extern void process_move_queue(struct Ratr0DisplayBuffer *backbuffer);
