@@ -11,6 +11,7 @@
 #include "game_data.h"
 #include "draw_primitives.h"
 #include "render_display.h"
+#include "utils.h"
 
 struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
     3, 5, 7, 9,
@@ -183,16 +184,30 @@ void main_scene_debug(struct Ratr0Scene *this_scene,
 
 void _update_level(void)
 {
-    struct DigitQueueItem digit = {player_state.difficulty_level, 0};
-    RATR0_ENQUEUE_ARR(level_queue, 0, digit);
-    RATR0_ENQUEUE_ARR(level_queue, 1, digit);
+    UINT8 digit_buffer[4];
+    UINT8 num_digits = extract_digits(digit_buffer, 4,
+                                      player_state.difficulty_level);
+    struct DigitQueueItem digit;
+    for (int i = 0; i < num_digits; i++) {
+        digit.digit = digit_buffer[i];
+        digit.rpos = i;
+        RATR0_ENQUEUE_ARR(level_queue, 0, digit);
+        RATR0_ENQUEUE_ARR(level_queue, 1, digit);
+    }
 }
 
 void _update_lines(void)
 {
-    struct DigitQueueItem digit = {player_state.level_cleared_rows, 0};
-    RATR0_ENQUEUE_ARR(lines_queue, 0, digit);
-    RATR0_ENQUEUE_ARR(lines_queue, 1, digit);
+    UINT8 digit_buffer[4];
+    UINT8 num_digits = extract_digits(digit_buffer, 4,
+                                      player_state.level_cleared_rows);
+    struct DigitQueueItem digit;
+    for (int i = 0; i < num_digits; i++) {
+        digit.digit = digit_buffer[i];
+        digit.rpos = i;
+        RATR0_ENQUEUE_ARR(lines_queue, 0, digit);
+        RATR0_ENQUEUE_ARR(lines_queue, 1, digit);
+    }
 }
 
 /**
@@ -589,6 +604,7 @@ void main_stage_on_enter(struct Ratr0Scene *this_scene)
     piece_queue_idx = 0;
     spawn_next_piece();
     enqueue_next3();
+
     _update_level();
     _update_lines();
     player_state.can_swap_hold = TRUE;

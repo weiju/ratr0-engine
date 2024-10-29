@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../tetris/game_data.h"
+#include "../tetris/utils.h"
 #include "../../chibi_test/chibi.h"
 
 UINT8 gameboard[BOARD_HEIGHT][BOARD_WIDTH];
@@ -476,6 +477,36 @@ CHIBI_TEST(TestDeleteRowsFromBoard_3Rows2Regions)
     }
 }
 
+CHIBI_TEST(TestNumDigits)
+{
+    chibi_assert_eq_int(1, num_digits(3));
+    chibi_assert_eq_int(2, num_digits(42));
+    chibi_assert_eq_int(3, num_digits(523));
+}
+
+CHIBI_TEST(TestExtractDigits)
+{
+    UINT8 buffer[4];
+    UINT8 result = extract_digits(buffer, 4, 3);
+    chibi_assert_eq_int(1, result);
+    chibi_assert_eq_int('3', buffer[0]);
+
+    result = extract_digits(buffer, 4, 1);
+    chibi_assert_eq_int(1, result);
+    chibi_assert_eq_int('1', buffer[0]);
+
+    result = extract_digits(buffer, 4, 23);
+    chibi_assert_eq_int(2, result);
+    chibi_assert_eq_int('3', buffer[0]);
+    chibi_assert_eq_int('2', buffer[1]);
+
+    result = extract_digits(buffer, 4, 469);
+    chibi_assert_eq_int(3, result);
+    chibi_assert_eq_int('9', buffer[0]);
+    chibi_assert_eq_int('6', buffer[1]);
+    chibi_assert_eq_int('4', buffer[2]);
+}
+
 /*
  * SUITE DEFINITION
  */
@@ -502,6 +533,8 @@ chibi_suite *CoreSuite(void)
     chibi_suite_add_test(suite, TestDeleteRowsFromBoard_BottomRow);
     chibi_suite_add_test(suite, TestDeleteRowsFromBoard_2TopRows);
     chibi_suite_add_test(suite, TestDeleteRowsFromBoard_3Rows2Regions);
+    chibi_suite_add_test(suite, TestNumDigits);
+    chibi_suite_add_test(suite, TestExtractDigits);
     return suite;
 }
 

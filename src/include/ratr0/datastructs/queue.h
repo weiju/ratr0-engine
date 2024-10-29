@@ -69,9 +69,10 @@
  * @param elem Element to enqueue
  */
 #define RATR0_ENQUEUE_ARR(q, i, elem) \
-    q[i][(q ## _first[i] + q ## _num_elems[i]) % q ## _size] = elem; \
-    q ## _num_elems[i]++; // end of enqueue array macro
-
+    { \
+        q[i][(q ## _first[i] + q ## _num_elems[i]) % q ## _size] = elem; \
+        q ## _num_elems[i]++;                                           \
+    } // end of enqueue_arr macro
 
 /**
  * Dequeue an element from a queue within the queue array. Note that there
@@ -83,9 +84,11 @@
  * @param i Index of the queue
  */
 #define RATR0_DEQUEUE_ARR(result, q, i)  \
-    result = q[i][q ## _first[i]];                       \
-    q ## _first[i] = (q ## _first[i] + 1) % q ## _size ; \
-    q ## _num_elems[i]--; // end of dequeue array macro
+    { \
+        result = q[i][q ## _first[i]];                   \
+        q ## _first[i] = (q ## _first[i] + 1) % q ## _size ;    \
+        q ## _num_elems[i]--;                                   \
+    } // end of dequeue array macro
 
 
 /**
@@ -95,7 +98,9 @@
  * @param i Index of the queue
  */
 #define RATR0_CLEAR_QUEUE_ARR(q, i) \
-    q ## _first[i] = 0; \
-    q ## _num_elems[i] = 0; // end of clear queue array macro
+    { \
+        q ## _first[i] = 0; \
+        q ## _num_elems[i] = 0;                 \
+    } // end of clear queue array macro
 
 #endif /* __RATR0_QUEUE_H__ */

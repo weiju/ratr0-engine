@@ -157,12 +157,12 @@ void render_score_queues(struct Ratr0DisplayBuffer *backbuffer,
     while (level_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(digit_item, level_queue, cur_buffer);
         draw_level_digit(backbuffer, digits16_surface,
-                         digit_item.rpos, '0' + digit_item.digit);
+                         digit_item.rpos, digit_item.digit);
     }
     while (lines_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(digit_item, lines_queue, cur_buffer);
         draw_lines_digit(backbuffer, digits16_surface,
-                         digit_item.rpos, '0' + digit_item.digit);
+                         digit_item.rpos, digit_item.digit);
     }
 }
 

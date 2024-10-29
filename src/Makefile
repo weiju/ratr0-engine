@@ -13,10 +13,10 @@ ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
 HW_OBJECTS=display.o sprites.o blitter.o audio.o
 EXT_OBJECTS=../ptplayer/ptplayer.o
 
-#CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
+CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
 # no optimizations so we can make sure it's not a compiler
 # optimization related bug
-CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -Iinclude
+#CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -Iinclude
 LDFLAGS=-lamiga -lauto
 TEST_CFLAGS=-Iinclude -I../chibi_test
 
@@ -49,7 +49,7 @@ INVADERS_OBJECTS=sinvaders/invaders.o sinvaders/inv_main_stage.o
 CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/main_stage.o
 
 TETRAZONE_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o \
-tetris/title_screen.o tetris/game_data.o \
+tetris/title_screen.o tetris/game_data.o tetris/utils.o \
 tetris/draw_primitives.o tetris/render_display.o
 
 .PHONY : clean check
@@ -128,5 +128,5 @@ quadtree_test: test/quadtree_test.o datastructs/vector.o datastructs/quadtree.o 
 vector_test: test/vector_test.o datastructs/vector.o ../chibi_test/chibi.o
 	$(CC) -o $@ $^
 
-tetris_test: test/tetris_test.o tetris/game_data.o ../chibi_test/chibi.o
+tetris_test: test/tetris_test.o tetris/game_data.o tetris/utils.o ../chibi_test/chibi.o
 	$(CC) $(LDFLAGS) -o $@ $^
