@@ -14,6 +14,8 @@ struct MyStruct {
 
 RATR0_QUEUE_ARR(myqueue, struct MyStruct, QUEUE_SIZE, 2)
 
+RATR0_QUEUE_ARR2(myqueue2, struct MyStruct, QUEUE_SIZE, 2)
+
 /*
  * TEST CASES
  */
@@ -88,6 +90,77 @@ CHIBI_TEST(TestRatr0QueueArrEnqueueWrapped)
     chibi_assert_eq_int(s3.c, myqueue[0][0].c);
 }
 
+
+/* Check that the queue is initialized */
+CHIBI_TEST(TestRatr0QueueArr2Init)
+{
+    init_myqueue2_queues();
+    chibi_assert_eq_int(QUEUE_SIZE, myqueue2_size);
+    chibi_assert_eq_int(0, myqueue2.first[0]);
+    chibi_assert_eq_int(0, myqueue2.num_elems[0]);
+    chibi_assert_eq_int(0, myqueue2.first[1]);
+    chibi_assert_eq_int(0, myqueue2.num_elems[1]);
+}
+
+CHIBI_TEST(TestRatr0QueueArr2Enqueue)
+{
+    struct MyStruct s1 = {1, 2, 3};
+    struct MyStruct s2 = {3, 4, 5};
+    struct MyStruct s3 = {4, 5, 6};
+    init_myqueue2_queues();
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s1);
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s2);
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s3);
+
+    chibi_assert_eq_int(0, myqueue2.first[0]);
+    chibi_assert_eq_int(3, myqueue2.num_elems[0]);
+    chibi_assert_eq_int(0, myqueue2.first[1]);
+    chibi_assert_eq_int(0, myqueue2.num_elems[1]);
+}
+
+CHIBI_TEST(TestRatr0QueueArr2Dequeue)
+{
+    struct MyStruct s1 = {1, 2, 3};
+    struct MyStruct s2 = {3, 4, 5};
+    struct MyStruct s3 = {4, 5, 6};
+    struct MyStruct dequeued;
+    init_myqueue2_queues();
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s1);
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s2);
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s3);
+    RATR0_DEQUEUE_ARR2(dequeued, myqueue2, 0);
+
+    chibi_assert_eq_int(1, myqueue2.first[0]);
+    chibi_assert_eq_int(2, myqueue2.num_elems[0]);
+
+    // check the element
+    chibi_assert_eq_int(s1.a, dequeued.a);
+    chibi_assert_eq_int(s1.b, dequeued.b);
+    chibi_assert_eq_int(s1.c, dequeued.c);
+}
+
+CHIBI_TEST(TestRatr0QueueArr2EnqueueWrapped)
+{
+    struct MyStruct s1 = {1, 2, 3};
+    struct MyStruct s2 = {3, 4, 5};
+    struct MyStruct s3 = {4, 5, 6};
+    struct MyStruct dequeued;
+    init_myqueue2_queues();
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s1);
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s2);
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s3);
+    RATR0_DEQUEUE_ARR2(dequeued, myqueue2, 0);
+
+    RATR0_ENQUEUE_ARR2(myqueue2, 0, s3);
+    chibi_assert_eq_int(1, myqueue2.first[0]);
+    chibi_assert_eq_int(3, myqueue2.num_elems[0]);
+
+    // test the wrapped element
+    chibi_assert_eq_int(s3.a, myqueue2.data[0][0].a);
+    chibi_assert_eq_int(s3.b, myqueue2.data[0][0].b);
+    chibi_assert_eq_int(s3.c, myqueue2.data[0][0].c);
+}
+
 /*
  * SUITE DEFINITION
  */
@@ -102,6 +175,11 @@ chibi_suite *build_suite(void)
     chibi_suite_add_test(suite, TestRatr0QueueArrDequeue);
     chibi_suite_add_test(suite, TestRatr0QueueArrEnqueueWrapped);
 
+    // new version of queue, based on structs
+    chibi_suite_add_test(suite, TestRatr0QueueArr2Init);
+    chibi_suite_add_test(suite, TestRatr0QueueArr2Enqueue);
+    chibi_suite_add_test(suite, TestRatr0QueueArr2Dequeue);
+    chibi_suite_add_test(suite, TestRatr0QueueArr2EnqueueWrapped);
     return suite;
 }
 

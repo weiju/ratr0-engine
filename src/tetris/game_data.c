@@ -1,5 +1,6 @@
 #include "game_data.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 // CONFIGURATIONS
 // A block is a 2-dimensional array of configurations on the game board
@@ -549,9 +550,35 @@ void establish_piece(struct PieceState *piece,
                      UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     // transfer the current piece to the board
+#if DEBUG && !TESTONLY
+    if (!piece) {
+        fprintf(debug_fp, "ERROR: piece is NULL !!!\n");
+        fflush(debug_fp);
+    }
+    if (piece->piece >= NUM_PIECES) {
+        fprintf(debug_fp, "ERROR: piece->piece is out of range !!!\n");
+        fflush(debug_fp);
+    }
+    if (piece->rotation >= NUM_ROTATIONS) {
+        fprintf(debug_fp, "ERROR: piece->rotations is out of range !!!\n");
+        fflush(debug_fp);
+    }
+#endif
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
         struct Position *pos = &rot->pos[i];
+#if DEBUG && !TESTONLY
+        if ((pos->y + piece->row) < 0 || (pos->y + piece->row) >= BOARD_HEIGHT) {
+            fprintf(debug_fp, "ERROR: pos->y, piece->row is out of range !!! piece->y: %d piece->row: %u\n",
+                    pos->y, piece->row);
+            fflush(debug_fp);
+        }
+        if ((pos->x + piece->col) < 0 || (pos->x + piece->col) >= BOARD_WIDTH) {
+            fprintf(debug_fp, "ERROR: pos->x, piece->col is out of range !!! piece->x: %d piece->col: %d\n",
+                    pos->x, piece->col);
+            fflush(debug_fp);
+        }
+#endif
         (*gameboard)[pos->y + piece->row][pos->x + piece->col] = 1;
     }
 }
@@ -886,3 +913,17 @@ void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN])
 // Game Global piece queue
 UINT8 piece_queue[PIECE_QUEUE_LEN];
 UINT8 piece_queue_idx = 0;
+
+struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
+
+void init_hiscore_list(void)
+{
+}
+
+void save_hiscore_list(void)
+{
+}
+
+void load_hiscore_list(void)
+{
+}

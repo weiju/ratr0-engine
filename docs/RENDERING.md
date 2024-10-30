@@ -50,9 +50,6 @@ Unfortunately, trees seem to be significantly slower on Amiga than
 hashing, so we use hash sets for BOB sets and a hash grids
 to process collisions
 
-
-
-
 ### Background restoration algorithm (dirty rectangles)
 
 #### Idea

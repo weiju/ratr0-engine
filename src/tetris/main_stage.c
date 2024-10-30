@@ -278,6 +278,8 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         // add score for deleted lines
         BOOL level_increased = score_rows_cleared(&player_state,
                                                   completed_rows.count);
+        fprintf(debug_fp, "# level increased, new score: %u\n",
+                player_state.score);
         if (level_increased) {
             // update level and drop speed display in the UI
             // by adding commands to the queue

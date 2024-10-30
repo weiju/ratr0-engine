@@ -1,8 +1,13 @@
 /** @file blitter.h
  *
  * Amiga Blitter functionality module. These are low-level functions that
- * are private to the display system. Don't use any of these functions
- * from user code.
+ * are are used by the display system.
+ * Users who want to directly call these functions should be aware that
+ * OwnBlitter() / DisownBlitter() is never called in any of these functions
+ * for performance reasons. However, it is the caller's responsibility to
+ * reserve the blitter for exclusive access to avoid strange effects caused
+ * by operating system usage of the blitter, potentially leaving registers in
+ * an undefined state.
  */
 #pragma once
 #ifndef __RATR0_BLITTER_H__

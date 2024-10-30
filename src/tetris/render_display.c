@@ -1,4 +1,5 @@
 #include <ratr0/ratr0.h>
+#include <clib/graphics_protos.h>
 #include "render_display.h"
 #include "draw_primitives.h"
 
@@ -95,6 +96,7 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
     struct RotationSpec *queued_spec;
     struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
     int cur_buffer = backbuffer->buffernum;
+    OwnBlitter();
     // 1. Clear queue to clean up pieces from the previous render pass
     while (clear_piece_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(piece_queue_item, clear_piece_queue, cur_buffer);
@@ -127,6 +129,7 @@ void process_blit_queues(struct Ratr0DisplayBuffer *backbuffer,
     }
     render_preview_queues(backbuffer, preview_surface, cur_buffer);
     render_score_queues(backbuffer, digits16_surface, digits_surface, cur_buffer);
+    DisownBlitter();
 }
 
 void render_preview_queues(struct Ratr0DisplayBuffer *backbuffer,
@@ -206,10 +209,12 @@ void process_move_queue(struct Ratr0DisplayBuffer *backbuffer)
     struct MoveQueueItem item;
     struct Ratr0Surface *backbuffer_surface = &backbuffer->surface;
     int cur_buffer = backbuffer->buffernum;
+    OwnBlitter();
     while (move_queue_num_elems[cur_buffer] > 0) {
         RATR0_DEQUEUE_ARR(item, move_queue, cur_buffer);
         _move_board_rect(backbuffer_surface, item.from, item.to, item.num_rows);
     }
+    DisownBlitter();
 }
 
 void clear_render_queues(void)

@@ -80,6 +80,9 @@ clean:
 .asm.o:
 	$(ASM) $^ -o $@
 
+test_console: test_console.o
+	$(CC) $(LDFLAGS) -o $@ $^
+
 example-01_game: $(ENGINE_OBJECTS) $(EXAMPLE01_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 

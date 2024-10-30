@@ -237,4 +237,19 @@ extern void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN]);
 extern UINT8 piece_queue[PIECE_QUEUE_LEN];
 extern UINT8 piece_queue_idx;
 
+
+#define MAX_HIGHSCORE_INITIALS_CHARS (4)
+#define MAX_HIGHSCORE_ENTRIES (10)
+
+struct HiscoreEntry {
+    UINT8 initials[MAX_HIGHSCORE_INITIALS_CHARS];
+    UINT16 points;
+};
+
+extern struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
+
+extern void init_hiscore_list(void);
+extern void save_hiscore_list(void);
+extern void load_hiscore_list(void);
+
 #endif // !__GAME_DATA_H__
