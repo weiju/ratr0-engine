@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <ratr0/ratr0.h>
+#include <ratr0/timers.h>
 #include <ratr0/datastructs/queue.h>
 #include <clib/graphics_protos.h>
 #include <ratr0/hw_registers.h>
@@ -65,11 +66,29 @@ struct Ratr0AudioProtrackerMod main_music;
 struct Ratr0SpriteSheet outlines_sheet;
 struct Ratr0HWSprite *outline_frame[9];
 
+// for palette animation
+Ratr0Timer *outline_timer;
+
 struct PlayerState player_state;
 
 // game board, 0 means empty, if there is a piece it is block type + 1
 // since the block types start at 0 as well
 UINT8 gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
+
+#define NUM_GHOST_PIECE_COLORS (4)
+UINT16 ghost_piece_colors[NUM_GHOST_PIECE_COLORS] = {
+    0x707, 0xa0a, 0xf0f, 0xa0a
+};
+UINT8 current_ghost_piece_color = 0;
+
+void change_ghost_piece_color(void)
+{
+    // TODO: modify the palette color 17
+    // default is f0f
+    UINT16 color = ghost_piece_colors[current_ghost_piece_color++];
+    current_ghost_piece_color %= NUM_GHOST_PIECE_COLORS;
+    current_coplist[current_copper_info->color00_index + 17 * 2] = color;
+}
 
 /**
  * Draw the ghost piece.
@@ -659,6 +678,8 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
 
     // start bg music
     ratr0_audio_play_mod(&main_music);
+
+    outline_timer = ratr0_timers_create(5, FALSE, change_ghost_piece_color);
 }
 
 void main_stage_on_exit(struct Ratr0Stage *this_stage)
@@ -682,6 +703,8 @@ void main_stage_on_exit(struct Ratr0Stage *this_stage)
 
     // clear all rendering related queues
     clear_render_queues();
+
+    // TODO: create free timer function and free the timer
 }
 
 struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)

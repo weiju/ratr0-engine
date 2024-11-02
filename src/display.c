@@ -13,6 +13,7 @@
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
 #include <ratr0/input.h>
+#include <ratr0/timers.h>
 
 #include <ratr0/memory.h>
 #include <ratr0/datastructs/bitset.h>
@@ -147,6 +148,7 @@ void VertBServer()
 {
     frames_elapsed++;
     engine->input_system->update();
+    ratr0_timers_tick();
     set_zero_flag();
 }
 

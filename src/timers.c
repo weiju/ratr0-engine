@@ -89,8 +89,6 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size
 {
     engine = eng;
     timer_system.shutdown = &ratr0_timers_shutdown;
-    timer_system.create_timer = &ratr0_timers_create;
-    timer_system.update = &ratr0_timers_tick;
 
     // Initialize the timer pool
     max_timers = pool_size;

@@ -50,7 +50,7 @@ void dummy_notify() { }
 CHIBI_TEST(TestInitTimer)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = timer_sys->create_timer(5, FALSE, dummy_notify);
+    Ratr0Timer *timer = ratr0_timers_create(5, FALSE, dummy_notify);
     chibi_assert_eq_int(5, timer->current_value);
     chibi_assert_eq_int(5, timer->start_value);
     chibi_assert_eq_int(FALSE, timer->oneshot);
@@ -64,9 +64,9 @@ CHIBI_TEST(TestInitTimer)
 CHIBI_TEST(TestUpdateTimerIsRunning)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = timer_sys->create_timer(5, FALSE, dummy_notify);
+    Ratr0Timer *timer = ratr0_timers_create(5, FALSE, dummy_notify);
 
-    timer_sys->update();
+    ratr0_timers_tick();
     chibi_assert_eq_int(4, timer->current_value);
 }
 
@@ -76,10 +76,10 @@ CHIBI_TEST(TestUpdateTimerIsRunning)
 CHIBI_TEST(TestUpdateTimerNotRunning)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = timer_sys->create_timer(5, FALSE, dummy_notify);
+    Ratr0Timer *timer = ratr0_timers_create(5, FALSE, dummy_notify);
     timer->running = FALSE;
 
-    timer_sys->update();
+    ratr0_timers_tick();
     chibi_assert_eq_int(5, timer->current_value);
 }
 
@@ -95,11 +95,11 @@ void notify01()
 CHIBI_TEST(TestUpdateTimerTimeout)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = timer_sys->create_timer(3, 0, notify01);
+    Ratr0Timer *timer = ratr0_timers_create(3, 0, notify01);
 
     /* Count down the timer */
     for (int i = 0; i < 3; i++) {
-        timer_sys->update();
+        ratr0_timers_tick();
     }
 
     chibi_assert_eq_int(1, was_notified1);
@@ -107,7 +107,7 @@ CHIBI_TEST(TestUpdateTimerTimeout)
 
     /* Count down the timer a second time */
     for (int i = 0; i < 3; i++) {
-        timer_sys->update();
+        ratr0_timers_tick();
     }
 
     /* now there are 2 notifications */
@@ -128,11 +128,11 @@ void notify02()
 CHIBI_TEST(TestUpdateTimerTimeoutOneShot)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = timer_sys->create_timer(3, TRUE, notify02);
+    Ratr0Timer *timer = ratr0_timers_create(3, TRUE, notify02);
 
     /* Count down the timer */
     for (int i = 0; i < 3; i++) {
-        timer_sys->update();
+        ratr0_timers_tick();
     }
 
     chibi_assert_eq_int(1, was_notified2);
@@ -141,7 +141,7 @@ CHIBI_TEST(TestUpdateTimerTimeoutOneShot)
 
     /* Count down the timer a second time */
     for (int i = 0; i < 3; i++) {
-        timer_sys->update();
+        ratr0_timers_tick();
     }
 
     /* still only 1 notification */
@@ -162,12 +162,12 @@ void notify04() { was_notified04++; }
 CHIBI_TEST(TestUpdate2TimersTimeout)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer1 = timer_sys->create_timer(3, 0, notify03);
-    Ratr0Timer *timer2 = timer_sys->create_timer(3, 0, notify04);
+    Ratr0Timer *timer1 = ratr0_timers_create(3, 0, notify03);
+    Ratr0Timer *timer2 = ratr0_timers_create(3, 0, notify04);
 
     /* Count down the timer */
     for (int i = 0; i < 3; i++) {
-        timer_sys->update();
+        ratr0_timers_tick();
     }
     /* 2 notifications were sent */
     chibi_assert_eq_int(1, was_notified03);
@@ -177,9 +177,9 @@ CHIBI_TEST(TestUpdate2TimersTimeout)
 CHIBI_TEST(TestCreateTooManyTimers)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 2);
-    Ratr0Timer *timer1 = timer_sys->create_timer(3, 0, NULL);
-    Ratr0Timer *timer2 = timer_sys->create_timer(3, 0, NULL);
-    Ratr0Timer *timer3 = timer_sys->create_timer(3, 0, NULL);
+    Ratr0Timer *timer1 = ratr0_timers_create(3, 0, NULL);
+    Ratr0Timer *timer2 = ratr0_timers_create(3, 0, NULL);
+    Ratr0Timer *timer3 = ratr0_timers_create(3, 0, NULL);
 
     chibi_assert(timer3 == NULL);
 }

@@ -1,6 +1,9 @@
 /** @file timers.h
  *
  * RATR0 Timer Subsystem. This system helps with the management of timers.
+ * Timers are updated by the Vertical blank interrupt, therefore a timer
+ * tick is 1/60 of a second on an NTSC system while it is 1/50 of a second
+ * on a PAL system.
  */
 #pragma once
 #ifndef __RATR0_TIMERS_H__
@@ -39,20 +42,6 @@ typedef struct _Timer {
  * Interface to the timer system.
  */
 struct Ratr0TimerSystem {
-    /**
-     * Create a timer object with the specified behavior.
-     *
-     * @param start_value timer start value
-     * @param oneshot TRUE if this is a one-shot timer, FALSE otherwise
-     * @param timeout_fun user-provided timeout callback
-     * @return pointer to initialize Ratr0Timer object
-     */
-    Ratr0Timer *(*create_timer)(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void));
-
-    /**
-     * This function is called every frame to update the timers.
-     */
-    void (*update)(void);  // update all timers with the next interval step
 
     /**
      * Shuts down the timer system.
@@ -68,5 +57,21 @@ struct Ratr0TimerSystem {
  * @return pointer to the initialized timer system
  */
 extern struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *engine, UINT16 pool_size);
+
+/**
+ * Create a timer object with the specified behavior.
+ *
+ * @param start_value timer start value
+ * @param oneshot TRUE if this is a one-shot timer, FALSE otherwise
+ * @param timeout_fun user-provided timeout callback
+ * @return pointer to initialize Ratr0Timer object
+ */
+extern Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void));
+
+
+/**
+ * This function is called every frame to update the timers.
+ */
+extern void ratr0_timers_tick(void);
 
 #endif /* __RATR0_TIMERS_H__ */
