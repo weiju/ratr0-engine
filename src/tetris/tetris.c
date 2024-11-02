@@ -61,9 +61,9 @@ int main(int argc, char **argv)
                                               RATR0_KEY_ESCAPE);
 
 
-    //struct Ratr0Scene *main_scene = setup_main_scene(engine);
-    struct Ratr0Scene *main_scene = setup_titlescreen_scene(engine);
-    engine->scenes_system->set_current_scene(main_scene);
+    //struct Ratr0Stage *main_stage = setup_main_stage(engine);
+    struct Ratr0Stage *main_stage = setup_titlescreen_stage(engine);
+    engine->stages_system->set_current_stage(main_stage);
 
     // START THE ENGINE !!!!
     engine->game_loop();

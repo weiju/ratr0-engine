@@ -22,7 +22,7 @@ struct Ratr0SpriteSheet fox_sprite_sheet;
 UINT8 fox_frames[] = {0, 1, 2, 3, 4};
 struct Ratr0HWSprite *fox;
 
-void main_scene_update(struct Ratr0Scene *this_scene,
+void main_stage_update(struct Ratr0Stage *this_stage,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
@@ -42,13 +42,13 @@ void main_scene_update(struct Ratr0Scene *this_scene,
 }
 
 
-struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
 {
     engine = eng;
-    // Use the scenes module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
-    struct Ratr0Scene *main_scene = node_factory->create_scene();
-    main_scene->update = main_scene_update;
+    // Use the stages module to create a stage and run that
+    struct Ratr0NodeFactory *node_factory = engine->stages_system->get_node_factory();
+    struct Ratr0Stage *main_stage = node_factory->create_stage();
+    main_stage->update = main_stage_update;
 
     ratr0_resources_read_tilesheet(GRID_PATH, &grid);
     ratr0_display_set_palette(grid.palette, 8, 0);
@@ -71,17 +71,17 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
     bobs[3]->base_obj.bounds.y = 63;
 
     for (int i = 0; i < NUM_BOBS; i++) {
-        main_scene->bobs[i] = bobs[i];
+        main_stage->bobs[i] = bobs[i];
     }
-    main_scene->num_bobs = NUM_BOBS;
-    main_scene->backdrop = node_factory->create_backdrop(&grid);
+    main_stage->num_bobs = NUM_BOBS;
+    main_stage->backdrop = node_factory->create_backdrop(&grid);
 
     // 1. Read animated sprites from sprite sheet
     ratr0_resources_read_spritesheet(SPRITES_PATH, &fox_sprite_sheet);
     fox = ratr0_create_sprite_from_sprite_sheet(&fox_sprite_sheet, (UINT8) 6, RATR0_ANIM_LOOP_TYPE_NONE);
-    main_scene->sprites[main_scene->num_sprites++] = fox;
+    main_stage->sprites[main_stage->num_sprites++] = fox;
     fox->base_obj.bounds.x = 0;
     fox->base_obj.bounds.y = 40;
 
-    return main_scene;
+    return main_stage;
 }

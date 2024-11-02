@@ -73,12 +73,12 @@ UINT8 gameboard0[BOARD_HEIGHT][BOARD_WIDTH];
 
 /**
  * Draw the ghost piece.
- * @param scene the current scene
+ * @param stage the current stage
  * @param outline pointer to the sprite outline
  * @param row origin row
  * @param col origin column
  */
-void draw_ghost_piece(struct Ratr0Scene *scene,
+void draw_ghost_piece(struct Ratr0Stage *stage,
                       struct SpriteOutline *outline, int row, int col)
 {
     struct Ratr0HWSprite *spr0 = outline_frame[outline->framenum0];
@@ -87,14 +87,14 @@ void draw_ghost_piece(struct Ratr0Scene *scene,
     spr0->base_obj.bounds.y = BOARD_Y0 + (row + outline->row0) * 8;
     spr1->base_obj.bounds.x = BOARD_X0 + (col + outline->col1) * 8;
     spr1->base_obj.bounds.y = BOARD_Y0 + (row + outline->row1) * 8;
-    scene->sprites[0] = spr0;
-    scene->sprites[1] = spr1;
-    scene->num_sprites = 2;
+    stage->sprites[0] = spr0;
+    stage->sprites[1] = spr1;
+    stage->num_sprites = 2;
 }
 
-void hide_ghost_piece(struct Ratr0Scene *scene)
+void hide_ghost_piece(struct Ratr0Stage *stage)
 {
-    scene->sprites[0] = scene->sprites[1] = &NULL_HW_SPRITE;
+    stage->sprites[0] = stage->sprites[1] = &NULL_HW_SPRITE;
 }
 
 struct PieceState current_piece = {
@@ -128,13 +128,13 @@ void spawn_next_piece(void)
  */
 struct CompletedRows completed_rows;
 int done = 0;
-void main_scene_update(struct Ratr0Scene *this_scene,
+void main_stage_update(struct Ratr0Stage *this_stage,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed);
 
 
 BOOL done_gameover_once = FALSE;
-void main_scene_gameover(struct Ratr0Scene *this_scene,
+void main_stage_gameover(struct Ratr0Stage *this_stage,
                          struct Ratr0DisplayBuffer *backbuffer,
                          UINT8 frame_elapsed) {
     if (engine->input_system->was_action_pressed(action_quit)) {
@@ -171,7 +171,7 @@ void main_scene_gameover(struct Ratr0Scene *this_scene,
  * DEBUG STATE. Use this state to quickly simulate game situations
  * that would otherwise require playing to this state.
  */
-void main_scene_debug(struct Ratr0Scene *this_scene,
+void main_stage_debug(struct Ratr0Stage *this_stage,
                       struct Ratr0DisplayBuffer *backbuffer,
                       UINT8 frame_elapsed) {
     if (engine->input_system->was_action_pressed(action_quit)) {
@@ -261,7 +261,7 @@ void _enqueue_score_digits(UINT16 oldscore, UINT16 newscore)
  * our queue processing ordering will interfere
  */
 BOOL done_delete_lines = 0;
-void main_scene_delete_lines(struct Ratr0Scene *this_scene,
+void main_stage_delete_lines(struct Ratr0Stage *this_stage,
                              struct Ratr0DisplayBuffer *backbuffer,
                              UINT8 frames_elapsed)
 {
@@ -348,7 +348,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
         done_delete_lines = 0; // reset frame counter for the next time
         player_state.can_swap_hold = TRUE;
         // back to main update state
-        this_scene->update = main_scene_update;
+        this_stage->update = main_stage_update;
     }
     debug_current_frame++;
 }
@@ -359,7 +359,7 @@ void main_scene_delete_lines(struct Ratr0Scene *this_scene,
  * the logic further into simple parts
  */
 BOOL done_establish = FALSE;
-void main_scene_establish_piece(struct Ratr0Scene *this_scene,
+void main_stage_establish_piece(struct Ratr0Stage *this_stage,
                                 struct Ratr0DisplayBuffer *backbuffer,
                                 UINT8 frames_elapsed)
 {
@@ -386,12 +386,12 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
             // delay the spawning, and delete completed lines first
             // switch state to deleting lines mode
             // but make sure, we update the drawing
-            this_scene->update = main_scene_delete_lines;
+            this_stage->update = main_stage_delete_lines;
         } else {
             spawn_next_piece(); // spawn next piece, but don't draw yet
             enqueue_next3();
             player_state.can_swap_hold = TRUE;
-            this_scene->update = main_scene_update;
+            this_stage->update = main_stage_update;
         }
     }
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
@@ -403,7 +403,7 @@ void main_scene_establish_piece(struct Ratr0Scene *this_scene,
  * This is the main gameplay loop state. Handle input, rotate, move and place
  * blocks. The state is switched when there are completed lines
  */
-void main_scene_update(struct Ratr0Scene *this_scene,
+void main_stage_update(struct Ratr0Stage *this_stage,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
@@ -534,9 +534,9 @@ void main_scene_update(struct Ratr0Scene *this_scene,
         landed = piece_landed(&current_piece, &gameboard0);
         if (landed) {
             done_establish = FALSE;
-            this_scene->update = (current_piece.row == 0) ?
-                this_scene->update = main_scene_gameover :
-                main_scene_establish_piece;
+            this_stage->update = (current_piece.row == 0) ?
+                this_stage->update = main_stage_gameover :
+                main_stage_establish_piece;
         } else {
             current_piece.row++;
         }
@@ -558,13 +558,13 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
                         &digits16_surface, &digits_surface);
     if (landed) {
-        hide_ghost_piece(this_scene);
+        hide_ghost_piece(this_stage);
     } else {
         // Ghost piece is drawn with sprite, no background restore needed
         int qdr = get_quickdrop_row(&current_piece,
                                     &gameboard0);
         struct RotationSpec *rot_spec = &PIECE_SPECS[current_piece.piece].rotations[current_piece.rotation];
-        draw_ghost_piece(this_scene, &rot_spec->outline, qdr, current_piece.col);
+        draw_ghost_piece(this_stage, &rot_spec->outline, qdr, current_piece.col);
     }
     debug_current_frame++;
 }
@@ -632,7 +632,7 @@ void _clear_score_panel(void)
     }
 }
 
-void main_stage_on_enter(struct Ratr0Scene *this_scene)
+void main_stage_on_enter(struct Ratr0Stage *this_stage)
 {
     // set new copper list
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
@@ -661,7 +661,7 @@ void main_stage_on_enter(struct Ratr0Scene *this_scene)
     ratr0_audio_play_mod(&main_music);
 }
 
-void main_stage_on_exit(struct Ratr0Scene *this_scene)
+void main_stage_on_exit(struct Ratr0Stage *this_stage)
 {
     // free all memory from the assets in reverse order
     // to make sure it all becomes available again
@@ -684,16 +684,16 @@ void main_stage_on_exit(struct Ratr0Scene *this_scene)
     clear_render_queues();
 }
 
-struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
 {
     engine = eng;
-    // Use the scenes module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
-    struct Ratr0Scene *main_scene = node_factory->create_scene();
-    //main_scene->update = main_scene_debug;
-    main_scene->update = main_scene_update;
-    main_scene->on_enter = main_stage_on_enter;
-    main_scene->on_exit = main_stage_on_exit;
+    // Use the stages module to create a stage and run that
+    struct Ratr0NodeFactory *node_factory = engine->stages_system->get_node_factory();
+    struct Ratr0Stage *main_stage = node_factory->create_stage();
+    //main_stage->update = main_stage_debug;
+    main_stage->update = main_stage_update;
+    main_stage->on_enter = main_stage_on_enter;
+    main_stage->on_exit = main_stage_on_exit;
 
-    return main_scene;
+    return main_stage;
 }

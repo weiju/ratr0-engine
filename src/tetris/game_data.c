@@ -550,7 +550,7 @@ void establish_piece(struct PieceState *piece,
                      UINT8 (*gameboard)[BOARD_HEIGHT][BOARD_WIDTH])
 {
     // transfer the current piece to the board
-#if DEBUG && !TESTONLY
+#if DEBUG && !TEST
     if (!piece) {
         fprintf(debug_fp, "ERROR: piece is NULL !!!\n");
         fflush(debug_fp);
@@ -567,7 +567,7 @@ void establish_piece(struct PieceState *piece,
     struct Rotation *rot = &PIECE_SPECS[piece->piece].rotations[piece->rotation].rotation;
     for (int i = 0; i < 4; i++) {
         struct Position *pos = &rot->pos[i];
-#if DEBUG && !TESTONLY
+#if DEBUG && !TEST
         if ((pos->y + piece->row) < 0 || (pos->y + piece->row) >= BOARD_HEIGHT) {
             fprintf(debug_fp, "ERROR: pos->y, piece->row is out of range !!! piece->y: %d piece->row: %u\n",
                     pos->y, piece->row);

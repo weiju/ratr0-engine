@@ -12,7 +12,7 @@
 #include <ratr0/display.h>
 #include <ratr0/input.h>
 #include <ratr0/resources.h>
-#include <ratr0/scenes.h>
+#include <ratr0/stages.h>
 
 #define MAX_TIMERS (10)
 #define TASK_PRIORITY (20)
@@ -46,7 +46,7 @@ void ratr0_engine_game_loop(void)
         WaitTOF();
         //*custom_color00 = 0xf00;
         // comment in for visual timing the loop iteration
-        engine.scenes_system->update(back_buffer ,frames_elapsed);
+        engine.stages_system->update(back_buffer ,frames_elapsed);
         //*custom_color00 = 0x000;
         // we are done with the back buffer. now swap it to the front
         back_buffer = ratr0_display_swap_buffers();
@@ -85,7 +85,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
     engine.rendering_system = ratr0_display_startup(&engine, display_info);
     engine.audio_system = ratr0_audio_startup();
     engine.resource_system = ratr0_resources_startup(&engine);
-    engine.scenes_system = ratr0_scenes_startup(&engine);
+    engine.stages_system = ratr0_stages_startup(&engine);
 
     PRINT_DEBUG("Startup finished.");
     return &engine;
@@ -94,7 +94,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
 void ratr0_engine_shutdown(void)
 {
     PRINT_DEBUG("Shutting down...");
-    engine.scenes_system->shutdown();
+    engine.stages_system->shutdown();
     engine.resource_system->shutdown();
     engine.audio_system->shutdown();
     engine.rendering_system->shutdown();

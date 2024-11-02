@@ -1,10 +1,10 @@
-/** @file scenes.h
+/** @file stages.h
  *
- * This is RATR0 Engine's implementation of the Scenes subsystem.
+ * This is RATR0 Engine's implementation of the Stages subsystem.
  */
 #pragma once
-#ifndef __RATR0_SCENES_H__
-#define __RATR0_SCENES_H__
+#ifndef __RATR0_STAGES_H__
+#define __RATR0_STAGES_H__
 #include <ratr0/data_types.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
@@ -12,28 +12,28 @@
 
 
 // just to make the compiler happy
-struct Ratr0Scene;
+struct Ratr0Stage;
 
 /**
- * A scene is a component of a game. It contains the movable and static game objects
- * and the assets. The game can also provide functions for transitions and scene specific
- * updates.
+ * A stage is a component of a game. It contains the movable and static game
+ * objects and the assets. The game can also provide functions for transitions
+ * and stage-specific updates.
  */
-struct Ratr0Scene {
+struct Ratr0Stage {
 
     /** \brief pointer to engine instance */
     Ratr0Engine *engine;
 
-    /** \brief memory handle to this scene's copper list */
+    /** \brief memory handle to this stage's copper list */
     Ratr0MemHandle h_copper_list;
 
-    /** \brief quick pointer to this scene's copper list */
+    /** \brief quick pointer to this stage's copper list */
     UINT16 *copper_list;
 
     /**
-     * \brief this scene's backdrop object
+     * \brief this stage's backdrop object
      *
-     * A scene can have a backdrop, if it does not need a tile map, this might
+     * A stage can have a backdrop, if it does not need a tile map, this might
      * be the only thing you need. Can be null if you don't need a backdrop.
      * The backdrop is essentially the restore buffer. If all you need is
      * a backdrop this is easy, because BOBs will also just work.
@@ -44,75 +44,77 @@ struct Ratr0Scene {
     struct Ratr0Backdrop *backdrop;
 
     //
-    // The animated objects in the scene that are visible/active. The scenes module will
-    // automatically render objects in these lists.
+    // The animated objects in the stage that are visible/active. The stages
+    // module will automatically render objects in these lists.
     // On Amiga, these are both sprites and BOBs, and we keep these separate
     // so we won't need any type checks.
     //
-    /** \brief list of active BOBs in the scene */
+    /** \brief list of active BOBs in the stage */
     struct Ratr0Bob *bobs[10];
 
     /** \brief number of bobs in the array */
     int num_bobs;
 
-    /** \brief list of active hardware sprites in the scene */
+    /** \brief list of active hardware sprites in the stage */
     struct Ratr0HWSprite *sprites[8];
 
     /** \brief number of sprites in the array */
     int num_sprites;
 
     /**
-     * Adds a bob to the scene.
+     * Adds a bob to the stage.
      *
-     * @param this_scene pointer to this scene
-     * @param bob the BOB to add to the scene
+     * @param this_stage pointer to this stage
+     * @param bob the BOB to add to the stage
      */
-    void (*add_bob)(struct Ratr0Scene *this_scene, struct Ratr0Bob *bob);
+    void (*add_bob)(struct Ratr0Stage *this_stage, struct Ratr0Bob *bob);
 
     /**
-     * User provided function that is called when this scene is set to the current scene.
+     * User provided function that is called when this stage is set to
+     * the current stage.
      *
-     * @param this_scene pointer to this scene
+     * @param this_stage pointer to this stage
      */
-    void (*on_enter)(struct Ratr0Scene *this_scene);
+    void (*on_enter)(struct Ratr0Stage *this_stage);
 
     /**
-     * User provided function that is called when the current scene changes to a different scene.
+     * User provided function that is called when the current stage changes to
+     * a different stage.
      *
-     * @param this_scene pointer to this scene
+     * @param this_stage pointer to this stage
      */
-    void (*on_exit)(struct Ratr0Scene *this_scene);
+    void (*on_exit)(struct Ratr0Stage *this_stage);
 
     /**
-     * User provided function that is called on every frame of the game loop while this scene
-     * is the current active scene.
+     * User provided function that is called on every frame of the game loop
+     * while this stage is the current active stage.
      *
-     * @param this_scene pointer to this scene
+     * @param this_stage pointer to this stage
      * @param backbuffer pointer to the display back buffer
      * @param frames_elapsed the number of elapsed frames since the last call of update
      */
-    void (*update)(struct Ratr0Scene *this_scene,
+    void (*update)(struct Ratr0Stage *this_stage,
                    struct Ratr0DisplayBuffer *backbuffer,
                    UINT8 frames_elapsed);
 
 };
 
 /**
- * This interface serves as the creator of our scene objects.
+ * This interface serves as the creator of our stage objects.
  */
 struct Ratr0NodeFactory {
     /**
-     * Creates a new Ratr0Scene object.
+     * Creates a new Ratr0Stage object.
      *
-     * @return pointer to an initialized Ratr0Scene object
+     * @return pointer to an initialized Ratr0Stage object
      */
-    struct Ratr0Scene *(*create_scene)(void);
+    struct Ratr0Stage *(*create_stage)(void);
 
     // TODO:
     // -----
     // This should actually be funcitons of the resources subsystem.
     // Logically this does not belong here. Also, the sprites and
-    // backdrops are not associated with a scene. This is a design
+    // backdrops are not associated with a stage. This is a design
     // flaw
     /**
      * Creates a new sprite.
@@ -139,18 +141,18 @@ struct Ratr0NodeFactory {
 
 
 /**
- * Interface to the Scenes subsystem.
+ * Interface to the Stages subsystem.
  */
-struct Ratr0ScenesSystem {
+struct Ratr0StagesSystem {
     /**
-     * Sets the currently active scene.
+     * Sets the currently active stage.
      *
-     * @param scene the scene to set
+     * @param stage the stage to set
      */
-    void (*set_current_scene)(struct Ratr0Scene *scene);
+    void (*set_current_stage)(struct Ratr0Stage *stage);
 
     /**
-     * Called every game loop iteration to update the Scenes system.
+     * Called every game loop iteration to update the Stages system.
      *
      * @param backbuffer the backbuffer of the display
      * @param frames_elapsed frames elapsed since last invocation
@@ -158,7 +160,7 @@ struct Ratr0ScenesSystem {
     void (*update)(struct Ratr0DisplayBuffer *backbuffer, UINT8 frames_elapsed);
 
     /**
-     * Shutdown the Scenes subsystem.
+     * Shutdown the Stages subsystem.
      */
     void (*shutdown)(void);
 
@@ -171,11 +173,11 @@ struct Ratr0ScenesSystem {
 };
 
 /**
- * Start up the scene subsystem.
+ * Start up the stage subsystem.
  *
  * @param eng the engine object
- * @return an initialized Ratr0SceneSystem instance
+ * @return an initialized Ratr0StagesSystem instance
  */
-extern struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng);
+extern struct Ratr0StagesSystem *ratr0_stages_startup(Ratr0Engine *eng);
 
-#endif /* __RATR0_SCENES_H__ */
+#endif /* __RATR0_STAGES_H__ */

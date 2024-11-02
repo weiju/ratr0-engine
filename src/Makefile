@@ -39,7 +39,7 @@ TEST_OBJECTS=test/timer_test.o timers.o test/fixed_point_test.o \
 DATA_OBJECTS=datastructs/bitset.o
 
 ENGINE_OBJECTS=engine.o timers.o memory.o input.o \
-	resources.o scenes.o default_copper.o $(DATA_OBJECTS) $(HW_OBJECTS) $(EXT_OBJECTS)
+	resources.o stages.o default_copper.o $(DATA_OBJECTS) $(HW_OBJECTS) $(EXT_OBJECTS)
 
 # game objects
 EXAMPLE01_OBJECTS=example-01/main.o example-01/main_scene.o

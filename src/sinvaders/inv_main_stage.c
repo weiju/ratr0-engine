@@ -28,7 +28,7 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 #define SPR0_COLOR00_IDX (16)
 
 
-void main_scene_update(struct Ratr0Scene *this_scene,
+void main_stage_update(struct Ratr0Stage *this_stage,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
@@ -114,13 +114,13 @@ void copy_spritesheet_to_sprite()
                              0, new_sprite[0]);
 }
 
-struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
 {
     engine = eng;
-    // Use the scenes module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
-    struct Ratr0Scene *main_scene = node_factory->create_scene();
-    main_scene->update = main_scene_update;
+    // Use the stages module to create a stage and run that
+    struct Ratr0NodeFactory *node_factory = engine->stages_system->get_node_factory();
+    struct Ratr0Stage *main_stage = node_factory->create_stage();
+    main_stage->update = main_stage_update;
 
     ratr0_resources_read_tilesheet(GRID_PATH, &grid_sheet);
     ratr0_display_set_palette(grid_sheet.palette, 4, 0);
@@ -138,17 +138,17 @@ struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
         bobs[i]->base_obj.bounds.x = bobx;
         bobs[i]->base_obj.bounds.y = boby;
         bobx += 16;
-        main_scene->bobs[i] = bobs[i];
+        main_stage->bobs[i] = bobs[i];
     }
-    main_scene->num_bobs = NUM_BOBS;
+    main_stage->num_bobs = NUM_BOBS;
 
     struct Ratr0DisplayBuffer *back_buffer, *front_buffer;
     front_buffer = ratr0_display_get_front_buffer();
     back_buffer = ratr0_display_get_back_buffer();
-    main_scene->backdrop = node_factory->create_backdrop(&grid_sheet);
+    main_stage->backdrop = node_factory->create_backdrop(&grid_sheet);
     printf("BACKDROP WIDTH: %d fb width: %d bb width: %d\n",\
-           (int) main_scene->backdrop->surface.width,
+           (int) main_stage->backdrop->surface.width,
            (int) front_buffer->surface.width,
            (int) back_buffer->surface.width);
-    return main_scene;
+    return main_stage;
 }

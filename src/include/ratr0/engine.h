@@ -39,8 +39,8 @@ typedef struct {
     struct Ratr0AudioSystem *audio_system;
     /** \brief resource subsystem */
     struct Ratr0ResourceSystem *resource_system;
-    /** \brief scene subsystem */
-    struct Ratr0ScenesSystem *scenes_system;
+    /** \brief stage subsystem */
+    struct Ratr0StagesSystem *stages_system;
 
     /**
      * Shuts down the engine.

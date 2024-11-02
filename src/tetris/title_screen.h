@@ -9,15 +9,15 @@
 #ifndef __TITLE_SCREEN_H__
 #define __TITLE_SCREEN_H__
 
-#include <ratr0/scenes.h>
+#include <ratr0/stages.h>
 #include <ratr0/engine.h>
 
 /**
- * Sets up the title screen scene object.
+ * Sets up the title screen stage object.
  *
  * @param engine pointer to Ratr0Engine instance
- * @return pointer to scene instance
+ * @return pointer to stage instance
  */
-struct Ratr0Scene *setup_titlescreen_scene(Ratr0Engine *engine);
+struct Ratr0Stage *setup_titlescreen_stage(Ratr0Engine *engine);
 
-#endif /* __MAIN_SCENE_H__ */
+#endif // __TITLE_SCREEN_H__

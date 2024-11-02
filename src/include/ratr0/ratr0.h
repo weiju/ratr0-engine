@@ -9,7 +9,7 @@
 #include <ratr0/display.h>
 #include <ratr0/engine.h>
 #include <ratr0/resources.h>
-#include <ratr0/scenes.h>
+#include <ratr0/stages.h>
 #include <ratr0/input.h>
 #include <ratr0/memory.h>
 

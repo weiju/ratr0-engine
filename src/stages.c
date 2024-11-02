@@ -1,8 +1,8 @@
-/** @file scenes.c */
+/** @file stages.c */
 #include <stdio.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
-#include <ratr0/scenes.h>
+#include <ratr0/stages.h>
 
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
@@ -10,41 +10,42 @@
 #include <ratr0/display.h>
 #include <ratr0/sprites.h>
 #include <ratr0/blitter.h>
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSCENES\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSTAGES\033[0m", __VA_ARGS__)
 
 extern struct Custom custom;
 
 /*
- * The scenes system is where games are implemented on a high level and tied together.
+ * The stages system is where games are implemented on a high level and tied
+ * together.
  * It builds on all the subsystems that deal with low-level aspects and integrates
  * with the scripting system.
  */
-static struct Ratr0ScenesSystem scenes_system;
+static struct Ratr0StagesSystem stages_system;
 static struct Ratr0NodeFactory node_factory;
 static Ratr0Engine *engine;
-static struct Ratr0Scene *current_scene = NULL;
+static struct Ratr0Stage *current_stage = NULL;
 static struct Ratr0Backdrop *backdrop = NULL;
 
-static void ratr0_scenes_shutdown(void);
-static void ratr0_scenes_update(struct Ratr0DisplayBuffer *, UINT8);
-static void ratr0_scenes_set_current_scene(struct Ratr0Scene *);
+static void ratr0_stages_shutdown(void);
+static void ratr0_stages_update(struct Ratr0DisplayBuffer *, UINT8);
+static void ratr0_stages_set_current_stage(struct Ratr0Stage *);
 
 /**
  * Node factory
  */
 // *do not* make the arrays static !!!! Otherwise bad things happen when you
 // try accessing them outside of the module
-struct Ratr0Scene _scenes[10];
-static UINT16 next_scene = 0;
+struct Ratr0Stage _stages[10];
+static UINT16 next_stage = 0;
 
 struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
 
-static struct Ratr0NodeFactory *ratr0_scenes_get_node_factory(void) { return &node_factory; }
+static struct Ratr0NodeFactory *ratr0_stages_get_node_factory(void) { return &node_factory; }
 
-static struct Ratr0Scene *ratr0_scenes_create_scene(void)
+static struct Ratr0Stage *ratr0_stages_create_stage(void)
 {
-    struct Ratr0Scene *result = &_scenes[next_scene++];
+    struct Ratr0Stage *result = &_stages[next_stage++];
     result->engine = engine;
     result->num_bobs = 0;
     result->num_sprites = 0;
@@ -60,48 +61,48 @@ static struct Ratr0Sprite *ratr0_nf_create_sprite(struct Ratr0TileSheet *,
 
 struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet);
 
-struct Ratr0ScenesSystem *ratr0_scenes_startup(Ratr0Engine *eng)
+struct Ratr0StagesSystem *ratr0_stages_startup(Ratr0Engine *eng)
 {
     engine = eng;
-    current_scene = NULL;
+    current_stage = NULL;
 
-    scenes_system.update = &ratr0_scenes_update;
-    scenes_system.shutdown = &ratr0_scenes_shutdown;
-    scenes_system.set_current_scene = &ratr0_scenes_set_current_scene;
+    stages_system.update = &ratr0_stages_update;
+    stages_system.shutdown = &ratr0_stages_shutdown;
+    stages_system.set_current_stage = &ratr0_stages_set_current_stage;
 
     // Node factory
-    node_factory.create_scene = &ratr0_scenes_create_scene;
+    node_factory.create_stage = &ratr0_stages_create_stage;
     node_factory.create_sprite = &ratr0_nf_create_sprite;
     node_factory.create_backdrop = &ratr0_nf_create_backdrop;
-    scenes_system.get_node_factory = &ratr0_scenes_get_node_factory;
+    stages_system.get_node_factory = &ratr0_stages_get_node_factory;
 
     PRINT_DEBUG("Startup finished.");
-    return &scenes_system;
+    return &stages_system;
 }
 
-static void ratr0_scenes_shutdown(void)
+static void ratr0_stages_shutdown(void)
 {
     PRINT_DEBUG("Shutdown finished.");
 }
 
-static void ratr0_scenes_set_current_scene(struct Ratr0Scene *scene)
+static void ratr0_stages_set_current_stage(struct Ratr0Stage *stage)
 {
-    // Leave previous scene if existing
-    if (current_scene && current_scene->on_exit) {
-        current_scene->on_exit(scene);
+    // Leave previous stage if existing
+    if (current_stage && current_stage->on_exit) {
+        current_stage->on_exit(stage);
     }
 
-    current_scene = scene;
+    current_stage = stage;
 
-    // Enter new scene
-    if (current_scene && current_scene->backdrop) {
+    // Enter new stage
+    if (current_stage && current_stage->backdrop) {
         // Make this the new backdrop for efficiency this is module global
-        backdrop = current_scene->backdrop;
+        backdrop = current_stage->backdrop;
         // Blit the backdrop once if it exists
         ratr0_display_blit_surface_to_buffers(&backdrop->surface);
     }
-    if (current_scene && current_scene->on_enter) {
-        current_scene->on_enter(scene);
+    if (current_stage && current_stage->on_enter) {
+        current_stage->on_enter(stage);
     }
 }
 
@@ -277,25 +278,25 @@ static void _update_sprite(struct Ratr0HWSprite *sprite)
 static void _update_sprites(void)
 {
     // update sprites
-    for (int i = 0; i < current_scene->num_sprites; i++) {
-        _update_sprite(current_scene->sprites[i]);
+    for (int i = 0; i < current_stage->num_sprites; i++) {
+        _update_sprite(current_stage->sprites[i]);
     }
 }
 
-static void ratr0_scenes_update(struct Ratr0DisplayBuffer *backbuffer,
+static void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
                                 UINT8 frames_elapsed)
 {
-    if (current_scene) {
-        // update the scene
-        if (current_scene->update) {
-            current_scene->update(current_scene, backbuffer, frames_elapsed);
+    if (current_stage) {
+        // update the stage
+        if (current_stage->update) {
+            current_stage->update(current_stage, backbuffer, frames_elapsed);
         }
         // process all the BOBS
         back_buffer = &ratr0_display_get_back_buffer()->surface;
 
         struct Ratr0Bob *bob;
-        for (int i = 0; i < current_scene->num_bobs; i++) {
-            bob = current_scene->bobs[i];
+        for (int i = 0; i < current_stage->num_bobs; i++) {
+            bob = current_stage->bobs[i];
             if (update_bob(bob)) {
                 // enqueue dirties
                 add_restore_tiles_for_bob(bob);
@@ -314,8 +315,8 @@ static void ratr0_scenes_update(struct Ratr0DisplayBuffer *backbuffer,
         dirty_bltsize = 0;
 
         // 2. Blit updated objects
-        for (int i = 0; i < current_scene->num_bobs; i++) {
-            bob = current_scene->bobs[i];
+        for (int i = 0; i < current_stage->num_bobs; i++) {
+            bob = current_stage->bobs[i];
             ratr0_blit_object_il(back_buffer, bob->tilesheet,
                                  0,
                                  bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],

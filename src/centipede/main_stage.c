@@ -25,7 +25,7 @@ UINT8 centi_head_lr_frames[] = {0, 1, 2, 3, 4};
 struct Ratr0HWSprite *centi;
 int centi_dir = 2;
 
-void main_scene_update(struct Ratr0Scene *this_scene,
+void main_stage_update(struct Ratr0Stage *this_stage,
                        struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
@@ -43,26 +43,26 @@ void main_scene_update(struct Ratr0Scene *this_scene,
     centi->base_obj.bounds.x += centi_dir;
 }
 
-struct Ratr0Scene *setup_main_scene(Ratr0Engine *eng)
+struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
 {
     engine = eng;
-    // Use the scenes module to create a scene and run that
-    struct Ratr0NodeFactory *node_factory = engine->scenes_system->get_node_factory();
-    struct Ratr0Scene *main_scene = node_factory->create_scene();
-    main_scene->update = main_scene_update;
+    // Use the stages module to create a stage and run that
+    struct Ratr0NodeFactory *node_factory = engine->stages_system->get_node_factory();
+    struct Ratr0Stage *main_stage = node_factory->create_stage();
+    main_stage->update = main_stage_update;
     ratr0_display_init_copper_list(centi_copper, CENTI_COPPER_SIZE_WORDS,
                                    &CENTI_COPPER_INFO);
 
     // 1. Read animated sprites from sprite sheet
     ratr0_resources_read_spritesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
     centi = ratr0_create_sprite_from_sprite_sheet(&centi_head_lr_sheet, (UINT8) 5, RATR0_ANIM_LOOP_TYPE_PINGPONG);
-    // add this sprite to the scene
+    // add this sprite to the stage
     centi->base_obj.bounds.x = 0;
     centi->base_obj.bounds.y = 40;
     ratr0_display_set_copperlist(centi_copper, CENTI_COPPER_SIZE_WORDS,
                                  &CENTI_COPPER_INFO);
 
-    main_scene->sprites[main_scene->num_sprites++] = centi;
+    main_stage->sprites[main_stage->num_sprites++] = centi;
 
-    return main_scene;
+    return main_stage;
 }
