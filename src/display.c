@@ -538,11 +538,16 @@ struct Ratr0Bob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
 void ratr0_dump_copperlist(UINT16 *copperlist, int len, const char *path)
 {
     FILE *fp = fopen(path, "w");
-    fprintf(fp, "UINT16 coplist[] = {\n\t");
-    for (int i = 0; i < len; i++) {
-        if (i > 0) fprintf(fp, ", ");
-        fprintf(fp, "0x%03x", copperlist[i]);
+    if (fp) {
+        fprintf(fp, "UINT16 coplist[] = {\n\t");
+        for (int i = 0; i < len; i++) {
+            if (i > 0) fprintf(fp, ", ");
+            fprintf(fp, "0x%03x", copperlist[i]);
+        }
+        fprintf(fp, "}\n");
+        fclose(fp);
+    } else {
+        fprintf(debug_fp, "could not open '%s'\n", path);
+        fflush(debug_fp);
     }
-    fprintf(fp, "}\n");
-    fclose(fp);
 }

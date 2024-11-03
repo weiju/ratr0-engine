@@ -915,15 +915,48 @@ UINT8 piece_queue[PIECE_QUEUE_LEN];
 UINT8 piece_queue_idx = 0;
 
 struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
+#define HISCORE_FILENAME "hiscores.dat"
 
 void init_hiscore_list(void)
 {
+    for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
+        strncpy((char *) hiscore_list[i].initials, "AAA",
+                MAX_HIGHSCORE_INITIALS_CHARS);
+        hiscore_list[i].points = 1000 * (10 - i);
+    }
 }
 
 void save_hiscore_list(void)
 {
+    FILE *fp = fopen(HISCORE_FILENAME, "w");
+    if (fp) {
+        for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
+            fwrite(hiscore_list[i].initials, sizeof(UINT8),
+                  MAX_HIGHSCORE_INITIALS_CHARS, fp);
+            fwrite(&hiscore_list[i].points, sizeof(UINT32),
+                  1, fp);
+        }
+        fclose(fp);
+    }
 }
 
 void load_hiscore_list(void)
 {
+    FILE *fp = fopen(HISCORE_FILENAME, "r");
+    if (!fp) {
+        init_hiscore_list();
+        save_hiscore_list();
+    } else {
+#if DEBUG && !TEST
+        fprintf(debug_fp, "yes, highscore list exists !\n");
+        fflush(debug_fp);
+#endif
+        for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
+            fread(hiscore_list[i].initials, sizeof(UINT8),
+                  MAX_HIGHSCORE_INITIALS_CHARS, fp);
+            fread(&hiscore_list[i].points, sizeof(UINT32),
+                  1, fp);
+        }
+        fclose(fp);
+    }
 }

@@ -661,6 +661,14 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
                                  &TETRIS_COPPER_INFO);
 
     _load_resources();
+    load_hiscore_list();
+#ifdef DEBUG
+    for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
+          fprintf(debug_fp, "%s: %u\n",
+          hiscore_list[i].initials, hiscore_list[i].points);
+          fflush(debug_fp);
+    }
+#endif
 
     // initialize board and  piece queue
     clear_board(&gameboard0);

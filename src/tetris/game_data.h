@@ -243,7 +243,7 @@ extern UINT8 piece_queue_idx;
 
 struct HiscoreEntry {
     UINT8 initials[MAX_HIGHSCORE_INITIALS_CHARS];
-    UINT16 points;
+    UINT32 points;
 };
 
 extern struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
