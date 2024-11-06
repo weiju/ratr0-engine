@@ -156,7 +156,7 @@ BOOL done_gameover_once = FALSE;
 void main_stage_gameover(struct Ratr0Stage *this_stage,
                          struct Ratr0DisplayBuffer *backbuffer,
                          UINT8 frame_elapsed) {
-    if (engine->input_system->was_action_pressed(action_quit)) {
+    if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
 
@@ -193,7 +193,7 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
 void main_stage_debug(struct Ratr0Stage *this_stage,
                       struct Ratr0DisplayBuffer *backbuffer,
                       UINT8 frame_elapsed) {
-    if (engine->input_system->was_action_pressed(action_quit)) {
+    if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
     draw_level_digit(backbuffer, &digits16_surface, 0, '2');
@@ -430,7 +430,7 @@ void main_stage_update(struct Ratr0Stage *this_stage,
     int original_score = player_state.score;
 
     // For now, end when the mouse was clicked. This is just for testing
-    if (engine->input_system->was_action_pressed(action_quit)) {
+    if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
     // cooldowns
@@ -439,26 +439,26 @@ void main_stage_update(struct Ratr0Stage *this_stage,
     if (quickdrop_cooldown > 0) quickdrop_cooldown--;
 
     // Input processing
-    if (engine->input_system->was_action_pressed(action_move_left)) {
+    if (ratr0_input_was_action_pressed(action_move_left)) {
         if (move_cooldown == 0 && can_move_left(&current_piece,
                                                 &gameboard0)) {
             current_piece.col--;
             move_cooldown = MOVE_COOLDOWN_TIME;
         }
-    } else if (engine->input_system->was_action_pressed(action_move_right)) {
+    } else if (ratr0_input_was_action_pressed(action_move_right)) {
         if (move_cooldown == 0 && can_move_right(&current_piece,
                                                  &gameboard0)) {
             current_piece.col++;
             move_cooldown = MOVE_COOLDOWN_TIME;
         }
-    } else if (engine->input_system->was_action_pressed(action_move_down)) {
+    } else if (ratr0_input_was_action_pressed(action_move_down)) {
         // ACCELERATE MOVE DOWN
         if (!piece_landed(&current_piece, &gameboard0)) {
             score_soft_drop(&player_state);
             current_piece.row++;
             drop_timer = player_state.drop_timer_value; // reset drop timer
         }
-    } else if (engine->input_system->was_action_pressed(action_drop)) {
+    } else if (ratr0_input_was_action_pressed(action_drop)) {
         // QUICK DROP
         // do a quick establish on the quickdrop row
         // we can do this by setting current_row to qdr and the drop timer
@@ -483,7 +483,7 @@ void main_stage_update(struct Ratr0Stage *this_stage,
             drop_timer = 0;
             quickdrop_cooldown = QUICKDROP_COOLDOWN_TIME;
         }
-    } else if (engine->input_system->was_action_pressed(action_rotate_right)) {
+    } else if (ratr0_input_was_action_pressed(action_rotate_right)) {
         // rotate right with wall kick
         if (rotate_cooldown == 0) {
             int next_rotation = (current_piece.rotation + 1) % 4;
@@ -500,7 +500,7 @@ void main_stage_update(struct Ratr0Stage *this_stage,
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
-    } else if (engine->input_system->was_action_pressed(action_rotate_left)) {
+    } else if (ratr0_input_was_action_pressed(action_rotate_left)) {
         // rotate left with wall kick
         if (rotate_cooldown == 0) {
             int next_rotation = (current_piece.rotation - 1) % 4;
@@ -516,7 +516,7 @@ void main_stage_update(struct Ratr0Stage *this_stage,
             }
             rotate_cooldown = ROTATE_COOLDOWN_TIME;
         }
-    } else if (engine->input_system->was_action_pressed(action_hold)) {
+    } else if (ratr0_input_was_action_pressed(action_hold)) {
         if (player_state.can_swap_hold) {
             if (player_state.hold == -1) {
                 // just move the current piece to the hold and

@@ -147,7 +147,7 @@ void set_zero_flag(void) = "\tmoveq.l\t#0,d0\n";
 void VertBServer()
 {
     frames_elapsed++;
-    engine->input_system->update();
+    ratr0_input_update();
     ratr0_timers_tick();
     set_zero_flag();
 }

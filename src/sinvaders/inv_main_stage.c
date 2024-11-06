@@ -33,14 +33,14 @@ void main_stage_update(struct Ratr0Stage *this_stage,
                        UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
-    if (engine->input_system->was_action_pressed(action_fire)) {
+    if (ratr0_input_was_action_pressed(action_fire)) {
         ratr0_engine_exit();
     }
-    if (engine->input_system->was_action_pressed(action_move_left)) {
+    if (ratr0_input_was_action_pressed(action_move_left)) {
         for (int i = 0; i < NUM_BOBS; i++) {
             bobs[i]->base_obj.translate.x--;
         }
-    } else if (engine->input_system->was_action_pressed(action_move_right)) {
+    } else if (ratr0_input_was_action_pressed(action_move_right)) {
         for (int i = 0; i < NUM_BOBS; i++) {
             bobs[i]->base_obj.translate.x++;
         }

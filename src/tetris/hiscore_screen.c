@@ -17,9 +17,9 @@ extern RATR0_ACTION_ID action_quit, action_drop;
 void hiscore_screen_update(struct Ratr0Stage *this_stage,
                            struct Ratr0DisplayBuffer *backbuffer,
                            UINT8 frame_elapsed) {
-    if (engine->input_system->was_action_pressed(action_quit)) {
+    if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
-    } else if (engine->input_system->was_action_pressed(action_drop)) {
+    } else if (ratr0_input_was_action_pressed(action_drop)) {
         //struct Ratr0Stage *main_stage = setup_main_stage(engine);
         //engine->stages_system->set_current_stage(main_stage);
     }

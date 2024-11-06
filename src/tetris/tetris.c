@@ -34,32 +34,32 @@ int main(int argc, char **argv)
 
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config, &display_init);
     // Additional game engine setup: input mapping etc.
-    action_move_left = engine->input_system->alloc_action();
-    action_move_right = engine->input_system->alloc_action();
-    action_move_down = engine->input_system->alloc_action();
-    action_rotate_right = engine->input_system->alloc_action();
-    action_rotate_left = engine->input_system->alloc_action();
-    action_hold = engine->input_system->alloc_action();
-    action_drop = engine->input_system->alloc_action();
-    action_quit = engine->input_system->alloc_action();
+    action_move_left = ratr0_input_alloc_action();
+    action_move_right = ratr0_input_alloc_action();
+    action_move_down = ratr0_input_alloc_action();
+    action_rotate_right = ratr0_input_alloc_action();
+    action_rotate_left = ratr0_input_alloc_action();
+    action_hold = ratr0_input_alloc_action();
+    action_drop = ratr0_input_alloc_action();
+    action_quit = ratr0_input_alloc_action();
 
-    engine->input_system->map_input_to_action(action_move_left, RATR0_IC_KB,
-                                              RATR0_KEY_LEFT);
-    engine->input_system->map_input_to_action(action_move_right, RATR0_IC_KB,
-                                              RATR0_KEY_RIGHT);
-    engine->input_system->map_input_to_action(action_move_down, RATR0_IC_KB,
-                                              RATR0_KEY_DOWN);
-    engine->input_system->map_input_to_action(action_rotate_right, RATR0_IC_KB,
-                                              RATR0_KEY_UP);
+    ratr0_input_map_input_to_action(action_move_left, RATR0_IC_KB,
+                                    RATR0_KEY_LEFT);
+    ratr0_input_map_input_to_action(action_move_right, RATR0_IC_KB,
+                                    RATR0_KEY_RIGHT);
+    ratr0_input_map_input_to_action(action_move_down, RATR0_IC_KB,
+                                    RATR0_KEY_DOWN);
+    ratr0_input_map_input_to_action(action_rotate_right, RATR0_IC_KB,
+                                    RATR0_KEY_UP);
     // TODO: consider something like Z or Q to rotate left
-    engine->input_system->map_input_to_action(action_drop, RATR0_IC_KB,
-                                              RATR0_KEY_SPACE);
-    engine->input_system->map_input_to_action(action_hold, RATR0_IC_KB,
-                                              RATR0_KEY_RAW_Z);
+    ratr0_input_map_input_to_action(action_drop, RATR0_IC_KB,
+                                    RATR0_KEY_SPACE);
+    ratr0_input_map_input_to_action(action_hold, RATR0_IC_KB,
+                                    RATR0_KEY_RAW_Z);
 
     // non-game actions
-    engine->input_system->map_input_to_action(action_quit, RATR0_IC_KB,
-                                              RATR0_KEY_ESCAPE);
+    ratr0_input_map_input_to_action(action_quit, RATR0_IC_KB,
+                                    RATR0_KEY_ESCAPE);
 
 
     //struct Ratr0Stage *main_stage = setup_main_stage(engine);

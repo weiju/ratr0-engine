@@ -33,7 +33,6 @@ extern struct ExecBase *SysBase;
 #define RAW_KEY_C            (0x33)
 
 void ratr0_input_shutdown(void);
-void ratr0_input_update(void);
 static struct Ratr0InputSystem input_system;
 static Ratr0Engine *engine;
 
@@ -212,9 +211,10 @@ static UINT16 num_registered_keys = 0;
 /**
  * NOTE: no limit check !!!
  */
-RATR0_ACTION_ID ratr0_alloc_action(void) { return next_input_action++; }
+RATR0_ACTION_ID ratr0_input_alloc_action(void) { return next_input_action++; }
 
-void ratr0_map_input_to_action(RATR0_ACTION_ID action_id, UINT16 input_class, UINT16 input_id)
+void ratr0_input_map_input_to_action(RATR0_ACTION_ID action_id,
+                                     UINT16 input_class, UINT16 input_id)
 {
     struct Ratr0InputEvent *list_item = action2input[action_id];
     struct Ratr0InputEvent *evt = &input_def_pool[next_input_def++];
@@ -241,7 +241,7 @@ void ratr0_map_input_to_action(RATR0_ACTION_ID action_id, UINT16 input_class, UI
     registered_keys[num_registered_keys++] = input_id;
 }
 
-BOOL ratr0_was_action_pressed(RATR0_ACTION_ID action_id)
+BOOL ratr0_input_was_action_pressed(RATR0_ACTION_ID action_id)
 {
     return action_occurred[action_id];
 }
@@ -261,11 +261,6 @@ struct Ratr0InputSystem *ratr0_input_startup(Ratr0Engine *eng)
     }
 
     input_system.shutdown = &ratr0_input_shutdown;
-    input_system.update = &ratr0_input_update;
-    input_system.alloc_action = &ratr0_alloc_action;
-    input_system.map_input_to_action = &ratr0_map_input_to_action;
-    input_system.was_action_pressed = &ratr0_was_action_pressed;
-
     init_keyboard_device();
 
     PRINT_DEBUG("Startup finished.");

@@ -74,35 +74,7 @@ struct Ratr0InputSystem {
      * Shuts down the input subsystem.
      */
     void (*shutdown)(void);
-    /**
-     * Update the input system state.
-     */
-    void (*update)(void);
 
-    /**
-     * Allocate an action.
-     *
-     * @return a new action id
-     */
-    RATR0_ACTION_ID (*alloc_action)(void);
-
-    /**
-     * Maps an input to an action. Multiple inputs can be mapped to an action.
-     *
-     * @param action_id the action id
-     * @param input_class input class
-     * @param input_id input id
-     */
-    void (*map_input_to_action)(RATR0_ACTION_ID action_id, UINT16 input_class, UINT16 input_id);
-
-    /**
-     * Returns TRUE if the specified action was pressed in the current loop iteration.
-     * Multiple actions can  be active in a single loop iteration.
-     *
-     * @param action_id action id
-     * @return TRUE if action was pressed, FALSE otherwise
-     */
-    BOOL (*was_action_pressed)(RATR0_ACTION_ID action_id);
 };
 
 /**
@@ -112,5 +84,37 @@ struct Ratr0InputSystem {
  * @return pointer to initialized Ratr0InputSystem
  */
 extern struct Ratr0InputSystem *ratr0_input_startup(Ratr0Engine *engine);
+
+/**
+ * Allocate an action.
+ *
+ * @return a new action id
+ */
+extern RATR0_ACTION_ID ratr0_input_alloc_action(void);
+
+/**
+ * Maps an input to an action. Multiple inputs can be mapped to an action.
+ *
+ * @param action_id the action id
+ * @param input_class input class
+ * @param input_id input id
+ */
+extern void ratr0_input_map_input_to_action(RATR0_ACTION_ID action_id,
+                                             UINT16 input_class,
+                                             UINT16 input_id);
+
+/**
+ * Returns TRUE if the specified action was pressed in the current loop iteration.
+ * Multiple actions can  be active in a single loop iteration.
+ *
+ * @param action_id action id
+ * @return TRUE if action was pressed, FALSE otherwise
+ */
+extern BOOL ratr0_input_was_action_pressed(RATR0_ACTION_ID action_id);
+
+/**
+ * Poll the input systems. Called in every frame.
+ */
+extern void ratr0_input_update(void);
 
 #endif /* __RATR0_INPUT_H__ */

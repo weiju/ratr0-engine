@@ -30,12 +30,12 @@ void main_stage_update(struct Ratr0Stage *this_stage,
                        UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing
-    if (engine->input_system->was_action_pressed(action_fire)) {
+    if (ratr0_input_was_action_pressed(action_fire)) {
         ratr0_engine_exit();
     }
-    if (engine->input_system->was_action_pressed(action_move_left)) {
+    if (ratr0_input_was_action_pressed(action_move_left)) {
         //
-    } else if (engine->input_system->was_action_pressed(action_move_right)) {
+    } else if (ratr0_input_was_action_pressed(action_move_right)) {
         //
     }
     if (centi_dir > 0 && centi->base_obj.bounds.x >= 200) centi_dir = -centi_dir;

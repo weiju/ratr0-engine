@@ -22,15 +22,15 @@ int main(int argc, char **argv)
 
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config, &display_init);
     // Additional game engine setup: input mapping etc.
-    action_move_left = engine->input_system->alloc_action();
-    action_move_right = engine->input_system->alloc_action();
-    action_fire = engine->input_system->alloc_action();
-    engine->input_system->map_input_to_action(action_move_left, RATR0_IC_JS1,
-                                              RATR0_INPUT_JS_LEFT);
-    engine->input_system->map_input_to_action(action_move_right, RATR0_IC_JS1,
-                                              RATR0_INPUT_JS_RIGHT);
-    engine->input_system->map_input_to_action(action_fire, RATR0_IC_JS1, RATR0_INPUT_JS_BUTTON0);
-    engine->input_system->map_input_to_action(action_fire, RATR0_IC_KB, RATR0_KEY_ESCAPE);
+    action_move_left = ratr0_input_alloc_action();
+    action_move_right = ratr0_input_alloc_action();
+    action_fire = ratr0_input_alloc_action();
+    ratr0_input_map_input_to_action(action_move_left, RATR0_IC_JS1,
+                                    RATR0_INPUT_JS_LEFT);
+    ratr0_input_map_input_to_action(action_move_right, RATR0_IC_JS1,
+                                    RATR0_INPUT_JS_RIGHT);
+    ratr0_input_map_input_to_action(action_fire, RATR0_IC_JS1, RATR0_INPUT_JS_BUTTON0);
+    ratr0_input_map_input_to_action(action_fire, RATR0_IC_KB, RATR0_KEY_ESCAPE);
 
     struct Ratr0Stage *main_stage = setup_main_stage(engine);
     engine->stages_system->set_current_stage(main_stage);
