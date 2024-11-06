@@ -67,7 +67,7 @@ struct Ratr0SpriteSheet outlines_sheet;
 struct Ratr0HWSprite *outline_frame[9];
 
 // for palette animation
-Ratr0Timer *outline_timer;
+Ratr0TimerHandle outline_timer;
 
 struct PlayerState player_state;
 
@@ -712,7 +712,8 @@ void main_stage_on_exit(struct Ratr0Stage *this_stage)
     // clear all rendering related queues
     clear_render_queues();
 
-    // TODO: create free timer function and free the timer
+    // free the timer
+    ratr0_timers_free(outline_timer);
 }
 
 struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)

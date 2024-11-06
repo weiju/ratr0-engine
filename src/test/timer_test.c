@@ -25,13 +25,8 @@ void *ratr0_memory_block_address(Ratr0MemHandle handle) { return mock_mem; }
 void timertest_setup(void *userdata)
 {
     mock_mem = NULL;
-    /*
-    memsys.allocate_block = &mock_allocate_block;
-    memsys.free_block = &mock_free_block;
-    memsys.block_address = &mock_block_address;
-    mock_engine.memory_system = &memsys;
-    */
 }
+
 void timertest_teardown(void *userdata) {
     if (mock_mem) {
         free(mock_mem);
@@ -50,7 +45,9 @@ void dummy_notify() { }
 CHIBI_TEST(TestInitTimer)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = ratr0_timers_create(5, FALSE, dummy_notify);
+    Ratr0TimerHandle timer_handle = ratr0_timers_create(5, FALSE, dummy_notify);
+    struct Ratr0Timer *timer = ratr0_timers_get(timer_handle);
+
     chibi_assert_eq_int(5, timer->current_value);
     chibi_assert_eq_int(5, timer->start_value);
     chibi_assert_eq_int(FALSE, timer->oneshot);
@@ -64,7 +61,8 @@ CHIBI_TEST(TestInitTimer)
 CHIBI_TEST(TestUpdateTimerIsRunning)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = ratr0_timers_create(5, FALSE, dummy_notify);
+    Ratr0TimerHandle timer_handle = ratr0_timers_create(5, FALSE, dummy_notify);
+    struct Ratr0Timer *timer = ratr0_timers_get(timer_handle);
 
     ratr0_timers_tick();
     chibi_assert_eq_int(4, timer->current_value);
@@ -76,7 +74,8 @@ CHIBI_TEST(TestUpdateTimerIsRunning)
 CHIBI_TEST(TestUpdateTimerNotRunning)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = ratr0_timers_create(5, FALSE, dummy_notify);
+    Ratr0TimerHandle timer_handle = ratr0_timers_create(5, FALSE, dummy_notify);
+    struct Ratr0Timer *timer = ratr0_timers_get(timer_handle);
     timer->running = FALSE;
 
     ratr0_timers_tick();
@@ -95,7 +94,8 @@ void notify01()
 CHIBI_TEST(TestUpdateTimerTimeout)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = ratr0_timers_create(3, 0, notify01);
+    Ratr0TimerHandle timer_handle = ratr0_timers_create(3, 0, notify01);
+    struct Ratr0Timer *timer = ratr0_timers_get(timer_handle);
 
     /* Count down the timer */
     for (int i = 0; i < 3; i++) {
@@ -128,7 +128,8 @@ void notify02()
 CHIBI_TEST(TestUpdateTimerTimeoutOneShot)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer = ratr0_timers_create(3, TRUE, notify02);
+    Ratr0TimerHandle timer_handle = ratr0_timers_create(3, TRUE, notify02);
+    struct Ratr0Timer *timer = ratr0_timers_get(timer_handle);
 
     /* Count down the timer */
     for (int i = 0; i < 3; i++) {
@@ -149,7 +150,6 @@ CHIBI_TEST(TestUpdateTimerTimeoutOneShot)
     chibi_assert_eq_int(0, timer->current_value);
 }
 
-
 /*
  * Check that timer function is notified and value is reset when timer value reaches 0.
  */
@@ -162,8 +162,10 @@ void notify04() { was_notified04++; }
 CHIBI_TEST(TestUpdate2TimersTimeout)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 5);
-    Ratr0Timer *timer1 = ratr0_timers_create(3, 0, notify03);
-    Ratr0Timer *timer2 = ratr0_timers_create(3, 0, notify04);
+    Ratr0TimerHandle timer_handle1 = ratr0_timers_create(3, 0, notify03);
+    Ratr0TimerHandle timer_handle2 = ratr0_timers_create(3, 0, notify04);
+    struct Ratr0Timer *timer1 = ratr0_timers_get(timer_handle1);
+    struct Ratr0Timer *timer2 = ratr0_timers_get(timer_handle2);
 
     /* Count down the timer */
     for (int i = 0; i < 3; i++) {
@@ -177,11 +179,27 @@ CHIBI_TEST(TestUpdate2TimersTimeout)
 CHIBI_TEST(TestCreateTooManyTimers)
 {
     struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 2);
-    Ratr0Timer *timer1 = ratr0_timers_create(3, 0, NULL);
-    Ratr0Timer *timer2 = ratr0_timers_create(3, 0, NULL);
-    Ratr0Timer *timer3 = ratr0_timers_create(3, 0, NULL);
+    Ratr0TimerHandle timer_handle1 = ratr0_timers_create(3, 0, NULL);
+    Ratr0TimerHandle timer_handle2 = ratr0_timers_create(3, 0, NULL);
+    Ratr0TimerHandle timer_handle3 = ratr0_timers_create(3, 0, NULL);
 
-    chibi_assert(timer3 == NULL);
+    chibi_assert_eq_int(-1, timer_handle3);
+}
+
+CHIBI_TEST(TestCreateAndFreeTimers)
+{
+    struct Ratr0TimerSystem *timer_sys = ratr0_timers_startup(&mock_engine, 2);
+    Ratr0TimerHandle timer_handle1 = ratr0_timers_create(3, 0, NULL);
+    Ratr0TimerHandle timer_handle2 = ratr0_timers_create(3, 0, NULL);
+
+    ratr0_timers_free(timer_handle1);
+    Ratr0TimerHandle timer_handle3 = ratr0_timers_create(3, 0, NULL);
+
+    // this is the handle of the freed object
+    chibi_assert_eq_int(timer_handle1, timer_handle3);
+
+    struct Ratr0Timer *timer2 = ratr0_timers_get(timer_handle2);
+    chibi_assert_eq_int(-1, timer2->next);
 }
 
 
@@ -193,15 +211,15 @@ chibi_suite *CoreSuite(void)
 {
     chibi_suite *suite = chibi_suite_new_fixture("ratr0.TimerSuite", timertest_setup,
                                                  timertest_teardown, NULL);
+
     chibi_suite_add_test(suite, TestInitTimer);
     chibi_suite_add_test(suite, TestUpdateTimerIsRunning);
     chibi_suite_add_test(suite, TestUpdateTimerNotRunning);
     chibi_suite_add_test(suite, TestUpdateTimerTimeout);
     chibi_suite_add_test(suite, TestUpdateTimerTimeoutOneShot);
-	// BUG: this hangs !!!!
-    //chibi_suite_add_test(suite, TestUpdate2TimersTimeout);
+    chibi_suite_add_test(suite, TestUpdate2TimersTimeout);
     chibi_suite_add_test(suite, TestCreateTooManyTimers);
-
+    chibi_suite_add_test(suite, TestCreateAndFreeTimers);
     return suite;
 }
 

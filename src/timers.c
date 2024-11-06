@@ -15,7 +15,7 @@ static Ratr0Engine *engine;
  * are constant time operations.
  */
 static Ratr0MemHandle h_timers;
-static Ratr0Timer *timers;
+static struct Ratr0Timer *timers;
 
 /* Timer pool management variables */
 static UINT16 max_timers;
@@ -27,7 +27,7 @@ static INT16 first_free_timer = 0;
 static INT16 first_used_timer = -1;
 
 
-void ratr0_timers_update(Ratr0Timer *timer)
+void ratr0_timers_update(struct Ratr0Timer *timer)
 {
     if (timer && timer->running) {
         timer->current_value--;
@@ -42,17 +42,20 @@ void ratr0_timers_update(Ratr0Timer *timer)
     }
 }
 
-Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void))
+Ratr0TimerHandle ratr0_timers_create(INT32 start_value, BOOL oneshot,
+                                       void (*timeout_fun)(void))
 {
     /* can't create more */
     if (num_used_timers == max_timers) {
+#ifndef TEST
         PRINT_DEBUG("maximum number of timers (%d) exceeded !", (int) max_timers);
-        return NULL;
+#endif
+        return -1;
     }
     int next_free_timer = timers[first_free_timer].next;  // next in chain
     int timer_idx = first_free_timer;
 
-    Ratr0Timer *timer = &timers[timer_idx];
+    struct Ratr0Timer *timer = &timers[timer_idx];
     timer->start_value = start_value;
     timer->current_value = start_value;
     timer->oneshot = oneshot;
@@ -73,7 +76,7 @@ Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_
     // This was a fresh timer, so just increment the free index
     if (next_free_timer == -1) first_free_timer++;
     num_used_timers++;
-    return timer;
+    return timer_idx;
 }
 
 void ratr0_timers_tick(void)
@@ -93,7 +96,7 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size
     // Initialize the timer pool
     max_timers = pool_size;
     h_timers = ratr0_memory_allocate_block(RATR0_MEM_DEFAULT,
-                                           sizeof(Ratr0Timer) * pool_size);
+                                           sizeof(struct Ratr0Timer) * pool_size);
     timers = ratr0_memory_block_address(h_timers);
     for (int i = 0; i < pool_size; i++) {
         timers[i].running = FALSE;
@@ -103,8 +106,43 @@ struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *eng, UINT16 pool_size
     first_free_timer = 0;
     first_used_timer = -1;
 
+#ifndef TEST
     PRINT_DEBUG("Startup finished.");
+#endif
     return &timer_system;
+}
+
+struct Ratr0Timer *ratr0_timers_get(Ratr0TimerHandle handle)
+{
+    return &timers[handle];
+}
+
+void ratr0_timers_free(Ratr0TimerHandle handle)
+{
+    if (handle == -1 || handle >= max_timers) {
+        PRINT_DEBUG("ERROR: trying to free invalid timer handle");
+        return;
+    }
+    // if the freed timer was the first one, make the next timer in the
+    // chain the next first used one
+    if (handle == first_used_timer) {
+        first_used_timer = timers[handle].next;
+    }
+    // put this timer at the start of the free chain
+    timers[first_free_timer].prev = handle;
+
+    // unlink this timer from the chain
+    if (timers[handle].prev != -1) {
+        timers[timers[handle].prev].next = timers[handle].next;
+    }
+
+    // now continue appending the rest of the current free timer chain
+    // to this new free timer and make it the first in the free chain
+    timers[handle].next = first_free_timer;
+    first_free_timer = handle;
+
+    // of course the number of used timers is now less
+    num_used_timers--;
 }
 
 void ratr0_timers_shutdown(void)

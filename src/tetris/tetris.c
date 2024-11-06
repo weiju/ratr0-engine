@@ -2,6 +2,7 @@
 #include <ratr0/ratr0.h>
 #include "main_stage.h"
 #include "title_screen.h"
+#include "hiscore_screen.h"
 
 #define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mTETRIS\033[0m", __VA_ARGS__)
 
@@ -63,6 +64,7 @@ int main(int argc, char **argv)
 
     //struct Ratr0Stage *main_stage = setup_main_stage(engine);
     struct Ratr0Stage *main_stage = setup_titlescreen_stage(engine);
+    //struct Ratr0Stage *main_stage = setup_hiscorescreen_stage(engine);
     engine->stages_system->set_current_stage(main_stage);
 
     // START THE ENGINE !!!!

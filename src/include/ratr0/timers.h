@@ -16,7 +16,7 @@
  * Data structure for a timer object. A timer counts from the start value
  * down to 0 and then either restarts or stops.
  */
-typedef struct _Timer {
+struct Ratr0Timer {
     /** \brief timer start value */
     INT32 start_value;
     /** \brief timer current value */
@@ -32,12 +32,13 @@ typedef struct _Timer {
     void (*timeout_fun)(void);
 
     // private, for management of free timers in the pool
-    /** \brief next free timer in the pool */
-    UINT16 next;
-    /** \brief previous free timer in the pool */
-    UINT16 prev;
-} Ratr0Timer;
+    /** \brief next free timer in the pool, -1 is undefined  */
+    INT16 next;
+    /** \brief previous free timer in the pool, -1 is undefined */
+    INT16 prev;
+};
 
+typedef UINT32 Ratr0TimerHandle;
 /**
  * Interface to the timer system.
  */
@@ -64,10 +65,27 @@ extern struct Ratr0TimerSystem *ratr0_timers_startup(Ratr0Engine *engine, UINT16
  * @param start_value timer start value
  * @param oneshot TRUE if this is a one-shot timer, FALSE otherwise
  * @param timeout_fun user-provided timeout callback
- * @return pointer to initialize Ratr0Timer object
+ * @return handle to the Ratr0Timer object
  */
-extern Ratr0Timer *ratr0_timers_create(INT32 start_value, BOOL oneshot, void (*timeout_fun)(void));
+extern Ratr0TimerHandle ratr0_timers_create(INT32 start_value,
+                                            BOOL oneshot,
+                                            void (*timeout_fun)(void));
 
+
+/**
+ * Retrieve the Ratr0Timer object associated with the specified handle.
+ *
+ * @param handle handle to the Ratr0Timer object
+ * @return pointer to the Ratr0Timer object
+ */
+extern struct Ratr0Timer *ratr0_timers_get(Ratr0TimerHandle handle);
+
+/**
+ * Free a timer object.
+ *
+ * @param handle handle to the Ratr0Timer object
+ */
+extern void ratr0_timers_free(Ratr0TimerHandle handle);
 
 /**
  * This function is called every frame to update the timers.
