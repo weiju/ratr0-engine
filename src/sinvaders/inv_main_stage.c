@@ -118,7 +118,7 @@ struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
 {
     engine = eng;
     // Use the stages module to create a stage and run that
-    struct Ratr0NodeFactory *node_factory = engine->stages_system->get_node_factory();
+    struct Ratr0NodeFactory *node_factory = ratr0_stages_get_node_factory();
     struct Ratr0Stage *main_stage = node_factory->create_stage();
     main_stage->update = main_stage_update;
 

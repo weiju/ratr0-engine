@@ -145,31 +145,9 @@ struct Ratr0NodeFactory {
  */
 struct Ratr0StagesSystem {
     /**
-     * Sets the currently active stage.
-     *
-     * @param stage the stage to set
-     */
-    void (*set_current_stage)(struct Ratr0Stage *stage);
-
-    /**
-     * Called every game loop iteration to update the Stages system.
-     *
-     * @param backbuffer the backbuffer of the display
-     * @param frames_elapsed frames elapsed since last invocation
-     */
-    void (*update)(struct Ratr0DisplayBuffer *backbuffer, UINT8 frames_elapsed);
-
-    /**
      * Shutdown the Stages subsystem.
      */
     void (*shutdown)(void);
-
-    /**
-     * Retrieve the singleton node factory instance.
-     *
-     * @return the singleton node factory instance
-     */
-    struct Ratr0NodeFactory *(*get_node_factory)(void);
 };
 
 /**
@@ -179,5 +157,29 @@ struct Ratr0StagesSystem {
  * @return an initialized Ratr0StagesSystem instance
  */
 extern struct Ratr0StagesSystem *ratr0_stages_startup(Ratr0Engine *eng);
+
+/**
+ * Retrieve the singleton node factory instance.
+ *
+ * @return the singleton node factory instance
+ */
+extern struct Ratr0NodeFactory *ratr0_stages_get_node_factory(void);
+
+/**
+ * Sets the currently active stage.
+ *
+ * @param stage the stage to set
+ */
+extern void ratr0_stages_set_current_stage(struct Ratr0Stage *stage);
+
+/**
+ * Called every game loop iteration to update the Stages system.
+ *
+ * @param backbuffer the backbuffer of the display
+ * @param frames_elapsed frames elapsed since last invocation
+ */
+extern void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
+                                UINT8 frames_elapsed);
+
 
 #endif /* __RATR0_STAGES_H__ */

@@ -6,6 +6,9 @@
 
 #include <devices/keyboard.h>
 #include <devices/input.h>
+#include <devices/console.h>
+#include <devices/conunit.h>
+
 #include <exec/execbase.h>
 #include <SDI/SDI_compiler.h>
 
@@ -44,8 +47,9 @@ static Ratr0Engine *engine;
  */
 // To handle input
 static BYTE error;
-static struct MsgPort *kb_mp;
-static struct IOStdReq *kb_io;
+static struct MsgPort *kb_mp, *console_mp;
+static struct IOStdReq *kb_io, *console_io;
+
 static UBYTE *kb_matrix;
 #define MATRIX_SIZE (16L)
 
@@ -71,14 +75,32 @@ static volatile UINT16 *custom_joy1dat = (volatile UINT16 *) 0xdff00c;
 
  */
 
+static BOOL init_console_device(void)
+{
+    console_mp = CreatePort(0, 0);
+    console_io = (struct IOStdReq *) CreateExtIO(console_mp,
+                                                 sizeof(struct IOStdReq));
+    error = OpenDevice("console.device", CONU_LIBRARY,
+                       (struct IORequest *) console_io, 0);
+    return TRUE;
+}
 
-static int init_keyboard_device(void)
+static void cleanup_console_device(void)
+{
+    if (console_io) {
+        CloseDevice((struct IORequest *) console_io);
+        DeleteExtIO((struct IORequest *) console_io);
+    }
+    if (console_mp) DeletePort(console_mp);
+}
+
+static BOOL init_keyboard_device(void)
 {
     kb_mp = CreatePort(0, 0);
     kb_io = (struct IOStdReq *) CreateExtIO(kb_mp, sizeof(struct IOStdReq));
     error = OpenDevice("keyboard.device", 0L, (struct IORequest *) kb_io, 0);
     kb_matrix = AllocMem(MATRIX_SIZE, MEMF_PUBLIC|MEMF_CLEAR);
-    return 1;
+    return TRUE;
 }
 
 static void cleanup_keyboard_device(void)

@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     //struct Ratr0Stage *main_stage = setup_main_stage(engine);
     struct Ratr0Stage *main_stage = setup_titlescreen_stage(engine);
     //struct Ratr0Stage *main_stage = setup_hiscorescreen_stage(engine);
-    engine->stages_system->set_current_stage(main_stage);
+    ratr0_stages_set_current_stage(main_stage);
 
     // START THE ENGINE !!!!
     engine->game_loop();

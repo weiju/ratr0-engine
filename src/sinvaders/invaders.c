@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     ratr0_input_map_input_to_action(action_fire, RATR0_IC_JS1, RATR0_INPUT_JS_BUTTON0);
 
     struct Ratr0Stage *main_stage = setup_main_stage(engine);
-    engine->stages_system->set_current_stage(main_stage);
+    ratr0_stages_set_current_stage(main_stage);
 
     // START THE ENGINE !!!!
     engine->game_loop();

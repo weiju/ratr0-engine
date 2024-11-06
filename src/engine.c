@@ -46,7 +46,7 @@ void ratr0_engine_game_loop(void)
         WaitTOF();
         //*custom_color00 = 0xf00;
         // comment in for visual timing the loop iteration
-        engine.stages_system->update(back_buffer ,frames_elapsed);
+        ratr0_stages_update(back_buffer, frames_elapsed);
         //*custom_color00 = 0x000;
         // we are done with the back buffer. now swap it to the front
         back_buffer = ratr0_display_swap_buffers();

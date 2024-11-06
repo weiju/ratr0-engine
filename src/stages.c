@@ -27,8 +27,6 @@ static struct Ratr0Stage *current_stage = NULL;
 static struct Ratr0Backdrop *backdrop = NULL;
 
 static void ratr0_stages_shutdown(void);
-static void ratr0_stages_update(struct Ratr0DisplayBuffer *, UINT8);
-static void ratr0_stages_set_current_stage(struct Ratr0Stage *);
 
 /**
  * Node factory
@@ -41,7 +39,10 @@ static UINT16 next_stage = 0;
 struct Ratr0Backdrop _backdrops[2]; // we don't have many of those
 static UINT16 next_backdrop = 0;
 
-static struct Ratr0NodeFactory *ratr0_stages_get_node_factory(void) { return &node_factory; }
+struct Ratr0NodeFactory *ratr0_stages_get_node_factory(void)
+{
+    return &node_factory;
+}
 
 static struct Ratr0Stage *ratr0_stages_create_stage(void)
 {
@@ -66,15 +67,12 @@ struct Ratr0StagesSystem *ratr0_stages_startup(Ratr0Engine *eng)
     engine = eng;
     current_stage = NULL;
 
-    stages_system.update = &ratr0_stages_update;
     stages_system.shutdown = &ratr0_stages_shutdown;
-    stages_system.set_current_stage = &ratr0_stages_set_current_stage;
 
     // Node factory
     node_factory.create_stage = &ratr0_stages_create_stage;
     node_factory.create_sprite = &ratr0_nf_create_sprite;
     node_factory.create_backdrop = &ratr0_nf_create_backdrop;
-    stages_system.get_node_factory = &ratr0_stages_get_node_factory;
 
     PRINT_DEBUG("Startup finished.");
     return &stages_system;
@@ -85,7 +83,7 @@ static void ratr0_stages_shutdown(void)
     PRINT_DEBUG("Shutdown finished.");
 }
 
-static void ratr0_stages_set_current_stage(struct Ratr0Stage *stage)
+void ratr0_stages_set_current_stage(struct Ratr0Stage *stage)
 {
     // Leave previous stage if existing
     if (current_stage && current_stage->on_exit) {
@@ -283,8 +281,8 @@ static void _update_sprites(void)
     }
 }
 
-static void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
-                                UINT8 frames_elapsed)
+void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
+                         UINT8 frames_elapsed)
 {
     if (current_stage) {
         // update the stage

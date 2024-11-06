@@ -21,7 +21,7 @@ void title_screen_update(struct Ratr0Stage *this_stage,
         ratr0_engine_exit();
     } else if (ratr0_input_was_action_pressed(action_drop)) {
         struct Ratr0Stage *main_stage = setup_main_stage(engine);
-        engine->stages_system->set_current_stage(main_stage);
+        ratr0_stages_set_current_stage(main_stage);
     }
 }
 
@@ -54,7 +54,7 @@ struct Ratr0Stage *setup_titlescreen_stage(Ratr0Engine *eng)
 {
     engine = eng;
     // Use the stages module to create a stage and run that
-    struct Ratr0NodeFactory *node_factory = engine->stages_system->get_node_factory();
+    struct Ratr0NodeFactory *node_factory = ratr0_stages_get_node_factory();
     struct Ratr0Stage *this_stage = node_factory->create_stage();
     this_stage->update = title_screen_update;
     this_stage->on_enter = title_screen_on_enter;
