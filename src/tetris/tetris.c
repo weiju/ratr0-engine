@@ -29,7 +29,8 @@ int main(int argc, char **argv)
     };
     struct Ratr0MemoryConfig mem_config = {
         8192, 40,   // 8k general purpose memory with max 20 mem blocks
-        131072, 40  // 128k chip memory with max 20 mem blocks
+        //131072, 40  // 128k chip memory with max 20 mem blocks
+        262144, 40  // 256k chip memory with max 40 mem blocks
     };
 
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config, &display_init);

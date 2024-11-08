@@ -926,6 +926,45 @@ void init_hiscore_list(void)
     }
 }
 
+BOOL is_new_hiscore(UINT32 score)
+{
+    return score > hiscore_list[MAX_HIGHSCORE_ENTRIES - 1].points;
+}
+
+INT16 find_hiscore_insert_index(UINT32 score)
+{
+    for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
+        if (hiscore_list[i].points < score) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void shift_hiscore_entries_from(UINT16 index)
+{
+    for (int i = MAX_HIGHSCORE_ENTRIES - 2; i >= index; i--) {
+        hiscore_list[i + 1].points = hiscore_list[i].points;
+        for (int j = 0; j < MAX_HIGHSCORE_INITIALS_CHARS; j++) {
+            hiscore_list[i + 1].initials[j] = hiscore_list[i].initials[j];
+        }
+    }
+}
+
+void insert_hiscore(UINT8 initials[MAX_HIGHSCORE_INITIALS_CHARS], UINT32 score)
+{
+    if (is_new_hiscore(score)) {
+        int insert_index = find_hiscore_insert_index(score);
+
+        // move all entries from insert index down by one
+        shift_hiscore_entries_from(insert_index);
+        hiscore_list[insert_index].points = score;
+        for (int i = 0; i < MAX_HIGHSCORE_INITIALS_CHARS; i++) {
+            hiscore_list[insert_index].initials[i] = initials[i];
+        }
+    }
+}
+
 void save_hiscore_list(void)
 {
     FILE *fp = fopen(HISCORE_FILENAME, "w");

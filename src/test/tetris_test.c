@@ -17,6 +17,7 @@ void tetris_test_setup(void *userdata)
 {
     clear_board(&gameboard);
     init_move_regions(&move_regions);
+    init_hiscore_list();
 }
 void tetris_test_teardown(void *userdata) { }
 
@@ -505,6 +506,34 @@ CHIBI_TEST(TestExtractDigits)
     chibi_assert_eq_int('9', buffer[0]);
     chibi_assert_eq_int('6', buffer[1]);
     chibi_assert_eq_int('4', buffer[2]);
+
+    result = extract_digits(buffer, 4, 9999);
+    chibi_assert_eq_int(4, result);
+    buffer[result] = '\0';
+    chibi_assert_eq_int('9', buffer[0]);
+    chibi_assert_eq_int('9', buffer[1]);
+    chibi_assert_eq_int('9', buffer[2]);
+    chibi_assert_eq_int('9', buffer[3]);
+
+}
+
+void print_hiscore_list(void)
+{
+    for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
+        printf("%s - %d\n", hiscore_list[i].initials, hiscore_list[i].points);
+    }
+}
+
+CHIBI_TEST(TestInsertHiscore)
+{
+    chibi_assert(is_new_hiscore(2000));
+    chibi_assert(!is_new_hiscore(10));
+    chibi_assert_eq_int(0, find_hiscore_insert_index(20000));
+    chibi_assert_eq_int(-1, find_hiscore_insert_index(5));
+    chibi_assert_eq_int(7, find_hiscore_insert_index(3500));
+
+    UINT8 initials[MAX_HIGHSCORE_INITIALS_CHARS] = "WJW\0";
+    insert_hiscore(initials, 3500);
 }
 
 /*
@@ -535,6 +564,7 @@ chibi_suite *CoreSuite(void)
     chibi_suite_add_test(suite, TestDeleteRowsFromBoard_3Rows2Regions);
     chibi_suite_add_test(suite, TestNumDigits);
     chibi_suite_add_test(suite, TestExtractDigits);
+    chibi_suite_add_test(suite, TestInsertHiscore);
     return suite;
 }
 

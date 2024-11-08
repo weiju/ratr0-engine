@@ -251,5 +251,10 @@ extern struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
 extern void init_hiscore_list(void);
 extern void save_hiscore_list(void);
 extern void load_hiscore_list(void);
+extern BOOL is_new_hiscore(UINT32 score);
+// -1 means not found
+extern INT16 find_hiscore_insert_index(UINT32 score);
+extern void insert_hiscore(UINT8 initials[MAX_HIGHSCORE_INITIALS_CHARS],
+                           UINT32 score);
 
 #endif // !__GAME_DATA_H__
