@@ -23,7 +23,7 @@
 #define NUM_BLOCKS_PER_PIECE (4)
 #define MAX_COMPLETED_ROWS (4)
 #define MAX_MOVE_REGIONS (2)
-#define PIECE_QUEUE_LEN (40)
+#define PIECE_QUEUE_LEN (70)
 
 /** \brief Piece types */
 #define PIECE_UNDEFINED (-1)
@@ -247,6 +247,7 @@ struct HiscoreEntry {
 };
 
 extern struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
+extern UINT8 num_hiscore_entries;
 
 extern void init_hiscore_list(void);
 extern void save_hiscore_list(void);

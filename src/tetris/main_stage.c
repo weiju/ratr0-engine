@@ -179,6 +179,13 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
 
         // 4. TODO: display the game over message.
 
+        // 5. Preliminary: for now, just save the new hiscore
+        if (is_new_hiscore(player_state.score)) {
+            UINT8 initials[4] = "AAA";
+            insert_hiscore(initials, player_state.score);
+            save_hiscore_list();
+        }
+
         done_gameover_once = TRUE;
     }
 
@@ -594,7 +601,7 @@ static void _load_resources(void)
     struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
     ratr0_resources_init_surface_from_tilesheet(&bg_surf, &background_ts);
-    ratr0_display_blit_surface_to_buffers(&bg_surf);
+    ratr0_display_blit_surface_to_buffers(&bg_surf, 0, 0);
     ratr0_display_set_palette(background_ts.palette, 32, 0);
 
     // from here we don't need to the memory for the background

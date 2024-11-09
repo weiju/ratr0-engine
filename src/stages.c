@@ -97,7 +97,7 @@ void ratr0_stages_set_current_stage(struct Ratr0Stage *stage)
         // Make this the new backdrop for efficiency this is module global
         backdrop = current_stage->backdrop;
         // Blit the backdrop once if it exists
-        ratr0_display_blit_surface_to_buffers(&backdrop->surface);
+        ratr0_display_blit_surface_to_buffers(&backdrop->surface, 0, 0);
     }
     if (current_stage && current_stage->on_enter) {
         current_stage->on_enter(stage);

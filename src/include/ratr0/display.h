@@ -219,7 +219,8 @@ extern struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void);
  *
  * @param surface the Ratr0Surface to blit
  */
-extern BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface);
+extern BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface,
+                                                  UINT16 dstx, UINT16 dsty);
 
 //
 // Current front and back buffer numbers, these are made global for efficiency,

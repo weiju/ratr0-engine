@@ -16,15 +16,18 @@ UINT8 num_digits(UINT16 value)
     return result;
 }
 
-UINT8 extract_digits(UINT8 *digit_buffer, UINT8 max_digits, UINT16 value)
+UINT8 extract_digits(UINT8 *digit_buffer, UINT8 max_digits, UINT32 value)
 {
     UINT8 index = 0;
     UINT8 out_digit = value % 10;
-    UINT16 cur_value = value / 10;
+    UINT32 cur_value = value / 10;
     digit_buffer[index++] = '0' + out_digit;
     while (cur_value > 0) {
         out_digit = cur_value % 10;
         digit_buffer[index++] = '0' + out_digit;
+        if  (index >= max_digits) {
+            break;
+        }
         cur_value /= 10;
     }
     return index;

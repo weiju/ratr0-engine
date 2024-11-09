@@ -905,8 +905,26 @@ BOOL score_rows_cleared(struct PlayerState *player_state, int num_rows)
 
 void init_piece_queue(UINT8 (*piece_queue)[PIECE_QUEUE_LEN])
 {
-    for (int i = 0; i < PIECE_QUEUE_LEN; i++) {
-        (*piece_queue)[i] = rand() % 7;
+    BOOL bag[NUM_PIECES];
+    int pieces_drawn = 0;
+    int piece_queue_idx = 0;
+
+    while (piece_queue_idx < PIECE_QUEUE_LEN) {
+        // new bag
+        pieces_drawn = 0;
+        for (int i = 0; i < NUM_PIECES; i++) {
+            bag[i] = FALSE;
+        }
+
+        while (pieces_drawn < NUM_PIECES) {
+            int piece = rand() % NUM_PIECES;
+            if (!bag[piece]) {
+                bag[piece] = TRUE;
+                pieces_drawn++;
+                (*piece_queue)[piece_queue_idx++] = piece;
+                if (piece_queue_idx >= PIECE_QUEUE_LEN) break;
+            }
+        }
     }
 }
 
@@ -916,6 +934,7 @@ UINT8 piece_queue_idx = 0;
 
 struct HiscoreEntry hiscore_list[MAX_HIGHSCORE_ENTRIES];
 #define HISCORE_FILENAME "hiscores.dat"
+UINT8 num_hiscore_entries;
 
 void init_hiscore_list(void)
 {
@@ -924,6 +943,7 @@ void init_hiscore_list(void)
                 MAX_HIGHSCORE_INITIALS_CHARS);
         hiscore_list[i].points = 1000 * (10 - i);
     }
+    num_hiscore_entries = display_info.is_pal ? 7 : 5;
 }
 
 BOOL is_new_hiscore(UINT32 score)
@@ -998,4 +1018,5 @@ void load_hiscore_list(void)
         }
         fclose(fp);
     }
+    num_hiscore_entries = display_info.is_pal ? 7 : 5;
 }

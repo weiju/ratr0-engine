@@ -31,7 +31,7 @@ static void _load_resources(void)
     struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(TITLE_PATH_PAL, &titlescreen_ts);
     ratr0_resources_init_surface_from_tilesheet(&bg_surf, &titlescreen_ts);
-    ratr0_display_blit_surface_to_buffers(&bg_surf);
+    ratr0_display_blit_surface_to_buffers(&bg_surf, 0, 0);
     ratr0_display_set_palette(titlescreen_ts.palette, 32, 0);
 
     // from here we don't need to the memory for the background
@@ -50,6 +50,10 @@ void title_screen_on_enter(struct Ratr0Stage *this_stage)
     _load_resources();
 }
 
+void title_screen_on_exit(struct Ratr0Stage *this_stage)
+{
+}
+
 struct Ratr0Stage *setup_titlescreen_stage(Ratr0Engine *eng)
 {
     engine = eng;
@@ -58,6 +62,7 @@ struct Ratr0Stage *setup_titlescreen_stage(Ratr0Engine *eng)
     struct Ratr0Stage *this_stage = node_factory->create_stage();
     this_stage->update = title_screen_update;
     this_stage->on_enter = title_screen_on_enter;
+    this_stage->on_exit = title_screen_on_exit;
 
     return this_stage;
 }

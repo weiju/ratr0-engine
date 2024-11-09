@@ -8,6 +8,6 @@
  * score and level values to convert into the display
  */
 UINT8 num_digits(UINT16 value);
-UINT8 extract_digits(UINT8 *digit_buffer, UINT8 max_digits, UINT16 value);
+UINT8 extract_digits(UINT8 *digit_buffer, UINT8 max_digits, UINT32 value);
 
 #endif // !__TETRAZONE_UTILS_H__
