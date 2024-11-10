@@ -16,6 +16,8 @@ RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_hold,
     action_quit;
 
+struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
+
 int main(int argc, char **argv)
 {
     struct Ratr0DisplayInfo display_init = {
@@ -62,11 +64,10 @@ int main(int argc, char **argv)
     ratr0_input_map_input_to_action(action_quit, RATR0_IC_KB,
                                     RATR0_KEY_ESCAPE);
 
-
-    //struct Ratr0Stage *main_stage = setup_main_stage(engine);
-    struct Ratr0Stage *main_stage = setup_titlescreen_stage(engine);
-    //struct Ratr0Stage *main_stage = setup_hiscorescreen_stage(engine);
-    ratr0_stages_set_current_stage(main_stage);
+    main_stage = setup_main_stage(engine);
+    title_screen = setup_titlescreen_stage(engine);
+    hiscore_screen = setup_hiscorescreen_stage(engine);
+    ratr0_stages_set_current_stage(title_screen);
 
     // START THE ENGINE !!!!
     engine->game_loop();

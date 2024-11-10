@@ -943,7 +943,9 @@ void init_hiscore_list(void)
                 MAX_HIGHSCORE_INITIALS_CHARS);
         hiscore_list[i].points = 1000 * (10 - i);
     }
+#ifndef TEST
     num_hiscore_entries = display_info.is_pal ? 7 : 5;
+#endif
 }
 
 BOOL is_new_hiscore(UINT32 score)
@@ -1018,5 +1020,7 @@ void load_hiscore_list(void)
         }
         fclose(fp);
     }
+#ifndef TEST
     num_hiscore_entries = display_info.is_pal ? 7 : 5;
+#endif
 }

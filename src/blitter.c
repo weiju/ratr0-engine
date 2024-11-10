@@ -232,6 +232,61 @@ void ratr0_blit_clear8(struct Ratr0Surface *dst,
     custom.bltsize = bltsize;
 }
 
+
+// A fast large blit that clears a rectangular region with a D <- 0 blit
+// and the width is a multiple of 16. Use for things like clear screen
+void ratr0_blit_clear16(struct Ratr0Surface *dst,
+                        UINT16 dstx, UINT16 dsty,
+                        UINT16 width_pixels,
+                        UINT16 height_pixels)
+{
+    UINT16 dst_width_bytes = dst->width >> 3;
+    UINT16 blit_width_words = width_pixels >> 4;
+    // calculate start addresses in both source and destination
+    UINT32 dst_addr = ((UINT32) dst->buffer) + (dst_width_bytes * dsty * dst->depth) + (dstx >> 3);
+    int blit_height_total = height_pixels * dst->depth;
+
+    // modulos are in *bytes*
+    UINT16 dstmod = dst_width_bytes - (blit_width_words << 1);
+
+    int blit_height_rest = 0;
+    if (blit_height_total > 1024) {
+        blit_height_rest = blit_height_total - 1024;
+        blit_height_total = 1024;
+    }
+    UINT16 bltsize = (UINT16) (blit_height_total << 6) | blit_width_words & 0x3f;
+
+    // Blit 1: up to 1024 lines
+    WaitBlit();
+    // D = 0 => LF = 0x00, channel D is the only active channel
+    custom.bltcon0 = 0x0100;
+    custom.bltcon1 = 0; // unused
+
+    custom.bltafwm = 0xffff;
+    custom.bltalwm = 0xffff;
+
+    custom.bltamod = 0;
+    custom.bltbmod = 0;
+    custom.bltcmod = 0;
+    custom.bltdmod = dstmod;
+
+    custom.bltapt = 0;
+    custom.bltbpt = 0;
+    custom.bltcpt = 0;
+    custom.bltdpt = (UINT8 *) dst_addr;
+
+    custom.bltadat = 0;
+    custom.bltsize = bltsize;
+
+    // Blit 1: up to 1024 lines
+    if (blit_height_rest > 0) {
+        bltsize = (UINT16) (blit_height_rest << 6) | blit_width_words & 0x3f;
+        dst_addr += dst_width_bytes * 1024;
+        WaitBlit();
+        custom.bltsize = bltsize;
+    }
+}
+
 // Generic A (+) D -> D blit with shift
 // where
 //   - (+) is a logic function specified by LF

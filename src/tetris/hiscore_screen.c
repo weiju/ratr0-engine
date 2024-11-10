@@ -10,13 +10,15 @@
 #include "../default_copper.h"
 
 static Ratr0Engine *engine = NULL;
+extern struct Ratr0Stage *main_stage, *title_screen;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
 #define TITLE_PATH_PAL ("tetris/assets/hiscores_title.ts")
 #define FONT_PATH_PAL ("tetris/assets/hiscores_font.ts")
 struct Ratr0TileSheet title_ts, font_ts;
-struct Ratr0Surface font_surf;
+struct Ratr0Surface title_surf, font_surf;
+static BOOL resources_loaded = FALSE;
 
 void draw_char16(struct Ratr0Surface *surface,
                  struct Ratr0Surface *font_surface,
@@ -82,7 +84,6 @@ void hiscore_screen_update(struct Ratr0Stage *this_stage,
         draw_row(&backbuffer->surface, i + 1,
                  hiscore_list[i].initials, hiscore_list[i].points);
     }
-
     if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     } else if (ratr0_input_was_action_pressed(action_drop)) {
@@ -94,15 +95,13 @@ void hiscore_screen_update(struct Ratr0Stage *this_stage,
 static void _load_resources(void)
 {
     // Load background
-    struct Ratr0Surface title_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(TITLE_PATH_PAL, &title_ts);
     ratr0_resources_init_surface_from_tilesheet(&title_surf, &title_ts);
-    ratr0_display_blit_surface_to_buffers(&title_surf, 48, 0);
     ratr0_display_set_palette(title_ts.palette, 32, 0);
 
     // from here we don't need to the memory for the background
     // anymore, we can free the surface and tilesheet
-    ratr0_resources_free_tilesheet_data(&title_ts);
+    //ratr0_resources_free_tilesheet_data(&title_ts);
     ts_read = ratr0_resources_read_tilesheet(FONT_PATH_PAL, &font_ts);
     ratr0_resources_init_surface_from_tilesheet(&font_surf, &font_ts);
 
@@ -118,7 +117,22 @@ void hiscore_screen_on_enter(struct Ratr0Stage *this_stage)
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
 
-    _load_resources();
+    if (!resources_loaded) {
+        _load_resources();
+        resources_loaded = TRUE;
+    }
+
+#ifdef TEST
+    int display_height = 256;
+#else
+    int display_height = display_info.is_pal ? 256 : 200;
+#endif
+    ratr0_blit_clear16(&ratr0_display_get_front_buffer()->surface,
+                       0, 0, 320, display_height);
+    ratr0_blit_clear16(&ratr0_display_get_back_buffer()->surface,
+                       0, 0, 320, display_height);
+
+    ratr0_display_blit_surface_to_buffers(&title_surf, 48, 0);
 }
 
 void hiscore_screen_on_exit(struct Ratr0Stage *this_stage)

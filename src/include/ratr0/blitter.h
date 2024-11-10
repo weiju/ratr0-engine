@@ -117,6 +117,21 @@ extern void ratr0_blit_clear8(struct Ratr0Surface *dst,
 
 
 /**
+ * Common case 4: Clear a rectangular area that is a multiple of 16 pixels wide.
+ *
+ * @param dst destination surface
+ * @param dstx destination x-coordinate
+ * @param dsty destination y-coordinate
+ * @param blit_width_pixels blit width in pixels
+ * @param blit_height_pixels blit height in pixels
+ */
+extern void ratr0_blit_clear16(struct Ratr0Surface *dst,
+                               UINT16 dstx, UINT16 dsty,
+                               UINT16 blit_width_pixels,
+                               UINT16 blit_height_pixels);
+
+
+/**
  * Special case of ratr0_blit_rect. This can blit the specified tile from the source sheet
  * into the destination surface at the specified position. This is useful when we only want to
  * blit single planes and in rectangular shape, without a mask but with a shift. This can significantly

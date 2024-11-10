@@ -4,15 +4,18 @@
 
 #include <ratr0/ratr0.h>
 #include "title_screen.h"
+#include "hiscore_screen.h"
 #include "main_stage.h"
 #include "../default_copper.h"
 
 static Ratr0Engine *engine = NULL;
+extern struct Ratr0Stage *main_stage, *title_screen;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
 #define TITLE_PATH_PAL ("tetris/assets/title_screen.ts")
 struct Ratr0TileSheet titlescreen_ts;
+static BOOL resources_loaded = FALSE;
 
 void title_screen_update(struct Ratr0Stage *this_stage,
                          struct Ratr0DisplayBuffer *backbuffer,
@@ -20,7 +23,6 @@ void title_screen_update(struct Ratr0Stage *this_stage,
     if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     } else if (ratr0_input_was_action_pressed(action_drop)) {
-        struct Ratr0Stage *main_stage = setup_main_stage(engine);
         ratr0_stages_set_current_stage(main_stage);
     }
 }
@@ -47,7 +49,10 @@ void title_screen_on_enter(struct Ratr0Stage *this_stage)
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
 
-    _load_resources();
+    if (!resources_loaded) {
+        _load_resources();
+        resources_loaded = TRUE;
+    }
 }
 
 void title_screen_on_exit(struct Ratr0Stage *this_stage)

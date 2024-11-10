@@ -27,6 +27,7 @@ struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
 static UINT32 debug_current_frame = 0;
 
 static Ratr0Engine *engine;
+extern struct Ratr0Stage *main_stage, *title_screen;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down, action_rotate_right, action_rotate_left,
     action_hold,
@@ -39,6 +40,7 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 #define DIGITS16_PATH  ("tetris/assets/calculator_digits_16.ts")
 #define PREVIEW_PATH  ("tetris/assets/preview_pieces.ts")
 #define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
+#define GAMEOVER_PATH  ("tetris/assets/gameover.spr")
 
 // Sounds effects:
 // we need rotate, drop and line deleted sounds
@@ -63,8 +65,9 @@ struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound,
 struct Ratr0AudioProtrackerMod main_music;
 
 // ghost piece outline
-struct Ratr0SpriteSheet outlines_sheet;
+struct Ratr0SpriteSheet outlines_sheet, gameover_sheet;
 struct Ratr0HWSprite *outline_frame[9];
+struct Ratr0HWSprite *gameover_frames[6];
 
 // for palette animation
 Ratr0TimerHandle outline_timer;
@@ -114,6 +117,28 @@ void draw_ghost_piece(struct Ratr0Stage *stage,
 void hide_ghost_piece(struct Ratr0Stage *stage)
 {
     stage->sprites[0] = stage->sprites[1] = &NULL_HW_SPRITE;
+}
+
+void draw_gameover(struct Ratr0Stage *stage)
+{
+    struct Ratr0HWSprite *spr;
+    int sx = 110;
+    int sy = 100;
+    for (int i = 0; i < 6; i++) {
+        spr = gameover_frames[i];
+        stage->sprites[2 + i] = spr;
+        spr->base_obj.bounds.x = sx + 16 * i;
+        spr->base_obj.bounds.y = sy;
+    }
+    stage->num_sprites = 8;
+}
+
+void hide_gameover(struct Ratr0Stage *stage)
+{
+    for (int i = 0; i < 6; i++) {
+        stage->sprites[2 + i] = &NULL_HW_SPRITE;
+    }
+    stage->num_sprites -= 6;
 }
 
 struct PieceState current_piece = {
@@ -177,7 +202,8 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
         // 3. stop music
         ratr0_audio_stop_mod();
 
-        // 4. TODO: display the game over message.
+        // 4. display the game over message.
+        draw_gameover(this_stage);
 
         // 5. Preliminary: for now, just save the new hiscore
         if (is_new_hiscore(player_state.score)) {
@@ -637,6 +663,12 @@ static void _load_resources(void)
     ratr0_resources_read_audiosample(SOUND_DELETELINES_PATH, &completed_sound);
     ratr0_resources_read_audiosample(SOUND_GAMEOVER_PATH, &gameover_sound);
 
+    // read game over sprites
+    ratr0_resources_read_spritesheet(GAMEOVER_PATH, &gameover_sheet);
+    for (int i = 0; i < gameover_sheet.header.num_sprites; i++) {
+        gameover_frames[i] = ratr0_create_sprite_from_sprite_sheet_frame(&gameover_sheet, i);
+    }
+
     BOOL ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
     if (!ret) {
         fprintf(debug_fp, "could not read protracker module '%s'\n",
@@ -699,11 +731,15 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
 
 void main_stage_on_exit(struct Ratr0Stage *this_stage)
 {
+    hide_gameover(this_stage);
+
     // free all memory from the assets in reverse order
     // to make sure it all becomes available again
     // note: we could have RATR0 have a deallocation marker
     // so the memory could be freed all at once
     ratr0_resources_free_protracker_data(&main_music);
+
+    ratr0_resources_free_spritesheet_data(&gameover_sheet);
     ratr0_resources_free_audiosample_data(&gameover_sound);
     ratr0_resources_free_audiosample_data(&completed_sound);
     ratr0_resources_free_audiosample_data(&rotate_sound);

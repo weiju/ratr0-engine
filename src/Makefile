@@ -50,7 +50,7 @@ CENTIPEDE_OBJECTS=centipede/centipede.o centipede/centipede_copper.o centipede/m
 
 TETRAZONE_OBJECTS=tetris/tetris.o tetris/tetris_copper.o tetris/main_stage.o \
 tetris/title_screen.o tetris/hiscore_screen.o tetris/game_data.o tetris/utils.o \
-tetris/draw_primitives.o tetris/render_display.o
+tetris/draw_primitives.o tetris/render_display.o tetris/fader.o
 
 .PHONY : clean check
 .SUFFIXES : .o .c .asm

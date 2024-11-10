@@ -90,8 +90,9 @@ UINT8 frames_elapsed;
 #define BITSET_Y(idx) (idx / 20)
 UINT32 bitset_arr[2][BITSET_SIZE];
 
+#define HW_SPRITE_TABLE_SIZE (20)
 // Sprite and bob tables can be in Fastmem
-struct Ratr0HWSprite hw_sprite_table[20];
+struct Ratr0HWSprite hw_sprite_table[HW_SPRITE_TABLE_SIZE];
 UINT16 next_hw_sprite = 0;
 struct Ratr0Bob bob_table[20];
 UINT16 next_bob = 0;
