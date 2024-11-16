@@ -549,7 +549,9 @@ void ratr0_dump_copperlist(UINT16 *copperlist, int len, const char *path)
         fprintf(fp, "}\n");
         fclose(fp);
     } else {
+#ifdef DEBUG
         fprintf(debug_fp, "could not open '%s'\n", path);
         fflush(debug_fp);
+#endif
     }
 }

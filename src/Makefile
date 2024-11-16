@@ -13,7 +13,12 @@ ASM=vasmm68k_mot -Fhunk -I$(NDK_ASMINC)
 HW_OBJECTS=display.o sprites.o blitter.o audio.o
 EXT_OBJECTS=../ptplayer/ptplayer.o
 
+ifdef RELEASE
+CFLAGS=-I$(NDK_INC) -DAMIGA -c99 -O2 -Iinclude
+else
 CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -O2 -Iinclude
+endif
+
 # no optimizations so we can make sure it's not a compiler
 # optimization related bug
 #CFLAGS=-I$(NDK_INC) -DDEBUG -DAMIGA -c99 -Iinclude
@@ -80,6 +85,9 @@ clean:
 .asm.o:
 	$(ASM) $^ -o $@
 
+test_startup: test_startup.o
+	$(CC) $(LDFLAGS) -o $@ $^
+
 test_console: test_console.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
@@ -94,6 +102,14 @@ centipede_game: $(ENGINE_OBJECTS) $(CENTIPEDE_OBJECTS)
 
 tetrazone_game: $(ENGINE_OBJECTS) $(TETRAZONE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
+ifdef RELEASE
+	mkdir -p tetrazone_release/assets
+	cp $@ tetrazone_game.info tetrazone_release
+	cp -r tetris/assets/* tetrazone_release/assets
+#	cp tetris/soundtrack/onlyamiga.mod tetrazone_release/assets
+	lha a tetrazone.lha tetrazone_release.info tetrazone_release
+endif
+
 
 default_copper.c: default.copper
 	ratr0-makecoplist default.copper default_copper.c

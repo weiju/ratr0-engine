@@ -14,11 +14,16 @@ extern struct Ratr0Stage *main_stage, *title_screen;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
+#ifdef DEBUG
 #define TITLE_PATH_PAL ("tetris/assets/hiscores_title.ts")
 #define FONT_PATH_PAL ("tetris/assets/hiscores_font.ts")
+#else
+#define TITLE_PATH_PAL ("assets/hiscores_title.ts")
+#define FONT_PATH_PAL ("assets/hiscores_font.ts")
+#endif
+
 struct Ratr0TileSheet title_ts, font_ts;
 struct Ratr0Surface title_surf, font_surf;
-static BOOL resources_loaded = FALSE;
 
 void draw_char16(struct Ratr0Surface *surface,
                  struct Ratr0Surface *font_surface,
@@ -76,19 +81,36 @@ void draw_row(struct Ratr0Surface *surface,
     }
 }
 
+static BOOL hiscore_screen_first_update = FALSE;
+static UINT16 hiscore_screen_timeout = 0;
+static UINT16 hiscore_blitcount = 0;
+#define HISCORE_SCREEN_TIMEOUT (300)
 void hiscore_screen_update(struct Ratr0Stage *this_stage,
                            struct Ratr0DisplayBuffer *backbuffer,
                            UINT8 frame_elapsed) {
-    // blit the high score list from the font
-    for (int i = 0; i < num_hiscore_entries; i++) {
-        draw_row(&backbuffer->surface, i + 1,
-                 hiscore_list[i].initials, hiscore_list[i].points);
+    if (!hiscore_screen_first_update) {
+#ifdef DEBUG
+        fprintf(debug_fp, "HISCORE SCREEN DISPLAY, SETTING TIMEOUT\n");
+        fflush(debug_fp);
+#endif
+        hiscore_screen_timeout = HISCORE_SCREEN_TIMEOUT;
+        hiscore_screen_first_update = TRUE;
     }
-    if (ratr0_input_was_action_pressed(action_quit)) {
-        ratr0_engine_exit();
-    } else if (ratr0_input_was_action_pressed(action_drop)) {
-        //struct Ratr0Stage *main_stage = setup_main_stage(engine);
-        //engine->stages_system->set_current_stage(main_stage);
+    if (hiscore_blitcount < 2) {
+        // blit the high score list from the font
+        for (int i = 0; i < num_hiscore_entries; i++) {
+            draw_row(&backbuffer->surface, i + 1,
+                     hiscore_list[i].initials, hiscore_list[i].points);
+        }
+        hiscore_blitcount++;  // blit twice, once for each buffer
+    }
+    hiscore_screen_timeout--;
+    if (hiscore_screen_timeout <= 0) {
+#ifdef DEBUG
+        fprintf(debug_fp, "HISCORE SCREEN TIMEOUT\n");
+        fflush(debug_fp);
+#endif
+        ratr0_stages_set_current_stage(title_screen);
     }
 }
 
@@ -111,16 +133,20 @@ static void _load_resources(void)
 
 void hiscore_screen_on_enter(struct Ratr0Stage *this_stage)
 {
+#ifdef DEBUG
+    fprintf(debug_fp, "HISCORESCREEN_ON_ENTER()\n");
+    fflush(debug_fp);
+#endif
+
+    hiscore_screen_first_update = FALSE;
+    hiscore_blitcount = 0;
+
     // set new copper list
     ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                    &DEFAULT_COPPER_INFO);
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
-
-    if (!resources_loaded) {
-        _load_resources();
-        resources_loaded = TRUE;
-    }
+    _load_resources();
 
 #ifdef TEST
     int display_height = 256;
@@ -137,6 +163,10 @@ void hiscore_screen_on_enter(struct Ratr0Stage *this_stage)
 
 void hiscore_screen_on_exit(struct Ratr0Stage *this_stage)
 {
+#ifdef DEBUG
+    fprintf(debug_fp, "HISCORESCREEN_ON_EXIT()\n");
+    fflush(debug_fp);
+#endif
 }
 
 struct Ratr0Stage *setup_hiscorescreen_stage(Ratr0Engine *eng)

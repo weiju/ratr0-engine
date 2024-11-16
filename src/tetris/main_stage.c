@@ -27,13 +27,14 @@ struct Ratr0CopperListInfo TETRIS_COPPER_INFO = {
 static UINT32 debug_current_frame = 0;
 
 static Ratr0Engine *engine;
-extern struct Ratr0Stage *main_stage, *title_screen;
+extern struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down, action_rotate_right, action_rotate_left,
     action_hold,
     action_quit;
 
 // Resources
+#ifdef DEBUG
 #define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
 #define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
 #define DIGITS_PATH  ("tetris/assets/calculator_digits.ts")
@@ -52,6 +53,26 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 #define SOUND_GAMEOVER_PATH "tetris/assets/sad_wah.raw8"
 
 #define MUSIC_MAIN_PATH "tetris/soundtrack/onlyamiga.mod"
+
+#else
+
+#define BG_PATH_PAL ("assets/background_320x256x32.ts")
+#define TILES_PATH  ("assets/tiles_32cols.ts")
+#define DIGITS_PATH  ("assets/calculator_digits.ts")
+#define DIGITS16_PATH  ("assets/calculator_digits_16.ts")
+#define PREVIEW_PATH  ("assets/preview_pieces.ts")
+#define OUTLINES_PATH  ("assets/block_outlines.spr")
+#define GAMEOVER_PATH  ("assets/gameover.spr")
+
+#define SOUND_ROTATE_PATH ("assets/bb-bathit.raw8")
+#define SOUND_DROP_PATH "assets/beep8bit.raw8"
+#define SOUND_DELETELINES_PATH "assets/laser_zap.raw8"
+#define SOUND_GAMEOVER_PATH "assets/sad_wah.raw8"
+
+#define MUSIC_MAIN_PATH "assets/onlyamiga.mod"
+
+#endif
+
 #define SOUNDFX_CHANNEL (3)
 
 struct Ratr0TileSheet background_ts, tiles_ts, digits_ts,
@@ -62,7 +83,10 @@ struct Ratr0Surface tiles_surface, digits_surface, digits16_surface,
 // sound and music
 struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound,
     gameover_sound;
+
+#ifdef DEBUG
 struct Ratr0AudioProtrackerMod main_music;
+#endif
 
 // ghost piece outline
 struct Ratr0SpriteSheet outlines_sheet, gameover_sheet;
@@ -138,7 +162,6 @@ void hide_gameover(struct Ratr0Stage *stage)
     for (int i = 0; i < 6; i++) {
         stage->sprites[2 + i] = &NULL_HW_SPRITE;
     }
-    stage->num_sprites -= 6;
 }
 
 struct PieceState current_piece = {
@@ -155,7 +178,7 @@ int drop_timer = DROP_TIMER_VALUE;
 int quickdrop_cooldown = 0;
 // TODO: this should be dependent on frame rate, so 6 for NTSC and 5 for
 // PAL
-#define MOVE_COOLDOWN_TIME (5)
+#define MOVE_COOLDOWN_TIME (4)
 int move_cooldown = 0;
 
 void spawn_next_piece(void)
@@ -178,6 +201,8 @@ void main_stage_update(struct Ratr0Stage *this_stage,
 
 
 BOOL done_gameover_once = FALSE;
+UINT16 gameover_timeout = 0;
+#define GAMEOVER_TIMEOUT (150)
 void main_stage_gameover(struct Ratr0Stage *this_stage,
                          struct Ratr0DisplayBuffer *backbuffer,
                          UINT8 frame_elapsed) {
@@ -200,7 +225,9 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
         ratr0_audio_play_sound(&gameover_sound, SOUNDFX_CHANNEL);
 
         // 3. stop music
+#ifdef DEBUG
         ratr0_audio_stop_mod();
+#endif
 
         // 4. display the game over message.
         draw_gameover(this_stage);
@@ -211,10 +238,13 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
             insert_hiscore(initials, player_state.score);
             save_hiscore_list();
         }
-
+        gameover_timeout = GAMEOVER_TIMEOUT;
         done_gameover_once = TRUE;
     }
-
+    gameover_timeout--;
+    if (gameover_timeout <= 0) {
+        ratr0_stages_set_current_stage(hiscore_screen);
+    }
     process_blit_queues(backbuffer, &tiles_surface, &preview_surface,
                         &digits16_surface, &digits_surface);
 }
@@ -324,14 +354,13 @@ void main_stage_delete_lines(struct Ratr0Stage *this_stage,
     // keep queueing clear requests
     if (done_delete_lines == 0) {
         struct RowQueueItem clear_row = { 0, 0};
-#ifdef DEBUG_TETRIS
-        fprintf(debug_fp, "# completed rows: %u\n", completed_rows.count);
-#endif
         // add score for deleted lines
         BOOL level_increased = score_rows_cleared(&player_state,
                                                   completed_rows.count);
+#ifdef DEBUG
         fprintf(debug_fp, "# level increased, new score: %u\n",
                 player_state.score);
+#endif
         if (level_increased) {
             // update level and drop speed display in the UI
             // by adding commands to the queue
@@ -345,20 +374,12 @@ void main_stage_delete_lines(struct Ratr0Stage *this_stage,
         // 1. move the regions above the deleted lines down graphically
         struct MoveRegions move_regions;
         get_move_regions(&move_regions, &completed_rows, &gameboard0);
-#ifdef DEBUG_TETRIS
-        fprintf(debug_fp, "# move regions: %u\n", move_regions.count);
-#endif
         for (int i = 0; i < move_regions.count; i++) {
             struct MoveQueueItem move_item = {
                 move_regions.regions[i].start,
                 move_regions.regions[i].start + move_regions.regions[i].move_by,
                 move_regions.regions[i].end - move_regions.regions[i].start + 1
             };
-#ifdef DEBUG_TETRIS
-            fprintf(debug_fp, "# move_region #%i: start: %u end: %u by: %u\n",
-                    i, move_regions.regions[i].start,
-                    move_regions.regions[i].end, move_regions.regions[i].move_by);
-#endif
             RATR0_ENQUEUE_ARR(move_queue, cur_buffer, move_item);
             RATR0_ENQUEUE_ARR(move_queue, ((cur_buffer + 1) % 2), move_item);
         }
@@ -368,25 +389,12 @@ void main_stage_delete_lines(struct Ratr0Stage *this_stage,
         clear_row.row = move_top;
         clear_row.num_rows = completed_rows.count;
 
-        // debug output
-#ifdef DEBUG_TETRIS
-        fprintf(debug_fp, "clearing %u rows off the top starting from: %d\n",
-                completed_rows.count, move_top);
-#endif
         RATR0_ENQUEUE_ARR(clear_row_queue, cur_buffer, clear_row);
         RATR0_ENQUEUE_ARR(clear_row_queue, ((cur_buffer + 1) % 2), clear_row);
 
         // 3. compact the board logically by moving every block above
         // the deleted lines down
-#ifdef DEBUG_TETRIS
-        fprintf(debug_fp, "BOARD BEFORE compacting\n");
-        dump_board(debug_fp, &gameboard0);
-#endif
         delete_rows_from_board(&move_regions, &completed_rows, &gameboard0);
-#ifdef DEBUG_TETRIS
-        fprintf(debug_fp, "BOARD AFTER compacting\n");
-        dump_board(debug_fp, &gameboard0);
-#endif
     }
     // move must come before blit, because the blit queues will delete rows !!!
     process_move_queue(backbuffer);
@@ -652,9 +660,11 @@ static void _load_resources(void)
 
     // load preview piece tile set
     ts_read = ratr0_resources_read_tilesheet(PREVIEW_PATH, &preview_ts);
+#ifdef DEBUG
     if (!ts_read) {
         fprintf(debug_fp, "could not read preview tiles !!!\n");
     }
+#endif
     ratr0_resources_init_surface_from_tilesheet(&preview_surface, &preview_ts);
 
     // read sound effects and music
@@ -669,11 +679,15 @@ static void _load_resources(void)
         gameover_frames[i] = ratr0_create_sprite_from_sprite_sheet_frame(&gameover_sheet, i);
     }
 
+#ifdef DEBUG
     BOOL ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
+#endif
+#ifdef DEBUG
     if (!ret) {
         fprintf(debug_fp, "could not read protracker module '%s'\n",
                 MUSIC_MAIN_PATH);
     }
+#endif
 }
 
 void _clear_score_panel(void)
@@ -724,20 +738,31 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
     done_gameover_once = FALSE;
 
     // start bg music
+#ifdef DEBUG
     ratr0_audio_play_mod(&main_music);
+#endif
 
     outline_timer = ratr0_timers_create(5, FALSE, change_ghost_piece_color);
+
+    // since main stage has multiple update functions, we need to make sure
+    // we start at the right one, when re reenter
+    main_stage->update = main_stage_update;
 }
 
 void main_stage_on_exit(struct Ratr0Stage *this_stage)
 {
     hide_gameover(this_stage);
+    hide_ghost_piece(this_stage);
+
+    ratr0_timers_free(outline_timer);
 
     // free all memory from the assets in reverse order
     // to make sure it all becomes available again
     // note: we could have RATR0 have a deallocation marker
     // so the memory could be freed all at once
+#ifdef DEBUG
     ratr0_resources_free_protracker_data(&main_music);
+#endif
 
     ratr0_resources_free_spritesheet_data(&gameover_sheet);
     ratr0_resources_free_audiosample_data(&gameover_sound);

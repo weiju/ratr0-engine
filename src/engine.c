@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <workbench/startup.h>
+#include <clib/dos_protos.h>
+#include <dos/dos.h>
 
 #include <ratr0/debug_utils.h>
 #include <ratr0/engine.h>
@@ -55,12 +58,51 @@ void ratr0_engine_game_loop(void)
 }
 
 Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
-                                  struct Ratr0DisplayInfo *display_info)
+                                  struct Ratr0DisplayInfo *display_info,
+                                  int argc, char **argv)
 {
+    int wb_numargs = 0;
+    struct MsgPort *proc_msgport;
+    struct Process *process;
+    struct FileInfoBlock fib;
+    BPTR curdir_lock;
+    BOOL is_cli = FALSE;
+    if (argc == 0) {
+        // WB start
+        struct WBStartup *argmsg;
+        struct WBArg *wb_arg;
+        argmsg = (struct WBStartup *) argv;
+        // This is the MsgPort member of the Process structure, so we need
+        // to convert this into the Process structure. What a pain
+        proc_msgport = argmsg->sm_Process;
+        process = (struct Process *)
+            (((UINT32) proc_msgport) - sizeof(struct Message));
+
+        wb_arg = argmsg->sm_ArgList;         /* head of the arg list */
+        wb_numargs = argmsg->sm_NumArgs;
+
+        curdir_lock = CurrentDir(wb_arg->wa_Lock);
+        CurrentDir(curdir_lock);
+
+    } else {
+        // CLI start, means we can call Cli() and access pr_Cli
+        process = (struct Process *) FindTask(NULL);
+        curdir_lock = process->pr_CurrentDir;
+        is_cli = TRUE;
+    }
     // Make the debug file handle available from the start so
     // we can write to it during startup
 #ifdef DEBUG
-    debug_fp = fopen("ratr0.debug", "a");
+    debug_fp = fopen("src:ratr0.debug", "a");
+    if (is_cli) {
+        fprintf(debug_fp, "CLI START\n");
+    } else {
+        fprintf(debug_fp, "WORKBENCH START\n");
+        fprintf(debug_fp, "WB #args: %d\n", wb_numargs);
+    }
+    Examine(curdir_lock, &fib);
+    fprintf(debug_fp, "curdir name: %s\n", fib.fib_FileName);
+    fflush(debug_fp);
 #endif
 
     // hook in the shutdown function
@@ -72,7 +114,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
 
     // set high task priority so multitasking does not
     // grab too much CPU
-    SetTaskPri(FindTask(NULL), TASK_PRIORITY);
+    //SetTaskPri(FindTask(NULL), TASK_PRIORITY);
 
     PRINT_DEBUG("Start up...");
 

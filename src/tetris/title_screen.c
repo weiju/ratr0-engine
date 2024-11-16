@@ -9,20 +9,42 @@
 #include "../default_copper.h"
 
 static Ratr0Engine *engine = NULL;
-extern struct Ratr0Stage *main_stage, *title_screen;
+extern struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
+#ifdef DEBUG
 #define TITLE_PATH_PAL ("tetris/assets/title_screen.ts")
+#else
+#define TITLE_PATH_PAL ("assets/title_screen.ts")
+#endif
 struct Ratr0TileSheet titlescreen_ts;
-static BOOL resources_loaded = FALSE;
 
+static BOOL title_screen_first_update = FALSE;
+static UINT16 title_screen_timeout = 0;
+static UINT16 title_screen_space_cooldown = 0;
+#define TITLE_SCREEN_TIMEOUT (200)
+#define TITLE_SCREEN_SPACE_COOLDOWN (20)
 void title_screen_update(struct Ratr0Stage *this_stage,
                          struct Ratr0DisplayBuffer *backbuffer,
                          UINT8 frame_elapsed) {
+    if (!title_screen_first_update) {
+        title_screen_first_update = TRUE;
+        title_screen_timeout = TITLE_SCREEN_TIMEOUT;
+    }
+    title_screen_timeout--;
+    if (title_screen_space_cooldown > 0) {
+        title_screen_space_cooldown--;
+    }
+
+    if (title_screen_timeout <= 0) {
+        ratr0_stages_set_current_stage(hiscore_screen);
+    }
+
     if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
-    } else if (ratr0_input_was_action_pressed(action_drop)) {
+    } else if (title_screen_space_cooldown <= 0 &&
+               ratr0_input_was_action_pressed(action_drop)) {
         ratr0_stages_set_current_stage(main_stage);
     }
 }
@@ -43,20 +65,28 @@ static void _load_resources(void)
 
 void title_screen_on_enter(struct Ratr0Stage *this_stage)
 {
+#ifdef DEBUG
+    fprintf(debug_fp, "TITLESCREEN_ON_ENTER()\n");
+    fflush(debug_fp);
+#endif
+
     // set new copper list
     ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                    &DEFAULT_COPPER_INFO);
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
 
-    if (!resources_loaded) {
-        _load_resources();
-        resources_loaded = TRUE;
-    }
+    _load_resources();
+    title_screen_first_update = FALSE;
+    title_screen_space_cooldown = TITLE_SCREEN_SPACE_COOLDOWN;
 }
 
 void title_screen_on_exit(struct Ratr0Stage *this_stage)
 {
+#ifdef DEBUG
+    fprintf(debug_fp, "HISCORESCREEN_ON_EXIT()\n");
+    fflush(debug_fp);
+#endif
 }
 
 struct Ratr0Stage *setup_titlescreen_stage(Ratr0Engine *eng)

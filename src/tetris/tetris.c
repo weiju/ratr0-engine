@@ -35,7 +35,8 @@ int main(int argc, char **argv)
         262144, 40  // 256k chip memory with max 40 mem blocks
     };
 
-    Ratr0Engine *engine = ratr0_engine_startup(&mem_config, &display_init);
+    Ratr0Engine *engine = ratr0_engine_startup(&mem_config, &display_init,
+                                               argc, argv);
     // Additional game engine setup: input mapping etc.
     action_move_left = ratr0_input_alloc_action();
     action_move_right = ratr0_input_alloc_action();
