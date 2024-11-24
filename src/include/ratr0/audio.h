@@ -67,4 +67,9 @@ extern void ratr0_audio_pause_playback(void);
  */
 extern void ratr0_audio_resume_playback(void);
 
+/**
+ * Toggle mod playback.
+ */
+extern void ratr0_audio_toggle_playback(void);
+
 #endif /* __RATR0_AUDIO_H__ */

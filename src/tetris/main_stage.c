@@ -30,7 +30,7 @@ static Ratr0Engine *engine;
 extern struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
 extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down, action_rotate_right, action_rotate_left,
-    action_hold,
+    action_hold, action_music,
     action_quit;
 
 // Resources
@@ -84,9 +84,7 @@ struct Ratr0Surface tiles_surface, digits_surface, digits16_surface,
 struct Ratr0AudioSample drop_sound, rotate_sound, completed_sound,
     gameover_sound;
 
-#ifdef DEBUG
 struct Ratr0AudioProtrackerMod main_music;
-#endif
 
 // ghost piece outline
 struct Ratr0SpriteSheet outlines_sheet, gameover_sheet;
@@ -180,6 +178,8 @@ int quickdrop_cooldown = 0;
 // PAL
 #define MOVE_COOLDOWN_TIME (4)
 int move_cooldown = 0;
+#define TOGGLE_MUSIC_COOLDOWN_TIME (10)
+int toggle_music_cooldown = 0;
 
 void spawn_next_piece(void)
 {
@@ -225,9 +225,7 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
         ratr0_audio_play_sound(&gameover_sound, SOUNDFX_CHANNEL);
 
         // 3. stop music
-#ifdef DEBUG
         ratr0_audio_stop_mod();
-#endif
 
         // 4. display the game over message.
         draw_gameover(this_stage);
@@ -478,6 +476,7 @@ void main_stage_update(struct Ratr0Stage *this_stage,
     if (move_cooldown > 0) move_cooldown--;
     if (rotate_cooldown > 0) rotate_cooldown--;
     if (quickdrop_cooldown > 0) quickdrop_cooldown--;
+    if (toggle_music_cooldown > 0) toggle_music_cooldown--;
 
     // Input processing
     if (ratr0_input_was_action_pressed(action_move_left)) {
@@ -584,6 +583,11 @@ void main_stage_update(struct Ratr0Stage *this_stage,
 
             player_state.can_swap_hold = FALSE;
         }
+    } else if (ratr0_input_was_action_pressed(action_music)) {
+        if (toggle_music_cooldown == 0) {
+            ratr0_audio_toggle_playback();
+            toggle_music_cooldown = TOGGLE_MUSIC_COOLDOWN_TIME;
+        }
     }
 
     // After input, was processed, we can determine what else is happening
@@ -679,9 +683,7 @@ static void _load_resources(void)
         gameover_frames[i] = ratr0_create_sprite_from_sprite_sheet_frame(&gameover_sheet, i);
     }
 
-#ifdef DEBUG
     BOOL ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
-#endif
 #ifdef DEBUG
     if (!ret) {
         fprintf(debug_fp, "could not read protracker module '%s'\n",
@@ -712,6 +714,7 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
 
     ratr0_display_set_copperlist(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
                                  &TETRIS_COPPER_INFO);
+    this_stage->num_sprites = 0;
 
     _load_resources();
     load_hiscore_list();
@@ -738,9 +741,7 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
     done_gameover_once = FALSE;
 
     // start bg music
-#ifdef DEBUG
     ratr0_audio_play_mod(&main_music);
-#endif
 
     outline_timer = ratr0_timers_create(5, FALSE, change_ghost_piece_color);
 
@@ -760,9 +761,7 @@ void main_stage_on_exit(struct Ratr0Stage *this_stage)
     // to make sure it all becomes available again
     // note: we could have RATR0 have a deallocation marker
     // so the memory could be freed all at once
-#ifdef DEBUG
     ratr0_resources_free_protracker_data(&main_music);
-#endif
 
     ratr0_resources_free_spritesheet_data(&gameover_sheet);
     ratr0_resources_free_audiosample_data(&gameover_sound);

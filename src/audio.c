@@ -79,3 +79,8 @@ void ratr0_audio_resume_playback(void)
 {
     mt_Enable = 1;
 }
+
+void ratr0_audio_toggle_playback(void)
+{
+    mt_Enable = mt_Enable == 1 ? 0 : 1;
+}

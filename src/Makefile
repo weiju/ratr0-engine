@@ -106,7 +106,7 @@ ifdef RELEASE
 	mkdir -p tetrazone_release/assets
 	cp $@ tetrazone_game.info tetrazone_release
 	cp -r tetris/assets/* tetrazone_release/assets
-#	cp tetris/soundtrack/onlyamiga.mod tetrazone_release/assets
+	cp tetris/soundtrack/onlyamiga.mod tetrazone_release/assets
 	lha a tetrazone.lha tetrazone_release.info tetrazone_release
 endif
 

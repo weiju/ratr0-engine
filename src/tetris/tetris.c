@@ -13,7 +13,7 @@
 //   - move/swap to hold: fire button 2 / left shift
 RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_move_down, action_rotate_right, action_rotate_left,
-    action_hold,
+    action_hold, action_music,
     action_quit;
 
 struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
@@ -24,9 +24,6 @@ int main(int argc, char **argv)
         320, 256,  // viewport
         320, 256,  // display buffer
         5, 2,      // 32 colors, double buffer
-        //4, 2,      // 16 colors, double buffer
-        //3, 2,      // 8 colors, double buffer
-        //2, 2,      // 4 colors, double buffer
         1, TRUE    // 1 frame flip, PAL
     };
     struct Ratr0MemoryConfig mem_config = {
@@ -46,6 +43,7 @@ int main(int argc, char **argv)
     action_hold = ratr0_input_alloc_action();
     action_drop = ratr0_input_alloc_action();
     action_quit = ratr0_input_alloc_action();
+    action_music = ratr0_input_alloc_action();
 
     ratr0_input_map_input_to_action(action_move_left, RATR0_IC_KB,
                                     RATR0_KEY_LEFT);
@@ -60,6 +58,8 @@ int main(int argc, char **argv)
                                     RATR0_KEY_SPACE);
     ratr0_input_map_input_to_action(action_hold, RATR0_IC_KB,
                                     RATR0_KEY_RAW_Z);
+    ratr0_input_map_input_to_action(action_music, RATR0_IC_KB,
+                                    RATR0_KEY_RAW_M);
 
     // non-game actions
     ratr0_input_map_input_to_action(action_quit, RATR0_IC_KB,

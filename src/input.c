@@ -30,10 +30,13 @@ extern struct ExecBase *SysBase;
 #define RAW_KEY_Q            (0x10)
 #define RAW_KEY_W            (0x11)
 #define RAW_KEY_E            (0x12)
+#define RAW_KEY_O            (0x18)
+#define RAW_KEY_P            (0x19)
 #define RAW_KEY_S            (0x21)
 #define RAW_KEY_Z            (0x31)
 #define RAW_KEY_X            (0x32)
 #define RAW_KEY_C            (0x33)
+#define RAW_KEY_M            (0x37)
 
 void ratr0_input_shutdown(void);
 static struct Ratr0InputSystem input_system;
@@ -155,6 +158,8 @@ UINT16 ratr0_get_keyboard_state(void)
         return RATR0_KEY_SPACE;
     } else if (is_keydown(RAW_KEY_Z)) {
         return RATR0_KEY_RAW_Z;
+    } else if (is_keydown(RAW_KEY_M)) {
+        return RATR0_KEY_RAW_M;
     }
     return RATR0_KEY_NONE;
 }
@@ -207,7 +212,7 @@ UINT16 ratr0_get_joystick_state(UINT8 device_num)
 // An array of action mappings, indexed by action ids. Each entry is a singly
 // linked list of InputEvents.
 /** \brief maximum entries in action map */
-#define RATR0_MAX_ACTIONS (20)
+#define RATR0_MAX_ACTIONS (30)
 /** \brief default value in input2action, means the input is unmapped */
 #define RATR0_INPUT_UNMAPPED (-1)
 #define RATR0_MAX_INPUT_DEFS (100)
