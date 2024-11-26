@@ -169,7 +169,7 @@ struct PieceState current_piece = {
 /** TIMERS THAT ARE CRITICAL TO GAME FEEL */
 // rotation cooldown. We introduce a cooldown, to avoid the player
 // piece rotating way too fast
-#define ROTATE_COOLDOWN_TIME (10)
+#define ROTATE_COOLDOWN_TIME (7)
 int rotate_cooldown = 0;
 int drop_timer = DROP_TIMER_VALUE;
 #define QUICKDROP_COOLDOWN_TIME (10)

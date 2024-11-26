@@ -85,10 +85,10 @@ clean:
 .asm.o:
 	$(ASM) $^ -o $@
 
-test_startup: test_startup.o
+test_startup: prototypes/test_startup.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
-test_console: test_console.o
+test_console: prototypes/test_console.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 example-01_game: $(ENGINE_OBJECTS) $(EXAMPLE01_OBJECTS)
@@ -104,10 +104,11 @@ tetrazone_game: $(ENGINE_OBJECTS) $(TETRAZONE_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 ifdef RELEASE
 	mkdir -p tetrazone_release/assets
-	cp $@ tetrazone_game.info tetrazone_release
+	cp $@ tetris/tetrazone_game.info tetrazone_release
 	cp -r tetris/assets/* tetrazone_release/assets
 	cp tetris/soundtrack/onlyamiga.mod tetrazone_release/assets
-	lha a tetrazone.lha tetrazone_release.info tetrazone_release
+    # should go into a relase directory
+	#lha a tetrazone.lha tetrazone_release.info tetrazone_release
 endif
 
 

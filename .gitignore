@@ -1,4 +1,7 @@
 *.o
+.info
+hiscores.dat
+*.debug
 *_test
 *_perf
 .DS_Store

@@ -47,15 +47,29 @@ int main(int argc, char **argv)
 
     ratr0_input_map_input_to_action(action_move_left, RATR0_IC_KB,
                                     RATR0_KEY_LEFT);
+    ratr0_input_map_input_to_action(action_move_left, RATR0_IC_JS1,
+                                    RATR0_INPUT_JS_LEFT);
+
     ratr0_input_map_input_to_action(action_move_right, RATR0_IC_KB,
                                     RATR0_KEY_RIGHT);
+    ratr0_input_map_input_to_action(action_move_right, RATR0_IC_JS1,
+                                    RATR0_INPUT_JS_RIGHT);
+
     ratr0_input_map_input_to_action(action_move_down, RATR0_IC_KB,
                                     RATR0_KEY_DOWN);
+    ratr0_input_map_input_to_action(action_move_down, RATR0_IC_JS1,
+                                    RATR0_INPUT_JS_DOWN);
+
     ratr0_input_map_input_to_action(action_rotate_right, RATR0_IC_KB,
                                     RATR0_KEY_UP);
+    ratr0_input_map_input_to_action(action_rotate_right, RATR0_IC_JS1, RATR0_INPUT_JS_BUTTON0);
+
     // TODO: consider something like Z or Q to rotate left
     ratr0_input_map_input_to_action(action_drop, RATR0_IC_KB,
                                     RATR0_KEY_SPACE);
+    ratr0_input_map_input_to_action(action_drop, RATR0_IC_JS1,
+                                    RATR0_INPUT_JS_UP);
+
     ratr0_input_map_input_to_action(action_hold, RATR0_IC_KB,
                                     RATR0_KEY_RAW_Z);
     ratr0_input_map_input_to_action(action_music, RATR0_IC_KB,

@@ -207,7 +207,7 @@ extern BOOL delete_rows_from_board(struct MoveRegions *move_regions,
 
  * TODO: advanced scoring (https://tetris.wiki/Scoring)
  */
-#define DROP_TIMER_VALUE (40)
+#define DROP_TIMER_VALUE (28)
 
 struct PlayerState {
     UINT8 difficulty_level, level_cleared_rows;
