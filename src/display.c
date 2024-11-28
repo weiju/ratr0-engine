@@ -241,9 +241,8 @@ static void set_display_surface(UINT16 coplist[], int num_words,
 }
 
 /**
- * Private function to build the main copper list.
- * For now, this is very basic and simple. Going forward, we absolutely need
- * a copper list compiler, to allow for complex sprite multiplexing and color management
+ * Initialize the given copper list with the essential information about
+ * the display.
  */
 void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
                                     struct Ratr0CopperListInfo *info)
@@ -311,7 +310,9 @@ static void build_display_buffer(struct Ratr0DisplayInfo *init_data)
 static void free_display_buffer(void)
 {
     for (int i = 0; i < display_info.num_buffers; i++) {
-        FreeMem(display_buffer[i].surface.buffer, display_buffer_size);
+        if (display_buffer[i].surface.buffer != NULL) {
+            FreeMem(display_buffer[i].surface.buffer, display_buffer_size);
+        }
     }
 }
 
@@ -335,8 +336,7 @@ void _uninstall_interrupts(void)
     RemIntServer(INTB_VERTB, &vbint);
 }
 
-struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
-                                                   struct Ratr0DisplayInfo *init_data)
+struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng)
 {
     engine = eng;
     rendering_system.shutdown = &ratr0_display_shutdown;
@@ -349,43 +349,49 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
     WaitTOF();       // 2 WaitTOFs to wait for 1. long frame and
     WaitTOF();       // 2. short frame copper lists to finish (if interlaced)
 
-    /*
-     * Store the display information so we can set up a default copper list.
-     */
-    display_info.vp_width = init_data->vp_width;
-    display_info.vp_height = init_data->vp_height;
-    display_info.buffer_width = init_data->buffer_width;
-    display_info.buffer_height = init_data->buffer_height;
-    display_info.depth = init_data->depth;
-    display_info.num_buffers = init_data->num_buffers;
     display_info.is_pal = (((struct GfxBase *) GfxBase)->DisplayFlags & PAL) == PAL;
-    if (init_data->num_buffers == 1) {
-        // back buffer == front buffer
-        ratr0_back_buffer = 0;
-    }
-
-    // Build the display buffer
-    build_display_buffer(&display_info);
-    ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
-                                   &DEFAULT_COPPER_INFO);
-
-    current_coplist = default_copper;
-    current_copper_info = &DEFAULT_COPPER_INFO;
-    current_coplist_size = DEFAULT_COPPER_SIZE_WORDS;
-
-    custom.cop1lc = (ULONG) default_copper;
 
     _install_interrupts();
 
-    // initialize the bitsets for dirty rectangles
-    ratr0_bitset_clear(bitset_arr[ratr0_back_buffer], BITSET_SIZE);
-    ratr0_bitset_clear(bitset_arr[ratr0_front_buffer], BITSET_SIZE);
+    // initialize display buffers and display info
+    display_info.num_buffers = 0;
+    display_info.buffer_width = 0;
+    display_info.buffer_height = 0;
+    display_info.depth = 0;
 
     // Object management initialization
     next_hw_sprite = next_bob = 0;
     PRINT_DEBUG("Startup finished");
     return &rendering_system;
 }
+
+void ratr0_init_display(struct Ratr0DisplayInit *init_data)
+{
+    // rebuild display if changed, for now, we assume
+    // the games always have the same display settings
+    if (display_info.buffer_width != init_data->buffer_width ||
+        display_info.buffer_height != init_data->buffer_height ||
+        display_info.depth != init_data->depth ||
+        display_info.num_buffers != init_data->num_buffers) {
+
+        display_info.vp_width = init_data->vp_width;
+        display_info.vp_height = init_data->vp_height;
+        display_info.buffer_width = init_data->buffer_width;
+        display_info.buffer_height = init_data->buffer_height;
+        display_info.depth = init_data->depth;
+        display_info.num_buffers = init_data->num_buffers;
+        if (init_data->num_buffers == 1) {
+            ratr0_front_buffer = ratr0_back_buffer = 0;
+        } else {
+            ratr0_front_buffer = 0;
+            ratr0_back_buffer = 1;
+        }
+        free_display_buffer();
+        build_display_buffer(&display_info);
+        ratr0_bitset_clear(bitset_arr[ratr0_back_buffer], BITSET_SIZE);
+        ratr0_bitset_clear(bitset_arr[ratr0_front_buffer], BITSET_SIZE);
+    }
+ }
 
 void ratr0_display_set_copperlist(UINT16 *copperlist, int size,
                                   struct Ratr0CopperListInfo *info)

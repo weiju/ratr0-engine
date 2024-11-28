@@ -20,20 +20,22 @@ struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
 
 int main(int argc, char **argv)
 {
-    struct Ratr0DisplayInfo display_init = {
-        320, 256,  // viewport
-        320, 256,  // display buffer
-        5, 2,      // 32 colors, double buffer
-        1, TRUE    // 1 frame flip, PAL
-    };
     struct Ratr0MemoryConfig mem_config = {
         8192, 40,   // 8k general purpose memory with max 20 mem blocks
         //131072, 40  // 128k chip memory with max 20 mem blocks
         262144, 40  // 256k chip memory with max 40 mem blocks
     };
 
-    Ratr0Engine *engine = ratr0_engine_startup(&mem_config, &display_init,
+    struct Ratr0DisplayInit display_init = {
+        320, 256,  // viewport
+        320, 256,  // display buffer
+        5, 2,      // 32 colors, double buffer
+        1    // 1 frame flip
+    };
+    Ratr0Engine *engine = ratr0_engine_startup(&mem_config,
                                                argc, argv);
+    ratr0_init_display(&display_init);
+
     // Additional game engine setup: input mapping etc.
     action_move_left = ratr0_input_alloc_action();
     action_move_right = ratr0_input_alloc_action();

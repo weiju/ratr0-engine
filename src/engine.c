@@ -58,7 +58,6 @@ void ratr0_engine_game_loop(void)
 }
 
 Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
-                                  struct Ratr0DisplayInfo *display_info,
                                   int argc, char **argv)
 {
     int wb_numargs = 0;
@@ -124,7 +123,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
     //engine.event_system = ratr0_events_startup(&engine);
     engine.timer_system = ratr0_timers_startup(&engine, MAX_TIMERS);
     engine.input_system = ratr0_input_startup(&engine);
-    engine.rendering_system = ratr0_display_startup(&engine, display_info);
+    engine.rendering_system = ratr0_display_startup(&engine);
     engine.audio_system = ratr0_audio_startup();
     engine.resource_system = ratr0_resources_startup(&engine);
     engine.stages_system = ratr0_stages_startup(&engine);

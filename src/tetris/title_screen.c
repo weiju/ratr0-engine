@@ -69,7 +69,6 @@ void title_screen_on_enter(struct Ratr0Stage *this_stage)
     fprintf(debug_fp, "TITLESCREEN_ON_ENTER()\n");
     fflush(debug_fp);
 #endif
-
     // set new copper list
     ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                    &DEFAULT_COPPER_INFO);

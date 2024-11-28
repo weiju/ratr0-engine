@@ -52,6 +52,40 @@
 extern UINT16 __chip NULL_SPRITE_DATA[];
 #endif
 
+struct Ratr0DisplayInit {
+    /**
+     * \brief viewport width
+     *
+     * Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
+     * 256 for PAL. Smaller values will typically result in less memory consumption and faster
+     * refresh times.
+     * Sensible values for width can be { 320, 288 }
+     * Sensible values for height can be { 192, 208, 224, 240 }
+     */
+    UINT16 vp_width;
+    /** \brief viewport height */
+    UINT16 vp_height;
+    /** \brief display buffer width */
+    UINT16 buffer_width;
+    /** \brief display buffer height */
+    UINT16 buffer_height;
+
+    /** \brief display depth, can be a value between 1 and 5 */
+    UINT8 depth;
+
+    /** \brief number of display buffers (always 2) */
+    UINT8 num_buffers;
+
+    /**
+     * \brief number of frames to switch buffers
+     *
+     * How many frames to update the backbuffer ? For now, this
+     * should only be either 1 or 2. More than that heavily impacts
+     * gameplay experience. Currently it is always 1
+     */
+    UINT8 update_frames;
+};
+
 /**
  * Amiga specific information about the display, used both for
  * initialization and query information. This includes aspects of the
@@ -118,8 +152,7 @@ struct Ratr0RenderingSystem {
  * @param display_info configuration informatino for the display.
  * @return pointer to rendering subsystem object
  */
-struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng,
-                                                   struct Ratr0DisplayInfo *init_data);
+struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng);
 
 
 /**
@@ -155,6 +188,15 @@ struct Ratr0DisplayBuffer {
  * Shut down the display subsystem.
  */
 extern void ratr0_display_shutdown(void);
+
+/**
+ * Initializes the display using the information in the init struct.
+ * If the information is not equal to the existing one, the current
+ * display buffer will be discarded and a new one will be built
+ *
+ * @param init_data the initialization struct
+ */
+extern void ratr0_init_display(struct Ratr0DisplayInit *init_data);
 
 /**
  * Swap back buffer with the front buffer.
@@ -196,6 +238,14 @@ extern void ratr0_display_set_sprite(UINT16 *coplist, int size,
                                      struct Ratr0CopperListInfo *info,
                                      int sprite_num, UINT16 *data);
 
+/**
+ * Initialize copper list with the current display values. The info structure
+ * is used to say where the basic display definitions are located
+ *
+ * @param coplist pointer to copper list
+ * @param num_words length of list in words
+ * @param info copper list index info
+ */
 extern void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
                                            struct Ratr0CopperListInfo *info);
 

@@ -67,7 +67,6 @@ typedef struct {
  * @return pointer to the initialized engine system
  */
 extern Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
-                                         struct Ratr0DisplayInfo *display_info,
                                          int argc, char **argv);
 
 /**
