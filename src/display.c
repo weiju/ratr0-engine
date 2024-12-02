@@ -285,11 +285,10 @@ void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
 }
 
 static int display_buffer_size;
-static void build_display_buffer(struct Ratr0DisplayInfo *init_data)
+static void build_display_buffer(struct Ratr0DisplayInit *init_data)
 {
     display_buffer_size = init_data->buffer_width / 8 * init_data->buffer_height
         * init_data->depth;
-    //PRINT_DEBUG("# BUFFERS INITIALIZED: %u", init_data->num_buffers);
     for (int i = 0; i < init_data->num_buffers; i++) {
         display_buffer[i].buffernum = i;
         display_buffer[i].surface.width = init_data->buffer_width;
@@ -297,8 +296,11 @@ static void build_display_buffer(struct Ratr0DisplayInfo *init_data)
 
         display_buffer[i].surface.depth = init_data->depth;
         display_buffer[i].surface.is_interleaved = TRUE;
-        // display buffer memory is allocated directly from the OS, otherwise the memory allocator
-        // gets too inflexible
+        // TODO
+        // display buffer memory is allocated directly from the OS
+        // since we haven't ironed out our memory allocation strategy
+        // which currently might lead to memory exhaustion. But we
+        // should actually be able to use the RATR0 allocator
         display_buffer[i].surface.buffer = (void *) AllocMem(display_buffer_size, MEMF_CHIP|MEMF_CLEAR);
         if (display_buffer[i].surface.buffer == NULL) {
             PRINT_DEBUG("ERROR: can't allocate memory for display buffers !");
@@ -354,6 +356,7 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng)
     _install_interrupts();
 
     // initialize display buffers and display info
+    display_buffer_size = 0;
     display_info.num_buffers = 0;
     display_info.buffer_width = 0;
     display_info.buffer_height = 0;
@@ -367,8 +370,9 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng)
 
 void ratr0_init_display(struct Ratr0DisplayInit *init_data)
 {
-    // rebuild display if changed, for now, we assume
-    // the games always have the same display settings
+    // optimization: if the memory requirement is actually smaller,
+    // we can reuse the display buffer memory instead of freeing it
+    // and only rebuild if we need a larger buffer
     if (display_info.buffer_width != init_data->buffer_width ||
         display_info.buffer_height != init_data->buffer_height ||
         display_info.depth != init_data->depth ||
@@ -386,8 +390,14 @@ void ratr0_init_display(struct Ratr0DisplayInit *init_data)
             ratr0_front_buffer = 0;
             ratr0_back_buffer = 1;
         }
-        free_display_buffer();
-        build_display_buffer(&display_info);
+        // Rebuild the display buffer if the new one would be bigger
+        int new_display_buffer_size =
+            init_data->buffer_width / 8 * init_data->buffer_height
+            * init_data->depth;
+        if (new_display_buffer_size > display_buffer_size) {
+            free_display_buffer();
+            build_display_buffer(init_data);
+        }
         ratr0_bitset_clear(bitset_arr[ratr0_back_buffer], BITSET_SIZE);
         ratr0_bitset_clear(bitset_arr[ratr0_front_buffer], BITSET_SIZE);
     }
