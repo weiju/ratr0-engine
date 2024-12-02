@@ -63,7 +63,6 @@ BOOL ratr0_resources_read_tilesheet(const char *filename,
 #else
         UINT16 palette_size = byteswap16(sheet->header.palette_size);
         UINT32 imgdata_size = byteswap32(sheet->header.imgdata_size);
-        printf("palette size: %d imgdata_size: %d\n", palette_size, imgdata_size);
 #endif
         elems_read = fread(&sheet->palette, sizeof(UINT16), palette_size, fp);
         Ratr0MemHandle handle = ratr0_memory_allocate_block(RATR0_MEM_CHIP, imgdata_size);
@@ -73,7 +72,11 @@ BOOL ratr0_resources_read_tilesheet(const char *filename,
         fclose(fp);
         return TRUE;
     } else {
-        printf("ratr0_read_tilesheet() error: file '%s' not found\n", filename);
+#ifdef DEBUG
+        fprintf(debug_fp, "ratr0_read_tilesheet() error: file '%s' not found\n",
+                filename);
+        fflush(debug_fp);
+#endif
         return FALSE;
     }
 }
@@ -101,7 +104,11 @@ BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSh
 #else
         UINT32 imgdata_size = byteswap32(sheet->header.imgdata_size);
 #endif
-        printf("palette size: %d imgdata_size: %d\n", (int) palette_size, (int) imgdata_size);
+#ifdef DEBUG
+        fprintf(debug_fp, "RATR0_RESOURCES_READ_SPRITESHEET(), palette size: %d imgdata_size: %d\n",
+                (int) palette_size, (int) imgdata_size);
+        fflush(debug_fp);
+#endif
         // TODO: 0. reserve info chunk memory for offsets and colors
         sheet->sprite_offsets = &info_words[num_info_words];
         num_info_words += sheet->header.num_sprites;
@@ -123,7 +130,11 @@ BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSh
         fclose(fp);
         return TRUE;
     } else {
-        printf("ratr0_read_spritesheet() error: file '%s' not found\n", filename);
+#ifdef DEBUG
+        fprintf(debug_fp, "ratr0_read_spritesheet() error: file '%s' not found\n",
+                filename);
+        fflush(debug_fp);
+#endif
         return FALSE;
     }
 }

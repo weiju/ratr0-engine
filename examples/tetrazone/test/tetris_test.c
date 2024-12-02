@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../tetris/game_data.h"
-#include "../tetris/utils.h"
+#include "../game_data.h"
+#include "../utils.h"
 #include "../../chibi_test/chibi.h"
 
 UINT8 gameboard[BOARD_HEIGHT][BOARD_WIDTH];

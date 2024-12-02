@@ -6,18 +6,14 @@
 #include "title_screen.h"
 #include "hiscore_screen.h"
 #include "main_stage.h"
-#include "../default_copper.h"
+#include "default_copper.h"
 
 static Ratr0Engine *engine = NULL;
 extern struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
-#ifdef DEBUG
-#define TITLE_PATH_PAL ("tetris/assets/title_screen.ts")
-#else
 #define TITLE_PATH_PAL ("assets/title_screen.ts")
-#endif
 struct Ratr0TileSheet titlescreen_ts;
 
 static BOOL title_screen_first_update = FALSE;
@@ -83,7 +79,7 @@ void title_screen_on_enter(struct Ratr0Stage *this_stage)
 void title_screen_on_exit(struct Ratr0Stage *this_stage)
 {
 #ifdef DEBUG
-    fprintf(debug_fp, "HISCORESCREEN_ON_EXIT()\n");
+    fprintf(debug_fp, "TITLESCREEN_ON_EXIT()\n");
     fflush(debug_fp);
 #endif
 }

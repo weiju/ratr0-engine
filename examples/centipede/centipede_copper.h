@@ -1,0 +1,15 @@
+#pragma once
+#ifndef __CENTI_COPPER__
+#define __CENTI_COPPER__
+#define CENTI_COPPER_BPLCON0_INDEX (11)
+#define CENTI_COPPER_BPL1MOD_INDEX (15)
+#define CENTI_COPPER_BPL1PTH_INDEX (19)
+#define CENTI_COPPER_SPR0PTH_INDEX (43)
+#define CENTI_COPPER_COLOR00_INDEX (75)
+
+#define CENTI_COPPER_SIZE_WORDS (140)
+#define CENTI_COPPER_SIZE_BYTES (280)
+
+extern UINT16 __chip centi_copper[];
+
+#endif /* __CENTI_COPPER__ */

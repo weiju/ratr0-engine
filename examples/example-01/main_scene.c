@@ -3,9 +3,9 @@
 #include "main_scene.h"
 
 // Resources
-#define BOBS_PATH_IL ("example-01/assets/fox_run_20x23x3.ts")
-#define GRID_PATH ("example-01/assets/basegrid_320x256x3.ts")
-#define SPRITES_PATH ("example-01/assets/fox-run_00.spr")
+#define BOBS_PATH_IL ("assets/fox_run_20x23x3.ts")
+#define GRID_PATH ("assets/basegrid_320x256x3.ts")
+#define SPRITES_PATH ("assets/fox-run_00.spr")
 #define NUM_BOBS (4)
 
 struct Ratr0TileSheet bobs_il, grid;

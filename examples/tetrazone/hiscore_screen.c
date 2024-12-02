@@ -7,20 +7,15 @@
 #include "title_screen.h"
 #include "game_data.h"
 #include "utils.h"
-#include "../default_copper.h"
+#include "default_copper.h"
 
 static Ratr0Engine *engine = NULL;
 extern struct Ratr0Stage *main_stage, *title_screen;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
-#ifdef DEBUG
-#define TITLE_PATH_PAL ("tetris/assets/hiscores_title.ts")
-#define FONT_PATH_PAL ("tetris/assets/hiscores_font.ts")
-#else
 #define TITLE_PATH_PAL ("assets/hiscores_title.ts")
 #define FONT_PATH_PAL ("assets/hiscores_font.ts")
-#endif
 
 struct Ratr0TileSheet title_ts, font_ts;
 struct Ratr0Surface title_surf, font_surf;

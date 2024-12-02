@@ -34,28 +34,6 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
     action_quit;
 
 // Resources
-#ifdef DEBUG
-#define BG_PATH_PAL ("tetris/assets/background_320x256x32.ts")
-#define TILES_PATH  ("tetris/assets/tiles_32cols.ts")
-#define DIGITS_PATH  ("tetris/assets/calculator_digits.ts")
-#define DIGITS16_PATH  ("tetris/assets/calculator_digits_16.ts")
-#define PREVIEW_PATH  ("tetris/assets/preview_pieces.ts")
-#define OUTLINES_PATH  ("tetris/assets/block_outlines.spr")
-#define GAMEOVER_PATH  ("tetris/assets/gameover.spr")
-
-// Sounds effects:
-// we need rotate, drop and line deleted sounds
-// TODO: maybe we should also have a sound for moving and for
-// next level
-#define SOUND_ROTATE_PATH ("tetris/assets/bb-bathit.raw8")
-#define SOUND_DROP_PATH "tetris/assets/beep8bit.raw8"
-#define SOUND_DELETELINES_PATH "tetris/assets/laser_zap.raw8"
-#define SOUND_GAMEOVER_PATH "tetris/assets/sad_wah.raw8"
-
-#define MUSIC_MAIN_PATH "tetris/soundtrack/onlyamiga.mod"
-
-#else
-
 #define BG_PATH_PAL ("assets/background_320x256x32.ts")
 #define TILES_PATH  ("assets/tiles_32cols.ts")
 #define DIGITS_PATH  ("assets/calculator_digits.ts")
@@ -64,14 +42,15 @@ extern RATR0_ACTION_ID action_drop, action_move_left, action_move_right,
 #define OUTLINES_PATH  ("assets/block_outlines.spr")
 #define GAMEOVER_PATH  ("assets/gameover.spr")
 
+// Sounds effects:
+// we need rotate, drop and line deleted sounds
+// TODO: maybe we should also have a sound for moving and for
+// next level
 #define SOUND_ROTATE_PATH ("assets/bb-bathit.raw8")
 #define SOUND_DROP_PATH "assets/beep8bit.raw8"
 #define SOUND_DELETELINES_PATH "assets/laser_zap.raw8"
 #define SOUND_GAMEOVER_PATH "assets/sad_wah.raw8"
-
 #define MUSIC_MAIN_PATH "assets/onlyamiga.mod"
-
-#endif
 
 #define SOUNDFX_CHANNEL (3)
 
@@ -635,6 +614,10 @@ void main_stage_update(struct Ratr0Stage *this_stage,
 
 static void _load_resources(void)
 {
+#ifdef DEBUG
+    fprintf(debug_fp, "_LOAD_RESOURCES()\n");
+    fflush(debug_fp);
+#endif
     // Load background
     struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
@@ -647,19 +630,75 @@ static void _load_resources(void)
     ratr0_resources_free_tilesheet_data(&background_ts);
 
     // Load tileset for the blocks
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO READ BLOCK TILES !!! !!!\n");
+    fflush(debug_fp);
+#endif
     ts_read = ratr0_resources_read_tilesheet(TILES_PATH, &tiles_ts);
+#ifdef DEBUG
+    if (!ts_read) {
+        fprintf(debug_fp, "could not read block tiles !!!\n");
+        fflush(debug_fp);
+    }
+#endif
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO INIT BLOCK TILE SURFACE !!! !!!\n");
+    fflush(debug_fp);
+#endif
     ratr0_resources_init_surface_from_tilesheet(&tiles_surface, &tiles_ts);
 
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO READ GHOST OUTLINES !!! !!!\n");
+    fflush(debug_fp);
+#endif
     // load block outlines as sprite for the ghost piece
-    ratr0_resources_read_spritesheet(OUTLINES_PATH, &outlines_sheet);
+    ts_read = ratr0_resources_read_spritesheet(OUTLINES_PATH, &outlines_sheet);
+#ifdef DEBUG
+    if (!ts_read) {
+        fprintf(debug_fp, "could not read outline sprites !!!\n");
+        fflush(debug_fp);
+    } else {
+        fprintf(debug_fp, "outline sprites successfully read !!!\n");
+        fflush(debug_fp);
+    }
+#endif
+
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO CREATE GHOST PIECE SPRITES !!! !!!\n");
+    fflush(debug_fp);
+#endif
     for (int i = 0; i < outlines_sheet.header.num_sprites; i++) {
         outline_frame[i] = ratr0_create_sprite_from_sprite_sheet_frame(&outlines_sheet, i);
     }
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO READ SMALL DIGIT TILES !!! !!!\n");
+    fflush(debug_fp);
+#endif
     // load digit tile set for the score panels
     ts_read = ratr0_resources_read_tilesheet(DIGITS_PATH, &digits_ts);
+#ifdef DEBUG
+    if (!ts_read) {
+        fprintf(debug_fp, "could not read digit for score panels !!!\n");
+        fflush(debug_fp);
+    }
+#endif
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO INIT SMALL DIGIT SURFACE !!! !!!\n");
+    fflush(debug_fp);
+#endif
     ratr0_resources_init_surface_from_tilesheet(&digits_surface, &digits_ts);
 
+#ifdef DEBUG
+    fprintf(debug_fp, "ABOUT TO READ LARGE DIGIT TILES !!! !!!\n");
+    fflush(debug_fp);
+#endif
     ts_read = ratr0_resources_read_tilesheet(DIGITS16_PATH, &digits16_ts);
+#ifdef DEBUG
+    if (!ts_read) {
+        fprintf(debug_fp, "could not read large digits for score panels !!!\n");
+        fflush(debug_fp);
+    }
+#endif
     ratr0_resources_init_surface_from_tilesheet(&digits16_surface, &digits16_ts);
 
     // load preview piece tile set
@@ -667,27 +706,69 @@ static void _load_resources(void)
 #ifdef DEBUG
     if (!ts_read) {
         fprintf(debug_fp, "could not read preview tiles !!!\n");
+        fflush(debug_fp);
     }
 #endif
     ratr0_resources_init_surface_from_tilesheet(&preview_surface, &preview_ts);
 
+#ifdef DEBUG
+    fprintf(debug_fp, "_LOAD_RESOURCES() - READING SOUNDS...\n");
+    fflush(debug_fp);
+#endif
+    BOOL ret;
     // read sound effects and music
-    ratr0_resources_read_audiosample(SOUND_DROP_PATH, &drop_sound);
-    ratr0_resources_read_audiosample(SOUND_ROTATE_PATH, &rotate_sound);
-    ratr0_resources_read_audiosample(SOUND_DELETELINES_PATH, &completed_sound);
-    ratr0_resources_read_audiosample(SOUND_GAMEOVER_PATH, &gameover_sound);
+    ret = ratr0_resources_read_audiosample(SOUND_DROP_PATH, &drop_sound);
+#ifdef DEBUG
+    if (!ret) {
+        fprintf(debug_fp, "could not read drop sound '%s'\n", SOUND_DROP_PATH);
+        fflush(debug_fp);
+    }
+#endif
+    ret = ratr0_resources_read_audiosample(SOUND_ROTATE_PATH, &rotate_sound);
+#ifdef DEBUG
+    if (!ret) {
+        fprintf(debug_fp, "could not read rotate sound '%s'\n", SOUND_ROTATE_PATH);
+        fflush(debug_fp);
+    }
+#endif
+    ret = ratr0_resources_read_audiosample(SOUND_DELETELINES_PATH, &completed_sound);
+#ifdef DEBUG
+    if (!ret) {
+        fprintf(debug_fp, "could not read delete lines sound '%s'\n", SOUND_DELETELINES_PATH);
+        fflush(debug_fp);
+    }
+#endif
+    ret = ratr0_resources_read_audiosample(SOUND_GAMEOVER_PATH, &gameover_sound);
+#ifdef DEBUG
+    if (!ret) {
+        fprintf(debug_fp, "could not read game over sound '%s'\n", SOUND_GAMEOVER_PATH);
+        fflush(debug_fp);
+    }
+#endif
+#ifdef DEBUG
+    fprintf(debug_fp, "_LOAD_RESOURCES() - SOUNDS READ\n");
+    fflush(debug_fp);
+#endif
 
+#ifdef DEBUG
+    fprintf(debug_fp, "_LOAD_RESOURCES() - READING GAMEOVER SPRITES...\n");
+    fflush(debug_fp);
+#endif
     // read game over sprites
-    ratr0_resources_read_spritesheet(GAMEOVER_PATH, &gameover_sheet);
+    ret = ratr0_resources_read_spritesheet(GAMEOVER_PATH, &gameover_sheet);
     for (int i = 0; i < gameover_sheet.header.num_sprites; i++) {
         gameover_frames[i] = ratr0_create_sprite_from_sprite_sheet_frame(&gameover_sheet, i);
     }
 
-    BOOL ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
+#ifdef DEBUG
+    fprintf(debug_fp, "_LOAD_RESOURCES() - READING MUSIC...\n");
+    fflush(debug_fp);
+#endif
+    ret = ratr0_resources_read_protracker(MUSIC_MAIN_PATH, &main_music);
 #ifdef DEBUG
     if (!ret) {
-        fprintf(debug_fp, "could not read protracker module '%s'\n",
-                MUSIC_MAIN_PATH);
+        fprintf(debug_fp, "could not read protracker module '%s'\n", MUSIC_MAIN_PATH);
+        fflush(debug_fp);
     }
 #endif
 }
@@ -708,6 +789,10 @@ void _clear_score_panel(void)
 
 void main_stage_on_enter(struct Ratr0Stage *this_stage)
 {
+#ifdef DEBUG
+    fprintf(debug_fp, "MAIN_STAGE_ON_ENTER()\n");
+    fflush(debug_fp);
+#endif
     // set new copper list
     ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
                                    &TETRIS_COPPER_INFO);
@@ -717,7 +802,15 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
     this_stage->num_sprites = 0;
 
     _load_resources();
+#ifdef DEBUG
+    fprintf(debug_fp, "LOADING HISCORES\n");
+    fflush(debug_fp);
+#endif
     load_hiscore_list();
+#ifdef DEBUG
+    fprintf(debug_fp, "HISCORES LOADED\n");
+    fflush(debug_fp);
+#endif
 #ifdef DEBUG
     for (int i = 0; i < MAX_HIGHSCORE_ENTRIES; i++) {
           fprintf(debug_fp, "%s: %u\n",
@@ -741,6 +834,10 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
     done_gameover_once = FALSE;
 
     // start bg music
+#ifdef DEBUG
+    fprintf(debug_fp, "BEFORE STARTING BACKGROUND MUSIC\n");
+    fflush(debug_fp);
+#endif
     ratr0_audio_play_mod(&main_music);
 
     outline_timer = ratr0_timers_create(5, FALSE, change_ghost_piece_color);

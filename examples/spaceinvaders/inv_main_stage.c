@@ -4,7 +4,7 @@
 
 #include <ratr0/ratr0.h>
 #include <clib/graphics_protos.h>
-#include "../default_copper.h"
+#include "default_copper.h"
 #include "inv_main_stage.h"
 
 static Ratr0Engine *engine;
@@ -13,10 +13,10 @@ extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 #define NUM_BOBS (10)
 struct Ratr0Bob *bobs[NUM_BOBS];
 // Resources
-#define BOBS_PATH ("sinvaders/assets/alien001_12x8x2.ts")
-#define BOBS2_PATH ("sinvaders/assets/alien001_12x8x1.ts")
-#define GRID_PATH ("sinvaders/assets/basegrid_288x256x2.ts")
-#define SPRITES_PATH ("sinvaders/assets/all-aliens.spr")
+#define BOBS_PATH ("assets/alien001_12x8x2.ts")
+#define BOBS2_PATH ("assets/alien001_12x8x1.ts")
+#define GRID_PATH ("assets/basegrid_288x256x2.ts")
+#define SPRITES_PATH ("assets/all-aliens.spr")
 struct Ratr0TileSheet bobs_sheet, bobs2_sheet, grid_sheet;
 struct Ratr0SpriteSheet sprite_sheet;
 UINT8 bob_frames[2] = {0, 1};

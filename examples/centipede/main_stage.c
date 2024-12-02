@@ -19,7 +19,7 @@ static Ratr0Engine *engine;
 extern RATR0_ACTION_ID action_fire, action_move_left, action_move_right;
 
 // Resources
-#define CENTI_HEAD_LR_PATH ("centipede/assets/c_head_l2r.spr")
+#define CENTI_HEAD_LR_PATH ("assets/c_head_l2r.spr")
 struct Ratr0SpriteSheet centi_head_lr_sheet;
 UINT8 centi_head_lr_frames[] = {0, 1, 2, 3, 4};
 struct Ratr0HWSprite *centi;

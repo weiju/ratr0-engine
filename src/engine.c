@@ -92,7 +92,7 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
     // Make the debug file handle available from the start so
     // we can write to it during startup
 #ifdef DEBUG
-    debug_fp = fopen("src:ratr0.debug", "a");
+    debug_fp = fopen("ratr0.debug", "a");
     if (is_cli) {
         fprintf(debug_fp, "CLI START\n");
     } else {

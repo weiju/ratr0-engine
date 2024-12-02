@@ -1,4 +1,6 @@
+*_copper.*
 *.o
+*.uaem
 .info
 hiscores.dat
 *.debug
