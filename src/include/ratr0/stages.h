@@ -94,7 +94,6 @@ struct Ratr0Stage {
      * @param frames_elapsed the number of elapsed frames since the last call of update
      */
     void (*update)(struct Ratr0Stage *this_stage,
-                   struct Ratr0DisplayBuffer *backbuffer,
                    UINT8 frames_elapsed);
 
 };
@@ -174,12 +173,8 @@ extern void ratr0_stages_set_current_stage(struct Ratr0Stage *stage);
 
 /**
  * Called every game loop iteration to update the Stages system.
- *
- * @param backbuffer the backbuffer of the display
- * @param frames_elapsed frames elapsed since last invocation
  */
-extern void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
-                                UINT8 frames_elapsed);
+extern void ratr0_stages_update(UINT8 frames_elapsed);
 
 
 #endif /* __RATR0_STAGES_H__ */

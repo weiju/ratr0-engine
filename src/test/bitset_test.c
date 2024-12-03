@@ -36,21 +36,24 @@ CHIBI_TEST(TestInsertIsSet)
     chibi_assert(ratr0_bitset_isset(bitset_arr, 4, 33));
 }
 
-void process_bit(UINT16 index)
+// add all the indexes
+void process_bit(UINT16 index, void *data)
 {
-    //printf("BIT SET INDEX: %d\n", index);
+    (*(int *)data) += index;
 }
 
 CHIBI_TEST(TestIterate)
 
 {
     UINT32 bitset_arr[4];
+    UINT32 result = 0;
     ratr0_bitset_clear(bitset_arr, 4);
 
     ratr0_bitset_insert(bitset_arr, 4, 0);
     ratr0_bitset_insert(bitset_arr, 4, 33);
     ratr0_bitset_insert(bitset_arr, 4, 67);
-    ratr0_bitset_iterate(bitset_arr, 4, &process_bit);
+    ratr0_bitset_iterate(bitset_arr, 4, &process_bit, &result);
+    chibi_assert_eq_int(100, result);
 }
 
 /*

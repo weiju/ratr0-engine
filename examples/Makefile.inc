@@ -1,7 +1,7 @@
 ifdef TESTONLY
 
 CC=gcc
-CFLAGS=-I/opt/homebrew/include -Iinclude -DDEBUG -DTEST
+CFLAGS=-I/opt/homebrew/include -I../../src/include -DDEBUG -DTEST
 LDFLAGS=
 TEST_CFLAGS=-Iinclude -I../../chibi_test
 

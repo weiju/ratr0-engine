@@ -29,9 +29,10 @@ extern struct Ratr0Backdrop *backdrop;  // GLOBAL for performance testing
 
 
 void main_stage_update(struct Ratr0Stage *this_stage,
-                       struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
     // For now, end when the mouse was clicked. This is just for testing
     if (ratr0_input_was_action_pressed(action_fire)) {
         ratr0_engine_exit();
@@ -143,8 +144,8 @@ struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
     main_stage->num_bobs = NUM_BOBS;
 
     struct Ratr0DisplayBuffer *back_buffer, *front_buffer;
-    front_buffer = ratr0_display_get_front_buffer();
-    back_buffer = ratr0_display_get_back_buffer();
+    front_buffer = ratr0_display_get_front_buffer(0);
+    back_buffer = ratr0_display_get_back_buffer(0);
     main_stage->backdrop = node_factory->create_backdrop(&grid_sheet);
     printf("BACKDROP WIDTH: %d fb width: %d bb width: %d\n",\
            (int) main_stage->backdrop->surface.width,

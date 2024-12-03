@@ -26,7 +26,6 @@ struct Ratr0HWSprite *centi;
 int centi_dir = 2;
 
 void main_stage_update(struct Ratr0Stage *this_stage,
-                       struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
     // For now, end when the mouse was clicked. This is just for testing

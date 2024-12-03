@@ -19,9 +19,15 @@ int main(int argc, char **argv)
 {
     struct Ratr0DisplayInit display_init = {
         320, 256,  // viewport
-        320, 256,  // display buffer
-        3, 2,      // 8 colors, double buffer
-        1    // 1 frame flip
+        1,         // single playfield
+        {
+            {
+                320, 256,  // display buffer
+                3, 2,      // 8 colors, double buffer
+                1    // 1 frame flip
+            },
+            { 0, 0, 0, 0, 0} // unused
+        }
     };
     struct Ratr0MemoryConfig mem_config = {
         8192, 20,   // 8k general purpose memory with max 20 mem blocks
@@ -30,7 +36,7 @@ int main(int argc, char **argv)
 
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config,
                                                argc, argv);
-    ratr0_init_display(&display_init);
+    ratr0_display_init_buffers(&display_init);
     ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                    &DEFAULT_COPPER_INFO);
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,

@@ -23,7 +23,6 @@ UINT8 fox_frames[] = {0, 1, 2, 3, 4};
 struct Ratr0HWSprite *fox;
 
 void main_stage_update(struct Ratr0Stage *this_stage,
-                       struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
     // TODO: Animate BOBs

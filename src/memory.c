@@ -5,9 +5,8 @@
 #include <clib/exec_protos.h>
 #include <ratr0/debug_utils.h>
 #include <ratr0/memory.h>
-//#include <ratr0/amiga/memory.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33mMEMORY\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("MEMORY", __VA_ARGS__)
 
 /*
  * The global memory service instance.
@@ -118,10 +117,6 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         if (first_free_chip + size > chip_pool_size) {
             // This is a fatal error -> Exit the engine !!
             PRINT_DEBUG("Chip memory exhausted, can't reserve more.");
-#ifdef DEBUG
-            fprintf(debug_fp, "Chip memory exhausted, can't reserve more.\n");
-            fflush(debug_fp);
-#endif
             ratr0_memory_shutdown();
             exit(-1);
         }
@@ -130,19 +125,12 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         chip_mem_table[first_free_chip_table].block_address = mem_block;
         chip_mem_table[first_free_chip_table++].block_size = size;
         first_free_chip += size;
-#ifdef DEBUG
-        fprintf(debug_fp, "Allocated %u bytes of chip memory.\n", size);
-        fflush(debug_fp);
-#endif
+        PRINT_DEBUG("Allocated %u bytes of chip memory.", size);
         return result | 0x80000000;  // add a chip mem tag
     } else {
         if (first_free_general + size > general_pool_size) {
             // This is a fatal error -> Exit the engine !!
             PRINT_DEBUG("General memory exhausted, can't reserve more.");
-#ifdef DEBUG
-            fprintf(debug_fp, "General memory exhausted, can't reserve more.\n");
-            fflush(debug_fp);
-#endif
             ratr0_memory_shutdown();
             exit(-1);
         }
@@ -151,10 +139,7 @@ Ratr0MemHandle ratr0_memory_allocate_block(Ratr0MemoryType mem_type, UINT32 size
         general_mem_table[first_free_general_table].block_address = mem_block;
         general_mem_table[first_free_general_table++].block_size = size;
         first_free_general += size;
-#ifdef DEBUG
-        fprintf(debug_fp, "Allocated %u bytes of general purpose memory.\n", size);
-        fflush(debug_fp);
-#endif
+        PRINT_DEBUG("Allocated %u bytes of general purpose memory.", size);
         return result;
     }
 }

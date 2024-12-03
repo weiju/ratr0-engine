@@ -4,7 +4,7 @@
 #include <ratr0/memory.h>
 #include <ratr0/timers.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[35mTIMERS\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("TIMERS", __VA_ARGS__)
 
 void ratr0_timers_shutdown(void);
 static struct Ratr0TimerSystem timer_system;

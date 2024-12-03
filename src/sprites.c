@@ -3,7 +3,8 @@
 #include <ratr0/memory.h>
 #include <ratr0/resources.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mSPRITES\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("SPRITES", __VA_ARGS__)
+
 /*
  * Amiga sprite module.
  * Amiga sprites are a data structure that starts with 2 descriptor words,

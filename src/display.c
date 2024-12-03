@@ -24,16 +24,7 @@
 #include <ratr0/sprites.h>
 #include <ratr0/blitter.h>
 
-/** \brief default copper list indexes */
-/*
-struct Ratr0CopperListInfo DEFAULT_COPPER_INFO = {
-    3, 5, 7, 9,
-    DEFAULT_COPPER_BPLCON0_INDEX, DEFAULT_COPPER_BPL1MOD_INDEX,
-    DEFAULT_COPPER_BPL1PTH_INDEX,
-    DEFAULT_COPPER_SPR0PTH_INDEX, DEFAULT_COPPER_COLOR00_INDEX
-};
-*/
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mDISPLAY\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("DISPLAY", __VA_ARGS__)
 
 static struct Ratr0RenderingSystem rendering_system;
 
@@ -65,10 +56,6 @@ static void set_display_surface(UINT16 coplist[], int num_words,
                                 struct Ratr0CopperListInfo *info,
                                 struct Ratr0Surface *s);
 
-static struct Ratr0DisplayBuffer display_buffer[MAX_BUFFERS];
-UINT16 ratr0_back_buffer = 1;
-UINT16 ratr0_front_buffer = 0;
-
 // For our interrupt handlers
 static struct Interrupt vbint;
 UINT8 frames_elapsed;
@@ -87,7 +74,18 @@ UINT8 frames_elapsed;
 #define BITSET_INDEX(x, y) (y * 20 + x)
 #define BITSET_X(idx) (idx % 20)
 #define BITSET_Y(idx) (idx / 20)
-UINT32 bitset_arr[2][BITSET_SIZE];
+
+/**
+ * Captures the properties of our display, which can be either 1 or 2
+ * playfields, each with up to 2 buffers
+ */
+struct Playfield {
+    struct Ratr0DisplayBuffer display_buffer[MAX_BUFFERS];
+    UINT16 back_buffer, front_buffer;
+    UINT32 bitset_arr[MAX_BUFFERS][BITSET_SIZE];
+    UINT32 display_buffer_size;
+};
+static struct Playfield playfields[MAX_PLAYFIELDS];
 
 #define HW_SPRITE_TABLE_SIZE (20)
 // Sprite and bob tables can be in Fastmem
@@ -96,46 +94,65 @@ UINT16 next_hw_sprite = 0;
 struct Ratr0Bob bob_table[20];
 UINT16 next_bob = 0;
 
-void add_dirty_rectangle(UINT16 x, UINT16 y)
+void ratr0_display_add_dirty_rectangle(UINT16 playfield_num, UINT16 x, UINT16 y)
 {
+    struct Playfield *playfield = &playfields[playfield_num];
     // Add the rectangles to both buffers
-    ratr0_bitset_insert(bitset_arr[ratr0_front_buffer], BITSET_SIZE, BITSET_INDEX(x, y));
-    ratr0_bitset_insert(bitset_arr[ratr0_back_buffer], BITSET_SIZE, BITSET_INDEX(x, y));
+    ratr0_bitset_insert(playfield->bitset_arr[playfield->front_buffer],
+                        BITSET_SIZE, BITSET_INDEX(x, y));
+    ratr0_bitset_insert(playfield->bitset_arr[playfield->back_buffer],
+                        BITSET_SIZE, BITSET_INDEX(x, y));
 }
 
-static void (*_process_rect)(UINT16 x, UINT16 y);
+static void (*_process_rect)(struct Ratr0DisplayBuffer *, UINT16 x, UINT16 y);
 
-void process_bit(UINT16 index)
+void process_bit(UINT16 index, void *userdata)
 {
     UINT16 x = BITSET_X(index) << 4;  // * 16
     UINT16 y = BITSET_Y(index) << 4;
-    _process_rect(x, y);
+    _process_rect((struct Ratr0DisplayBuffer *) userdata, x, y);
 }
 
-void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y))
+void ratr0_display_process_dirty_rectangles(void (*process_dirty_rect)(struct Ratr0DisplayBuffer *, UINT16, UINT16))
 {
-    // Establish the rect processing function
-    _process_rect = process_dirty_rect;
-    // 1. Restore background using the dirty tile set
-    ratr0_bitset_iterate(bitset_arr[ratr0_back_buffer], BITSET_SIZE, &process_bit);
-    ratr0_bitset_clear(bitset_arr[ratr0_back_buffer], 10); // clear to reset
+    for (int playfield_num = 0; playfield_num < display_info.num_playfields;
+         playfield_num++) {
+        struct Playfield *playfield = &playfields[playfield_num];
+        int backbuffer_num = playfield->back_buffer;
+        struct Ratr0DisplayBuffer *backbuffer =
+            &playfield->display_buffer[backbuffer_num];
+
+        // Establish the rect processing function
+        _process_rect = process_dirty_rect;
+        // 1. Restore background using the dirty tile set
+        ratr0_bitset_iterate(playfield->bitset_arr[backbuffer_num],
+                             BITSET_SIZE, &process_bit, backbuffer);
+        ratr0_bitset_clear(playfield->bitset_arr[backbuffer_num],
+                           10); // clear to reset
+    }
 }
 
 // Swap back and front buffers
-struct Ratr0DisplayBuffer *ratr0_display_swap_buffers(void)
+void ratr0_display_swap_buffers(void)
 {
-    //  just the first buffer single buffering
-    if (display_info.num_buffers == 1) return &display_buffer[0];
+    for (int playfield_num = 0; playfield_num < display_info.num_playfields;
+         playfield_num++) {
+        struct Playfield *playfield = &playfields[playfield_num];
 
-    // 1. swap front and back indexes
-    int tmp = ratr0_front_buffer;
-    ratr0_front_buffer = ratr0_back_buffer;
-    ratr0_back_buffer = tmp;
-    // 2. set new front buffer to copper list
-    set_display_surface(current_coplist, current_coplist_size,
-                        current_copper_info,
-                        &display_buffer[ratr0_front_buffer].surface);
-    return &display_buffer[ratr0_back_buffer];
+        //  just the first buffer single buffering -> next playfield
+        if (display_info.playfield[playfield_num].num_buffers == 1) {
+            continue;
+        }
+
+        // 1. swap front and back indexes
+        int tmp = playfield->front_buffer;
+        playfield->front_buffer = playfield->back_buffer;
+        playfield->back_buffer = tmp;
+        // 2. set new front buffer to copper list
+        set_display_surface(current_coplist, current_coplist_size,
+                            current_copper_info,
+                            &playfield->display_buffer[playfield->front_buffer].surface);
+    }
 }
 
 // Our vertical blank server only implements a simple frame counter
@@ -196,21 +213,25 @@ static void set_display_mode(UINT16 coplist[],
  * Set the bitplane pointers in the copper list to the specified display buffer
  * It also adjusts BPLCONx and BPLxMOD.
  */
-struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(void)
+struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(UINT16 playfield_num)
 {
-    return &display_buffer[ratr0_front_buffer];
+    struct Playfield *playfield = &playfields[playfield_num];
+    return &playfield->display_buffer[playfield->front_buffer];
 }
-struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void)
+
+struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(UINT16 playfield_num)
 {
-    return &display_buffer[ratr0_back_buffer];
+    struct Playfield *playfield = &playfields[playfield_num];
+    return &playfield->display_buffer[playfield->back_buffer];
 }
 
 BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface,
+                                           UINT16 playfield_num,
                                            UINT16 dstx, UINT16 dsty)
 {
     struct Ratr0Surface *back_buffer, *front_buffer;
-    front_buffer = &ratr0_display_get_front_buffer()->surface;
-    back_buffer = &ratr0_display_get_back_buffer()->surface;
+    front_buffer = &ratr0_display_get_front_buffer(playfield_num)->surface;
+    back_buffer = &ratr0_display_get_back_buffer(playfield_num)->surface;
     OwnBlitter();
     ratr0_blit_rect_simple(front_buffer, surface, dstx, dsty, 0, 0,
                            surface->width, surface->height);
@@ -270,49 +291,73 @@ void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
         }
     }
 
-    // establish the display mode
-    set_display_mode(coplist, info,
-                     display_info.vp_width, display_info.depth);
-
     // 2. Initialize the sprites with the NULL address (8x8 = 64 bytes)
     for (int i = 0; i < 8; i++) {
         ratr0_display_set_sprite(coplist, num_words, info,
                                  i, NULL_SPRITE_DATA);
     }
+
+    // 3. establish the display mode
+    // TODO: what to do when we have dual playfield mode ????
+    int playfield_num = 0;
+    struct Playfield *playfield = &playfields[playfield_num];
+    set_display_mode(coplist, info,
+                     display_info.vp_width,
+                     display_info.playfield[playfield_num].depth);
+
+    // Establish the playfield display buffers
     set_display_surface(coplist, num_words,
-                        info, &display_buffer[ratr0_front_buffer].surface);
+                        info,
+                        &playfield->display_buffer[playfield->front_buffer].surface);
 }
 
-static int display_buffer_size;
 static void build_display_buffer(struct Ratr0DisplayInit *init_data)
 {
-    display_buffer_size = init_data->buffer_width / 8 * init_data->buffer_height
-        * init_data->depth;
-    for (int i = 0; i < init_data->num_buffers; i++) {
-        display_buffer[i].buffernum = i;
-        display_buffer[i].surface.width = init_data->buffer_width;
-        display_buffer[i].surface.height = init_data->buffer_height;
+    for (int playfield_num = 0; playfield_num < init_data->num_playfields;
+         playfield_num++) {
 
-        display_buffer[i].surface.depth = init_data->depth;
-        display_buffer[i].surface.is_interleaved = TRUE;
-        // TODO
-        // display buffer memory is allocated directly from the OS
-        // since we haven't ironed out our memory allocation strategy
-        // which currently might lead to memory exhaustion. But we
-        // should actually be able to use the RATR0 allocator
-        display_buffer[i].surface.buffer = (void *) AllocMem(display_buffer_size, MEMF_CHIP|MEMF_CLEAR);
-        if (display_buffer[i].surface.buffer == NULL) {
-            PRINT_DEBUG("ERROR: can't allocate memory for display buffers !");
-            break;
+        playfields[playfield_num].display_buffer_size =
+            init_data->playfield[playfield_num].buffer_width / 8 *
+            init_data->playfield[playfield_num].buffer_height *
+            init_data->playfield[playfield_num].depth;
+
+        for (int j = 0; j < init_data->playfield[playfield_num].num_buffers; j++) {
+            playfields[playfield_num].display_buffer[j].buffernum = j;
+            playfields[playfield_num].display_buffer[j].surface.width =
+                init_data->playfield[playfield_num].buffer_width;
+            playfields[playfield_num].display_buffer[j].surface.height =
+                init_data->playfield[playfield_num].buffer_height;
+            playfields[playfield_num].display_buffer[j].surface.depth =
+                init_data->playfield[playfield_num].depth;
+            playfields[playfield_num].display_buffer[j].surface.is_interleaved = TRUE;
+
+            // TODO
+            // display buffer memory is allocated directly from the OS
+            // since we haven't ironed out our memory allocation strategy
+            // which currently might lead to memory exhaustion. But we
+            // should actually be able to use the RATR0 allocator
+            playfields[playfield_num].display_buffer[j].surface.buffer =
+                (void *) AllocMem(playfields[playfield_num].display_buffer_size,
+                                  MEMF_CHIP|MEMF_CLEAR);
+            if (playfields[playfield_num].display_buffer[j].surface.buffer == NULL) {
+                PRINT_DEBUG("ERROR: can't allocate memory for display buffers !");
+                break;
+            }
         }
     }
+
+    // don't forget to set the number of playfields
+    display_info.num_playfields = init_data->num_playfields;
 }
 
 static void free_display_buffer(void)
 {
-    for (int i = 0; i < display_info.num_buffers; i++) {
-        if (display_buffer[i].surface.buffer != NULL) {
-            FreeMem(display_buffer[i].surface.buffer, display_buffer_size);
+    for (int playfield_num = 0; playfield_num < display_info.num_playfields; playfield_num++) {
+        for (int j = 0; j < display_info.playfield[playfield_num].num_buffers; j++) {
+            if (playfields[playfield_num].display_buffer[j].surface.buffer != NULL) {
+                FreeMem(playfields[playfield_num].display_buffer[j].surface.buffer,
+                        playfields[playfield_num].display_buffer_size);
+            }
         }
     }
 }
@@ -355,11 +400,13 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng)
     _install_interrupts();
 
     // initialize display buffers and display info
-    display_buffer_size = 0;
-    display_info.num_buffers = 0;
-    display_info.buffer_width = 0;
-    display_info.buffer_height = 0;
-    display_info.depth = 0;
+    for (int i = 0; i < MAX_PLAYFIELDS; i++) {
+        playfields[i].display_buffer_size = 0;
+        display_info.playfield[i].num_buffers = 0;
+        display_info.playfield[i].buffer_width = 0;
+        display_info.playfield[i].buffer_height = 0;
+        display_info.playfield[i].depth = 0;
+    }
 
     // Object management initialization
     next_hw_sprite = next_bob = 0;
@@ -367,38 +414,49 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng)
     return &rendering_system;
 }
 
-void ratr0_init_display(struct Ratr0DisplayInit *init_data)
+void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data)
 {
-    // optimization: if the memory requirement is actually smaller,
-    // we can reuse the display buffer memory instead of freeing it
-    // and only rebuild if we need a larger buffer
-    if (display_info.buffer_width != init_data->buffer_width ||
-        display_info.buffer_height != init_data->buffer_height ||
-        display_info.depth != init_data->depth ||
-        display_info.num_buffers != init_data->num_buffers) {
+    for (int playfield_num = 0; playfield_num < init_data->num_playfields;
+         playfield_num++) {
+        struct Playfield *playfield = &playfields[playfield_num];
+        struct Ratr0PlayfieldInfo *pfinfo = &display_info.playfield[playfield_num];
+        struct Ratr0PlayfieldInfo *pfinit = &init_data->playfield[playfield_num];
 
-        display_info.vp_width = init_data->vp_width;
-        display_info.vp_height = init_data->vp_height;
-        display_info.buffer_width = init_data->buffer_width;
-        display_info.buffer_height = init_data->buffer_height;
-        display_info.depth = init_data->depth;
-        display_info.num_buffers = init_data->num_buffers;
-        if (init_data->num_buffers == 1) {
-            ratr0_front_buffer = ratr0_back_buffer = 0;
-        } else {
-            ratr0_front_buffer = 0;
-            ratr0_back_buffer = 1;
+        // optimization: if the memory requirement is actually smaller,
+        // we can reuse the display buffer memory instead of freeing it
+        // and only rebuild if we need a larger buffer
+        if (pfinfo->buffer_width != pfinit->buffer_width ||
+            pfinfo->buffer_height != pfinit->buffer_height ||
+            pfinfo->depth != pfinit->depth ||
+            pfinfo->num_buffers != pfinit->num_buffers) {
+
+            display_info.vp_width = init_data->vp_width;
+            display_info.vp_height = init_data->vp_height;
+
+            pfinfo->buffer_width = pfinit->buffer_width;
+            pfinfo->buffer_height = pfinit->buffer_height;
+            pfinfo->depth = pfinit->depth;
+            pfinfo->num_buffers = pfinit->num_buffers;
+
+            if (pfinit->num_buffers == 1) {
+                playfield->front_buffer = playfield->back_buffer = 0;
+            } else {
+                playfield->front_buffer = 0;
+                playfield->back_buffer = 1;
+            }
+            // Rebuild the display buffer if the new one would be bigger
+            int new_display_buffer_size = pfinit->buffer_width / 8 *
+                pfinit->buffer_height * pfinit->depth;
+
+            if (new_display_buffer_size > playfield->display_buffer_size) {
+                free_display_buffer();
+                build_display_buffer(init_data);
+            }
+            ratr0_bitset_clear(playfield->bitset_arr[playfield->back_buffer],
+                               BITSET_SIZE);
+            ratr0_bitset_clear(playfield->bitset_arr[playfield->front_buffer],
+                               BITSET_SIZE);
         }
-        // Rebuild the display buffer if the new one would be bigger
-        int new_display_buffer_size =
-            init_data->buffer_width / 8 * init_data->buffer_height
-            * init_data->depth;
-        if (new_display_buffer_size > display_buffer_size) {
-            free_display_buffer();
-            build_display_buffer(init_data);
-        }
-        ratr0_bitset_clear(bitset_arr[ratr0_back_buffer], BITSET_SIZE);
-        ratr0_bitset_clear(bitset_arr[ratr0_front_buffer], BITSET_SIZE);
     }
  }
 

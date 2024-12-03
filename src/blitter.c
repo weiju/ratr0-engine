@@ -7,7 +7,7 @@
 #include <ratr0/blitter.h>
 #include <ratr0/display.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[32mBLITTER\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("BLITTER", __VA_ARGS__)
 
 extern struct Custom custom;
 static Ratr0Engine *engine;

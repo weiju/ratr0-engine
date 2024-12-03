@@ -3,7 +3,7 @@
 #include <ratr0/debug_utils.h>
 #include <ratr0/events.h>
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[31mEVENTS\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("EVENTS", __VA_ARGS__)
 
 static struct Ratr0EventSystem event_system;
 void ratr0_events_shutdown(void);

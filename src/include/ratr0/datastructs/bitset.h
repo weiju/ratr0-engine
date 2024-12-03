@@ -39,13 +39,17 @@ void ratr0_bitset_insert(UINT32 *bitset, UINT16 size, UINT16 index);
  */
 BOOL ratr0_bitset_isset(UINT32 *bitset, UINT16 size, UINT16 index);
 
+/** \brief Function pointer for iterating over the set. */
+typedef void (*Ratr0BitSetIterFunc)(UINT16 index, void *userdata);
+
 /**
  * Iterates over all set bits in the set.
  *
  * @param bitset a bitset, stored as an array of 32 bit unsigned integers
  * @param size the size of the bitset array
  * @param func a function that is called with the index of the element
+ * @param userdata a pointer that is passed to the function
  */
-void ratr0_bitset_iterate(UINT32 *bitset, UINT16 size, void (*func)(UINT16));
+void ratr0_bitset_iterate(UINT32 *bitset, UINT16 size, void (*func)(UINT16, void *), void *userdata);
 
 #endif /* __RATR0_BITSET_H__ */

@@ -6,7 +6,7 @@
 #include <hardware/custom.h>
 #include "../../ptplayer/ptplayer.h"
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mAUDIO\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("AUDIO", __VA_ARGS__)
 
 #define SAMPLE_PERIOD_NTSC (162)
 #define SAMPLE_PERIOD_PAL  (161)

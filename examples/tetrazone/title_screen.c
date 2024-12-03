@@ -22,7 +22,6 @@ static UINT16 title_screen_space_cooldown = 0;
 #define TITLE_SCREEN_TIMEOUT (200)
 #define TITLE_SCREEN_SPACE_COOLDOWN (20)
 void title_screen_update(struct Ratr0Stage *this_stage,
-                         struct Ratr0DisplayBuffer *backbuffer,
                          UINT8 frame_elapsed) {
     if (!title_screen_first_update) {
         title_screen_first_update = TRUE;
@@ -51,7 +50,7 @@ static void _load_resources(void)
     struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(TITLE_PATH_PAL, &titlescreen_ts);
     ratr0_resources_init_surface_from_tilesheet(&bg_surf, &titlescreen_ts);
-    ratr0_display_blit_surface_to_buffers(&bg_surf, 0, 0);
+    ratr0_display_blit_surface_to_buffers(&bg_surf, 0, 0, 0);
     ratr0_display_set_palette(titlescreen_ts.palette, 32, 0);
 
     // from here we don't need to the memory for the background

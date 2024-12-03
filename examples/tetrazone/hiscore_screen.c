@@ -81,8 +81,9 @@ static UINT16 hiscore_screen_timeout = 0;
 static UINT16 hiscore_blitcount = 0;
 #define HISCORE_SCREEN_TIMEOUT (300)
 void hiscore_screen_update(struct Ratr0Stage *this_stage,
-                           struct Ratr0DisplayBuffer *backbuffer,
                            UINT8 frame_elapsed) {
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
     if (!hiscore_screen_first_update) {
 #ifdef DEBUG
         fprintf(debug_fp, "HISCORE SCREEN DISPLAY, SETTING TIMEOUT\n");
@@ -148,12 +149,12 @@ void hiscore_screen_on_enter(struct Ratr0Stage *this_stage)
 #else
     int display_height = display_info.is_pal ? 256 : 200;
 #endif
-    ratr0_blit_clear16(&ratr0_display_get_front_buffer()->surface,
+    ratr0_blit_clear16(&ratr0_display_get_front_buffer(0)->surface,
                        0, 0, 320, display_height);
-    ratr0_blit_clear16(&ratr0_display_get_back_buffer()->surface,
+    ratr0_blit_clear16(&ratr0_display_get_back_buffer(0)->surface,
                        0, 0, 320, display_height);
 
-    ratr0_display_blit_surface_to_buffers(&title_surf, 48, 0);
+    ratr0_display_blit_surface_to_buffers(&title_surf, 0, 48, 0);
 }
 
 void hiscore_screen_on_exit(struct Ratr0Stage *this_stage)

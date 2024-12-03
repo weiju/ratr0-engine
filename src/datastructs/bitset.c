@@ -22,7 +22,7 @@ BOOL ratr0_bitset_isset(UINT32 *bitset, UINT16 size, UINT16 index)
 /**
  * Iterates over all set bits in the set
  */
-void ratr0_bitset_iterate(UINT32 *bitset, UINT16 size, void (*func)(UINT16))
+void ratr0_bitset_iterate(UINT32 *bitset, UINT16 size, void (*func)(UINT16, void *), void *userdata)
 {
     int i, j, k;
     UINT8 *bytes, mask, b;
@@ -47,7 +47,7 @@ void ratr0_bitset_iterate(UINT32 *bitset, UINT16 size, void (*func)(UINT16))
                         mask = 1 << (7 - k);
                         if ((b & mask) == mask) {
                             // call func with index
-                            func((i << 5) + (j << 3) + k);
+                            func((i << 5) + (j << 3) + k, userdata);
                         }
                     }
                 }

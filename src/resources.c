@@ -5,11 +5,7 @@
 #include <ratr0/display.h>
 #include <ratr0/resources.h>
 
-#ifdef AMIGA
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mRESOURCES\033[0m", __VA_ARGS__)
-#else
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[34;1mRESOURCES\033[0m", __VA_ARGS__)
-#endif
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("RESOURCES", __VA_ARGS__)
 
 /**
  * Endianess swapping on Intel machines.
@@ -104,11 +100,9 @@ BOOL ratr0_resources_read_spritesheet(const char *filename, struct Ratr0SpriteSh
 #else
         UINT32 imgdata_size = byteswap32(sheet->header.imgdata_size);
 #endif
-#ifdef DEBUG
-        fprintf(debug_fp, "RATR0_RESOURCES_READ_SPRITESHEET(), palette size: %d imgdata_size: %d\n",
+        PRINT_DEBUG("read_spritesheet(), palette size: %d imgdata_size: %d",
                 (int) palette_size, (int) imgdata_size);
-        fflush(debug_fp);
-#endif
+
         // TODO: 0. reserve info chunk memory for offsets and colors
         sheet->sprite_offsets = &info_words[num_info_words];
         num_info_words += sheet->header.num_sprites;

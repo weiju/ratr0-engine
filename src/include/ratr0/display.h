@@ -46,11 +46,38 @@
 #define DISP_SPRITE_X0_320 (128)
 #define DISP_SPRITE_Y0 (44)
 
+#define MAX_PLAYFIELDS (2)
 #define MAX_BITPLANES (6)
 
 #ifdef AMIGA
 extern UINT16 __chip NULL_SPRITE_DATA[];
 #endif
+
+
+struct Ratr0PlayfieldInfo {
+
+    /** Playfield buffer widths */
+    /** \brief display buffer width */
+    UINT16 buffer_width;
+    /** \brief display buffer height */
+    UINT16 buffer_height;
+
+    /** \brief display depth, can be a value between 1 and 5 */
+    UINT8 depth;
+
+    /** \brief number of display buffer, this is the main buffer + any
+     amount of back buffers for the playfield */
+    UINT8 num_buffers;
+
+    /**
+     * \brief number of frames to switch buffers
+     *
+     * How many frames to update the backbuffer ? For now, this
+     * should only be either 1 or 2. More than that heavily impacts
+     * gameplay experience. Currently it is always 1
+     */
+    UINT8 update_frames;
+};
 
 struct Ratr0DisplayInit {
     /**
@@ -65,25 +92,12 @@ struct Ratr0DisplayInit {
     UINT16 vp_width;
     /** \brief viewport height */
     UINT16 vp_height;
-    /** \brief display buffer width */
-    UINT16 buffer_width;
-    /** \brief display buffer height */
-    UINT16 buffer_height;
 
-    /** \brief display depth, can be a value between 1 and 5 */
-    UINT8 depth;
+    /** number of playfields used */
+    UINT16 num_playfields;
 
-    /** \brief number of display buffers (always 2) */
-    UINT8 num_buffers;
-
-    /**
-     * \brief number of frames to switch buffers
-     *
-     * How many frames to update the backbuffer ? For now, this
-     * should only be either 1 or 2. More than that heavily impacts
-     * gameplay experience. Currently it is always 1
-     */
-    UINT8 update_frames;
+    /** \brief playfield descriptions  */
+    struct Ratr0PlayfieldInfo playfield[MAX_PLAYFIELDS];
 };
 
 /**
@@ -104,25 +118,12 @@ struct Ratr0DisplayInfo {
     UINT16 vp_width;
     /** \brief viewport height */
     UINT16 vp_height;
-    /** \brief display buffer width */
-    UINT16 buffer_width;
-    /** \brief display buffer height */
-    UINT16 buffer_height;
 
-    /** \brief display depth, can be a value between 1 and 5 */
-    UINT8 depth;
+    /** number of playfields used */
+    UINT16 num_playfields;
 
-    /** \brief number of display buffers (always 2) */
-    UINT8 num_buffers;
-
-    /**
-     * \brief number of frames to switch buffers
-     *
-     * How many frames to update the backbuffer ? For now, this
-     * should only be either 1 or 2. More than that heavily impacts
-     * gameplay experience. Currently it is always 1
-     */
-    UINT8 update_frames;
+    /** \brief playfield descriptions  */
+    struct Ratr0PlayfieldInfo playfield[MAX_PLAYFIELDS];
 
     /** \brief if PAL, this is TRUE, if NTSC, this is FALSE */
     BOOL is_pal;
@@ -153,7 +154,6 @@ struct Ratr0RenderingSystem {
  * @return pointer to rendering subsystem object
  */
 struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng);
-
 
 /**
  * Information about the current display in this object.
@@ -196,14 +196,12 @@ extern void ratr0_display_shutdown(void);
  *
  * @param init_data the initialization struct
  */
-extern void ratr0_init_display(struct Ratr0DisplayInit *init_data);
+extern void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data);
 
 /**
- * Swap back buffer with the front buffer.
- *
- * @return pointer to current back buffer
+ * Swap back buffer with the front buffer if available. Affects both playfields.
  */
-extern struct Ratr0DisplayBuffer *ratr0_display_swap_buffers(void);
+extern void ratr0_display_swap_buffers(void);
 
 //
 // Quick access functions to the copper list.
@@ -252,24 +250,30 @@ extern void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
 /**
  * Returns a pointer to the current front buffer.
  *
+ * @param playfield_num the number of the playfield (0 or 1)
  * @return pointer to the current front buffer
  */
-extern struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(void);
+extern struct Ratr0DisplayBuffer *ratr0_display_get_front_buffer(UINT16 playfield_num);
 
 /**
  * Returns a pointer to the current back buffer.
  *
+ * @param playfield_num the number of the playfield (0 or 1)
  * @return pointer to the current back buffer
  */
-extern struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(void);
+extern struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(UINT16 playfield_num);
 
 /**
  * Blits the specified surface to the front and back buffers. Can be
  * used to blit a background that will be restored using a custom mechanism.
  *
  * @param surface the Ratr0Surface to blit
+ * @param playfield_num the number of the playfield (0 or 1)
+ * @param dstx destination X coordinate
+ * @param dsty destination Y coordinate
  */
 extern BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface,
+                                                  UINT16 playfield_num,
                                                   UINT16 dstx, UINT16 dsty);
 
 //
@@ -277,9 +281,9 @@ extern BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface,
 // never write directly and use with caution !
 //
 /** \brief index of the current back buffer */
-extern UINT16 ratr0_back_buffer;
+//extern UINT16 ratr0_back_buffer;
 /** \brief index of the current front buffer */
-extern UINT16 ratr0_front_buffer;
+//extern UINT16 ratr0_front_buffer;
 
 extern struct Ratr0CopperListInfo *current_copper_info;
 extern UINT16 *current_coplist;
@@ -289,17 +293,19 @@ extern int current_coplist_size;
  * Adds a dirty rectangle to the list at the specified position. The coordinates
  * are based on 16 pixel tiles rather than individual pixels.
  *
+ * @param playfield_num the number of the playfield (0 or 1)
  * @param x coordinate of the dirty tile
  * @param y coordinate of the dirty tile
  */
-extern void add_dirty_rectangle(UINT16 x, UINT16 y);
+extern void ratr0_display_add_dirty_rectangle(UINT16 playfield_num,
+                                              UINT16 x, UINT16 y);
 
 /**
  * Processes the dirty rectangle list of the current back buffer.
  *
  * @param process_dirty_rect a function that is called for every dirty rectangle
  */
-extern void process_dirty_rectangles(void (*process_dirty_rect)(UINT16 x, UINT16 y));
+extern void ratr0_display_process_dirty_rectangles(void (*process_dirty_rect)(struct Ratr0DisplayBuffer *display_buffer, UINT16 x, UINT16 y));
 
 /**
  * \brief frame counter to show how many frames have elapsed since the last reset

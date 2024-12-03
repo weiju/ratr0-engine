@@ -24,7 +24,7 @@
 #include <clib/graphics_protos.h>
 
 
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[36mENGINE\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("ENGINE", __VA_ARGS__)
 
 enum { GAMESTATE_QUIT, GAMESTATE_RUNNING };
 static int game_state = GAMESTATE_RUNNING;
@@ -44,15 +44,14 @@ void ratr0_engine_shutdown(void);
 static volatile UINT16 *custom_color00 = (volatile UINT16 *) 0xdff180;
 void ratr0_engine_game_loop(void)
 {
-    struct Ratr0DisplayBuffer *back_buffer = ratr0_display_get_back_buffer();
     while (game_state != GAMESTATE_QUIT) {
         WaitTOF();
         //*custom_color00 = 0xf00;
         // comment in for visual timing the loop iteration
-        ratr0_stages_update(back_buffer, frames_elapsed);
+        ratr0_stages_update(frames_elapsed);
         //*custom_color00 = 0x000;
         // we are done with the back buffer. now swap it to the front
-        back_buffer = ratr0_display_swap_buffers();
+        ratr0_display_swap_buffers();
         frames_elapsed = 0;  // Reset the update frame counter
     }
 }
@@ -94,14 +93,13 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
 #ifdef DEBUG
     debug_fp = fopen("ratr0.debug", "a");
     if (is_cli) {
-        fprintf(debug_fp, "CLI START\n");
+        PRINT_DEBUG("CLI START");
     } else {
-        fprintf(debug_fp, "WORKBENCH START\n");
-        fprintf(debug_fp, "WB #args: %d\n", wb_numargs);
+        PRINT_DEBUG("WORKBENCH START\n");
+        PRINT_DEBUG("WB #args: %d", wb_numargs);
     }
     Examine(curdir_lock, &fib);
-    fprintf(debug_fp, "curdir name: %s\n", fib.fib_FileName);
-    fflush(debug_fp);
+    PRINT_DEBUG("curdir name: %s", fib.fib_FileName);
 #endif
 
     // hook in the shutdown function
@@ -111,8 +109,9 @@ Ratr0Engine *ratr0_engine_startup(struct Ratr0MemoryConfig *memory_config,
     engine.game_loop = &ratr0_engine_game_loop;
     engine.exit = &ratr0_engine_exit;
 
-    // set high task priority so multitasking does not
-    // grab too much CPU
+    // HowToCode sets high task priority so multitasking does not
+    // grab too much CPU time. However, we want to use the system devices
+    // to process input, so we don't set it
     //SetTaskPri(FindTask(NULL), TASK_PRIORITY);
 
     PRINT_DEBUG("Start up...");

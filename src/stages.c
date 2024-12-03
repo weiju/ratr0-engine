@@ -10,7 +10,8 @@
 #include <ratr0/display.h>
 #include <ratr0/sprites.h>
 #include <ratr0/blitter.h>
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[33;1mSTAGES\033[0m", __VA_ARGS__)
+
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("STAGES", __VA_ARGS__)
 
 extern struct Custom custom;
 
@@ -93,11 +94,14 @@ void ratr0_stages_set_current_stage(struct Ratr0Stage *stage)
     current_stage = stage;
 
     // Enter new stage
+    UINT16 playfield_num = 0;
     if (current_stage && current_stage->backdrop) {
         // Make this the new backdrop for efficiency this is module global
         backdrop = current_stage->backdrop;
         // Blit the backdrop once if it exists
-        ratr0_display_blit_surface_to_buffers(&backdrop->surface, 0, 0);
+        ratr0_display_blit_surface_to_buffers(&backdrop->surface,
+                                              playfield_num,
+                                              0, 0);
     }
     if (current_stage && current_stage->on_enter) {
         current_stage->on_enter(stage);
@@ -135,14 +139,17 @@ struct Ratr0Backdrop *ratr0_nf_create_backdrop(struct Ratr0TileSheet *tilesheet)
  * Restore dirty rectangles from backdrop image
  */
 static UINT16 dirty_bltsize = 0;
-struct Ratr0Surface *back_buffer;
-void process_dirty_rect(UINT16 x, UINT16 y)
+//struct Ratr0Surface *back_buffer;
+void process_dirty_rect(struct Ratr0DisplayBuffer *backbuffer,
+                        UINT16 x, UINT16 y)
 {
     if (!dirty_bltsize) {
-        dirty_bltsize = ratr0_blit_rect_simple(back_buffer, &backdrop->surface,
+        dirty_bltsize = ratr0_blit_rect_simple(&backbuffer->surface,
+                                               &backdrop->surface,
                                                x, y, x, y, 16, 16);
     } else {
-        ratr0_blit_rect_simple2(back_buffer, &backdrop->surface, x, y, x, y, dirty_bltsize);
+        ratr0_blit_rect_simple2(&backbuffer->surface, &backdrop->surface, x, y,
+                                x, y, dirty_bltsize);
     }
 }
 
@@ -151,6 +158,7 @@ void add_restore_tiles_for_bob(struct Ratr0Bob *bob)
 {
     // Compute dirty rectangles for the BOB
     // determine first and last horizontal tile positions horizontal and vertical
+    UINT16 playfield_num = 0;
     int tx0 = bob->base_obj.bounds.x >> 4;
     int ty0 = bob->base_obj.bounds.y >> 4;
     int txn = (bob->base_obj.bounds.x + bob->base_obj.bounds.width) >> 4;
@@ -158,7 +166,7 @@ void add_restore_tiles_for_bob(struct Ratr0Bob *bob)
     int x, y;
     for (y = ty0; y <= tyn; y++) {
         for (x = tx0; x <= txn; x++) {
-            add_dirty_rectangle(x, y);
+            ratr0_display_add_dirty_rectangle(playfield_num, x, y);
         }
     }
 }
@@ -281,17 +289,16 @@ static void _update_sprites(void)
     }
 }
 
-void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
-                         UINT8 frames_elapsed)
+void ratr0_stages_update(UINT8 frames_elapsed)
 {
+    UINT16 playfield_num = 0;
     if (current_stage) {
+        struct Ratr0DisplayBuffer *backbuffer = ratr0_display_get_back_buffer(playfield_num);
         // update the stage
         if (current_stage->update) {
-            current_stage->update(current_stage, backbuffer, frames_elapsed);
+            current_stage->update(current_stage, frames_elapsed);
         }
         // process all the BOBS
-        back_buffer = &ratr0_display_get_back_buffer()->surface;
-
         struct Ratr0Bob *bob;
         for (int i = 0; i < current_stage->num_bobs; i++) {
             bob = current_stage->bobs[i];
@@ -308,14 +315,14 @@ void ratr0_stages_update(struct Ratr0DisplayBuffer *backbuffer,
         // Enable blitter nasty
         custom.dmacon = DMAF_SETCLR | DMAF_BLITHOG;
 
-        process_dirty_rectangles(process_dirty_rect);
+        ratr0_display_process_dirty_rectangles(process_dirty_rect);
         // reset bltsize since it's used to determine the first blit of the chain
         dirty_bltsize = 0;
 
         // 2. Blit updated objects
         for (int i = 0; i < current_stage->num_bobs; i++) {
             bob = current_stage->bobs[i];
-            ratr0_blit_object_il(back_buffer, bob->tilesheet,
+            ratr0_blit_object_il(&backbuffer->surface, bob->tilesheet,
                                  0,
                                  bob->base_obj.anim_frames.frames[bob->base_obj.anim_frames.current_frame_idx],
                                  bob->base_obj.bounds.x,

@@ -175,7 +175,6 @@ void spawn_next_piece(void)
 struct CompletedRows completed_rows;
 int done = 0;
 void main_stage_update(struct Ratr0Stage *this_stage,
-                       struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed);
 
 
@@ -183,11 +182,12 @@ BOOL done_gameover_once = FALSE;
 UINT16 gameover_timeout = 0;
 #define GAMEOVER_TIMEOUT (150)
 void main_stage_gameover(struct Ratr0Stage *this_stage,
-                         struct Ratr0DisplayBuffer *backbuffer,
                          UINT8 frame_elapsed) {
     if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
 
     if (!done_gameover_once) {
         // 1. establish the piece in the board by enqueueing the dropped
@@ -231,11 +231,12 @@ void main_stage_gameover(struct Ratr0Stage *this_stage,
  * that would otherwise require playing to this state.
  */
 void main_stage_debug(struct Ratr0Stage *this_stage,
-                      struct Ratr0DisplayBuffer *backbuffer,
                       UINT8 frame_elapsed) {
     if (ratr0_input_was_action_pressed(action_quit)) {
         ratr0_engine_exit();
     }
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
     draw_level_digit(backbuffer, &digits16_surface, 0, '2');
     draw_lines_digit(backbuffer, &digits16_surface, 0, '3');
     draw_score_digit(backbuffer, &digits_surface, 3, '1');
@@ -321,9 +322,10 @@ void _enqueue_score_digits(UINT16 oldscore, UINT16 newscore)
  */
 BOOL done_delete_lines = 0;
 void main_stage_delete_lines(struct Ratr0Stage *this_stage,
-                             struct Ratr0DisplayBuffer *backbuffer,
                              UINT8 frames_elapsed)
 {
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
     int cur_buffer = backbuffer->buffernum;
     UINT16 original_score = player_state.score;
 
@@ -397,9 +399,10 @@ void main_stage_delete_lines(struct Ratr0Stage *this_stage,
  */
 BOOL done_establish = FALSE;
 void main_stage_establish_piece(struct Ratr0Stage *this_stage,
-                                struct Ratr0DisplayBuffer *backbuffer,
                                 UINT8 frames_elapsed)
 {
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
     int cur_buffer = backbuffer->buffernum;
     if (!done_establish) {
         ratr0_audio_play_sound(&drop_sound, SOUNDFX_CHANNEL);
@@ -441,9 +444,10 @@ void main_stage_establish_piece(struct Ratr0Stage *this_stage,
  * blocks. The state is switched when there are completed lines
  */
 void main_stage_update(struct Ratr0Stage *this_stage,
-                       struct Ratr0DisplayBuffer *backbuffer,
                        UINT8 frames_elapsed)
 {
+    struct Ratr0DisplayBuffer *backbuffer =
+        ratr0_display_get_back_buffer(0);
     int cur_buffer = backbuffer->buffernum;
     int original_score = player_state.score;
 
@@ -622,7 +626,7 @@ static void _load_resources(void)
     struct Ratr0Surface bg_surf;
     BOOL ts_read = ratr0_resources_read_tilesheet(BG_PATH_PAL, &background_ts);
     ratr0_resources_init_surface_from_tilesheet(&bg_surf, &background_ts);
-    ratr0_display_blit_surface_to_buffers(&bg_surf, 0, 0);
+    ratr0_display_blit_surface_to_buffers(&bg_surf, 0, 0, 0);
     ratr0_display_set_palette(background_ts.palette, 32, 0);
 
     // from here we don't need to the memory for the background

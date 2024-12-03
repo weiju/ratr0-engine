@@ -37,13 +37,19 @@ int main(int argc, char **argv)
 
     struct Ratr0DisplayInit display_init = {
         320, 256,  // viewport
-        320, 256,  // display buffer
-        5, 2,      // 32 colors, double buffer
-        1    // 1 frame flip
+        1,         // single playfield
+        {
+            {
+                320, 256,  // display buffer
+                5, 2,      // 32 colors, double buffer
+                1    // 1 frame flip
+            },
+            { 0, 0, 0, 0, 0 }  // unused
+        }
     };
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config,
                                                argc, argv);
-    ratr0_init_display(&display_init);
+    ratr0_display_init_buffers(&display_init);
 
     // Additional game engine setup: input mapping etc.
     action_move_left = ratr0_input_alloc_action();

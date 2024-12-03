@@ -16,8 +16,7 @@
 #include <ratr0/input.h>
 #include <ratr0/debug_utils.h>
 
-
-#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("\033[31;1mINPUT\033[0m", __VA_ARGS__)
+#define PRINT_DEBUG(...) PRINT_DEBUG_TAG("INPUT", __VA_ARGS__)
 
 extern struct ExecBase *SysBase;
 #define RAW_KEY_LSHIFT       (0x60)
