@@ -27,7 +27,7 @@ TEST_CFLAGS=-Iinclude -I../chibi_test
 
 endif  # ifdef AMIGA
 
-TEST_PRGS=fixed_point_test bitset_test treeset_test quadtree_test vector_test queue_test
+TEST_PRGS=fixed_point_test bitset_test treeset_test quadtree_test vector_test queue_test timer_test
 
 # programs for benchmarks
 PERF_PRGS=set_perf
