@@ -17,16 +17,11 @@ RATR0_ACTION_ID action_fire, action_move_left, action_move_right, action_exit;
 
 int main(int argc, char **argv)
 {
-    struct Ratr0DisplayInit display_init = {
-        320, 256,  // viewport
-        1,         // single playfield
+    struct Ratr0PlayfieldInfo pf_infos[] = {
         {
-            {
-                320, 256,  // display buffer
-                3, 2,      // 8 colors, double buffer
-                1    // 1 frame flip
-            },
-            { 0, 0, 0, 0, 0} // unused
+            320, 256,  // display buffer
+            3, 2,      // 8 colors, double buffer
+            1    // 1 frame flip
         }
     };
     struct Ratr0MemoryConfig mem_config = {
@@ -36,7 +31,7 @@ int main(int argc, char **argv)
 
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config,
                                                argc, argv);
-    ratr0_display_init_buffers(&display_init);
+    ratr0_display_init_buffers(320, 256, 1, pf_infos);
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
 

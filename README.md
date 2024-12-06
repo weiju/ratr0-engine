@@ -83,14 +83,13 @@ can safely use it at any time.
 The following subsystems are planned
 
   * Memory
-  * Events
   * Timers
   * Audio
   * Display
   * Input
   * Physics/Collisions
   * Resources and files
-  * World simulation
+  * Stages
 
 ## The subsystems
 
@@ -115,12 +114,14 @@ This has the following benefits:
   * The memory subsystem can implement more efficient allocation strategies
     than the operating system that also can reduce fragmentation
 
-### Rendering subsystem
+ Go [here](docs/MEMORY.md) for more information.
+
+### Display subsystem
 
 The central component to implement all visual aspects of a game. In
 RATR0 the goal is to achieve reasonably good rendering performance
 on vintage computer systems like the Amiga by taking advantage of a
-system's hardware features. Go [here](docs/RENDERING.md) for more information.
+system's hardware features. Go [here](docs/DISPLAY.md) for more information.
 
 #### Tile data
 
@@ -129,8 +130,6 @@ TODO
 #### Sprites
 
 Go [here](docs/SPRITES.md) for more information
-
-### Event subsystem
 
 ### Timer subsystem
 
@@ -155,18 +154,15 @@ Go [here](docs/INPUT.md) for more information
 
 Go [here](docs/COLLISIONS.md) for more information
 
-## The World subsystem
+### The Stages subsystem
 
 Games are build from a set of scenes that are connected to each other. Each scene
 represents an isolated logical unit like a level, a title screen or a high score
-screen etc. Go [here](docs/WORLD.md) for more information.
+screen etc. Go [here](docs/STAGES.md) for more information.
 
-### Scenes and Nodes
+### Event subsystem
 
-The world subsystem is based around scene trees. At each moment, there is a current
-scene with a root node.
-Nodes are communicating down the hierarchy by passing arguments to function calls and we use signals
-to communicate up or across the hierarchy.
+currently not even planned
 
 ## Building the system
 

@@ -8,7 +8,4 @@ hiscores.dat
 *_perf
 .DS_Store
 doxygen-out
-example-01_game
-invaders_game
-centipede_game
-tetrazone_game
+*_game

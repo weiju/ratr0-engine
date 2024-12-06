@@ -13,9 +13,12 @@ The input system is inspired by other game engines like Godot, but
 rather using string as identifiers, it uses integers to avoid
 costly comparison or mapping functions.
 
+  * Rather than responding to specific inputs, the input system instead
+    defines actions, and input types can be mapped to actions. With this
+    not only can we remap inputs, but also map multiple input types to
+    one action
   * Actions are represented with an ID that is allocated on demand at
     engine configuration time.
-  * Actions are globally for a game, i.e. they apply to every scene in the game
   * The input system is updated once per frame and synchronized to the video beam
     to ensure stable low latency, that means for Amiga that the input system is
     updated in the vertical blank interrupt.

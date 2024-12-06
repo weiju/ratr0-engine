@@ -26,6 +26,18 @@ a very direct manner, meaning
 
 ### Copper lists
 
+Copper lists are the central element of RATR0's display design. Each
+stage can define its own copper list which defines how the playfields,
+sprites and color palettes are arranged.
+Because of this, the programmer will have a great amount of control
+over the visual aspects of the game.
+
+### Playfields
+
+RATR0 fully supports single and dual playfield modes, moreover since we
+have very flexible copper list design, it is possible to partition the screen
+into vertical slices and implement split screen and parallax effects with that.
+
 ### Double buffering
 
 The render component will strictly use double buffering. This is to ensure smooth

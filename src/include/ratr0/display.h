@@ -79,27 +79,6 @@ struct Ratr0PlayfieldInfo {
     UINT8 update_frames;
 };
 
-struct Ratr0DisplayInit {
-    /**
-     * \brief viewport width
-     *
-     * Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
-     * 256 for PAL. Smaller values will typically result in less memory consumption and faster
-     * refresh times.
-     * Sensible values for width can be { 320, 288 }
-     * Sensible values for height can be { 192, 208, 224, 240 }
-     */
-    UINT16 vp_width;
-    /** \brief viewport height */
-    UINT16 vp_height;
-
-    /** number of playfields used */
-    UINT16 num_playfields;
-
-    /** \brief playfield descriptions  */
-    struct Ratr0PlayfieldInfo playfield[MAX_PLAYFIELDS];
-};
-
 /**
  * Amiga specific information about the display, used both for
  * initialization and query information. This includes aspects of the
@@ -193,11 +172,18 @@ extern void ratr0_display_shutdown(void);
 /**
  * Initializes the display using the information in the init struct.
  * If the information is not equal to the existing one, the current
- * display buffer will be discarded and a new one will be built
+ * display buffer will be discarded and a new one will be built.
+ * This will build a bunch of playfield buffer structures in a batch.
+ * num_playfields can be a value from 1 to n
  *
- * @param init_data the initialization struct
+ * @param vp_width viewport width
+ * @param vp_height viewport height
+ * @param num_playfields size of the pf_infos array (1..)
+ * @param pf_infos array of playfield information
  */
-extern void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data);
+extern void ratr0_display_init_buffers(UINT16 vp_width, UINT16 vp_height,
+                                       UINT16 num_playfields,
+                                       struct Ratr0PlayfieldInfo pf_infos[]);
 
 /**
  * Swap back buffer with the front buffer if available. Affects both playfields.

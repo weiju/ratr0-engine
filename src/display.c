@@ -52,9 +52,8 @@ int current_coplist_size;
 
 // Double buffer management
 #define MAX_BUFFERS (2)
-static void set_display_surface(UINT16 coplist[], int num_words,
-                                struct Ratr0CopperListInfo *info,
-                                struct Ratr0Surface *s);
+static void _update_front_buffers(UINT16 coplist[], int num_words,
+                                  struct Ratr0CopperListInfo *info);
 
 // For our interrupt handlers
 static struct Interrupt vbint;
@@ -148,11 +147,10 @@ void ratr0_display_swap_buffers(void)
         int tmp = playfield->front_buffer;
         playfield->front_buffer = playfield->back_buffer;
         playfield->back_buffer = tmp;
-        // 2. set new front buffer to copper list
-        set_display_surface(current_coplist, current_coplist_size,
-                            current_copper_info,
-                            &playfield->display_buffer[playfield->front_buffer].surface);
     }
+    // 2. set new front buffer to copper list
+    _update_front_buffers(current_coplist, current_coplist_size,
+                          current_copper_info);
 }
 
 // Our vertical blank server only implements a simple frame counter
@@ -187,26 +185,36 @@ struct Ratr0HWSprite NULL_HW_SPRITE = {
 
 /**
  * We need to adjust the BPLCONx and BPLxMOD values after changing the
- * display mode.
- * Note: bplmod is currently the same for BPL1MOD and BPL2MOD, so no
- * dual playfield as for now
+ * display mode. This function looks at display_info and will
+ * will set the BPLCON0 and BPLxMOD registers accordingly depending
+ * on dual playfield or single playfield modes
  */
-static void set_display_mode(UINT16 coplist[],
-                             struct Ratr0CopperListInfo *info,
-                             UINT16 width, UINT8 num_bitplanes)
+static void _set_display_mode(UINT16 coplist[],
+                             struct Ratr0CopperListInfo *info)
 {
-    // width *needs* to be a multiple of 16 because Amiga playfield hardware operates
-    // on word boundaries
-    UINT16 screenrow_bytes = width / 8;
-    UINT16 bplmod = screenrow_bytes * (num_bitplanes - 1);
-    UINT16 bplcon0_value = (num_bitplanes << 12) | 0x200;
-    /*
-    PRINT_DEBUG("screenrow_bytes: %d bpl1mod: %d num_bitplanes: %d bplcon0: %04x",
-                (int) screenrow_bytes, (int) bplmod, (int) num_bitplanes, (int) bplcon0_value);
-    */
+    // width *needs* to be a multiple of 16 because Amiga playfield hardware
+    // operates on word boundaries
+    BOOL is_dual_playfield = display_info.num_playfields == 2;
+    UINT16 dpf_flag = is_dual_playfield ? 0x400 : 0;
+    UINT16 playfield0_width = display_info.playfield[0].buffer_width;
+    UINT16 playfield1_width = display_info.playfield[1].buffer_width;
+    UINT16 playfield0_depth = display_info.playfield[0].depth;
+    UINT16 playfield1_depth = display_info.playfield[1].depth;
+
+    UINT16 playfield_total_depth = is_dual_playfield ?
+        playfield0_depth + playfield1_depth : playfield0_depth;
+
+    UINT16 screenrow_bytes0 = playfield0_width / 8;
+    UINT16 screenrow_bytes1 = playfield1_width / 8;
+    UINT16 bpl1mod = screenrow_bytes0 * (playfield0_depth - 1);
+    UINT16 bpl2mod = is_dual_playfield ?
+        screenrow_bytes1 * (playfield1_depth - 1) : bpl1mod;
+
+    UINT16 bplcon0_value = (playfield_total_depth << 12) | dpf_flag
+        | 0x200;
     coplist[info->bplcon0_index] = bplcon0_value;
-    coplist[info->bpl1mod_index] = bplmod;
-    coplist[info->bpl1mod_index + 2] = bplmod;
+    coplist[info->bpl1mod_index] = bpl1mod;
+    coplist[info->bpl1mod_index + 2] = bpl2mod;
 }
 
 /**
@@ -242,21 +250,65 @@ BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface,
 }
 
 /**
- * Private function to apply the render context to the copper list
+ * Private function to apply the new front buffers to the copper list.
+ * This sets the correct BPLxPTH/BPLxPTL pointers.
+ * TODO: if we are working with dual playfield, we need to take
+ * the pointers from both playfields' bitmaps
  */
-static void set_display_surface(UINT16 coplist[], int num_words,
-                                struct Ratr0CopperListInfo *info,
-                                struct Ratr0Surface *s)
+static void _update_front_buffers(UINT16 coplist[], int num_words,
+                                 struct Ratr0CopperListInfo *info)
 {
-    UINT16 screenrow_bytes = s->width / 8;
-    UINT32 plane = (UINT32) s->buffer;
-    UINT32 clidx = info->bpl1pth_index;
+    // TODO: we need to process all playfields. That means
+    // if we have dual playfields, we need to set odd and even playfields
+    //   * Playfield 0 uses bitplanes 1, 3, 5
+    //   * Playfield 1 uses bitplanes 2, 4, 6
+    // Actually, if one playfield does not use double buffering,
+    // we don't even need to update the buffer pointers for the playfield
+    // more than once. Right now, we won't bother, it might actually not matter
 
-    for (int i = 0; i < s->depth; i++) {
-        coplist[clidx] = (plane >> 16) & 0xffff;
-        coplist[clidx + 2] = plane & 0xffff;
-        plane += screenrow_bytes;
-        clidx += 4;
+    if (display_info.num_playfields ==  1) {
+        struct Playfield *playfield = &playfields[0];
+        struct Ratr0Surface *s = &playfield->display_buffer[playfield->front_buffer].surface;
+        UINT16 screenrow_bytes = s->width / 8;
+        UINT32 plane = (UINT32) s->buffer;
+        UINT32 clidx = info->bpl1pth_index;
+
+        for (int i = 0; i < s->depth; i++) {
+            coplist[clidx] = (plane >> 16) & 0xffff;
+            coplist[clidx + 2] = plane & 0xffff;
+            plane += screenrow_bytes;
+            clidx += 4;
+        }
+    } else {
+        struct Playfield *playfield1 = &playfields[0];
+        struct Ratr0Surface *s1 =
+            &playfield1->display_buffer[playfield1->front_buffer].surface;
+
+        // dual playfield mode
+        UINT16 screenrow_bytes = s1->width / 8;
+        UINT32 plane = (UINT32) s1->buffer;
+        UINT32 clidx = info->bpl1pth_index;
+
+        for (int i = 0; i < s1->depth; i++) {
+            coplist[clidx] = (plane >> 16) & 0xffff;
+            coplist[clidx + 2] = plane & 0xffff;
+            plane += screenrow_bytes;
+            clidx += 8;
+        }
+
+        struct Playfield *playfield2 = &playfields[1];
+        struct Ratr0Surface *s2 =
+            &playfield2->display_buffer[playfield2->front_buffer].surface;
+        screenrow_bytes = s2->width / 8;
+        plane = (UINT32) s2->buffer;
+        clidx = info->bpl1pth_index + 4;
+
+        for (int i = 0; i < s2->depth; i++) {
+            coplist[clidx] = (plane >> 16) & 0xffff;
+            coplist[clidx + 2] = plane & 0xffff;
+            plane += screenrow_bytes;
+            clidx += 8;
+        }
     }
 }
 
@@ -301,38 +353,32 @@ void _ratr0_display_init_copperlist(UINT16 coplist[], int num_words,
                                  i, NULL_SPRITE_DATA);
     }
 
-    // 3. establish the display mode
-    // TODO: what to do when we have dual playfield mode ????
-    int playfield_num = 0;
-    struct Playfield *playfield = &playfields[playfield_num];
-    set_display_mode(coplist, info,
-                     display_info.vp_width,
-                     display_info.playfield[playfield_num].depth);
+    // 3. establish the display mode in the copper list
+    _set_display_mode(coplist, info);
 
     // Establish the playfield display buffers
-    set_display_surface(coplist, num_words,
-                        info,
-                        &playfield->display_buffer[playfield->front_buffer].surface);
+    _update_front_buffers(coplist, num_words, info);
 }
 
-static void build_display_buffer(struct Ratr0DisplayInit *init_data)
+static void build_display_buffer(UINT16 num_playfields,
+                                 struct Ratr0PlayfieldInfo pf_infos[])
 {
-    for (int playfield_num = 0; playfield_num < init_data->num_playfields;
+    for (int playfield_num = 0; playfield_num < num_playfields;
          playfield_num++) {
 
         playfields[playfield_num].display_buffer_size =
-            init_data->playfield[playfield_num].buffer_width / 8 *
-            init_data->playfield[playfield_num].buffer_height *
-            init_data->playfield[playfield_num].depth;
+            pf_infos[playfield_num].buffer_width / 8 *
+            pf_infos[playfield_num].buffer_height *
+            pf_infos[playfield_num].depth;
 
-        for (int j = 0; j < init_data->playfield[playfield_num].num_buffers; j++) {
+        for (int j = 0; j < pf_infos[playfield_num].num_buffers; j++) {
             playfields[playfield_num].display_buffer[j].buffernum = j;
             playfields[playfield_num].display_buffer[j].surface.width =
-                init_data->playfield[playfield_num].buffer_width;
+                pf_infos[playfield_num].buffer_width;
             playfields[playfield_num].display_buffer[j].surface.height =
-                init_data->playfield[playfield_num].buffer_height;
+                pf_infos[playfield_num].buffer_height;
             playfields[playfield_num].display_buffer[j].surface.depth =
-                init_data->playfield[playfield_num].depth;
+                pf_infos[playfield_num].depth;
             playfields[playfield_num].display_buffer[j].surface.is_interleaved = TRUE;
 
             // TODO
@@ -351,7 +397,7 @@ static void build_display_buffer(struct Ratr0DisplayInit *init_data)
     }
 
     // don't forget to set the number of playfields
-    display_info.num_playfields = init_data->num_playfields;
+    display_info.num_playfields = num_playfields;
 }
 
 static void free_display_buffer(void)
@@ -418,13 +464,15 @@ struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng)
     return &rendering_system;
 }
 
-void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data)
+void ratr0_display_init_buffers(UINT16 vp_width, UINT16 vp_height,
+                                UINT16 num_playfields,
+                                struct Ratr0PlayfieldInfo pf_infos[])
 {
-    for (int playfield_num = 0; playfield_num < init_data->num_playfields;
+    for (int playfield_num = 0; playfield_num < num_playfields;
          playfield_num++) {
         struct Playfield *playfield = &playfields[playfield_num];
         struct Ratr0PlayfieldInfo *pfinfo = &display_info.playfield[playfield_num];
-        struct Ratr0PlayfieldInfo *pfinit = &init_data->playfield[playfield_num];
+        struct Ratr0PlayfieldInfo *pfinit = &pf_infos[playfield_num];
 
         // optimization: if the memory requirement is actually smaller,
         // we can reuse the display buffer memory instead of freeing it
@@ -434,8 +482,8 @@ void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data)
             pfinfo->depth != pfinit->depth ||
             pfinfo->num_buffers != pfinit->num_buffers) {
 
-            display_info.vp_width = init_data->vp_width;
-            display_info.vp_height = init_data->vp_height;
+            display_info.vp_width = vp_width;
+            display_info.vp_height = vp_height;
 
             pfinfo->buffer_width = pfinit->buffer_width;
             pfinfo->buffer_height = pfinit->buffer_height;
@@ -454,7 +502,7 @@ void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data)
 
             if (new_display_buffer_size > playfield->display_buffer_size) {
                 free_display_buffer();
-                build_display_buffer(init_data);
+                build_display_buffer(num_playfields, pf_infos);
             }
             ratr0_bitset_clear(playfield->bitset_arr[playfield->back_buffer],
                                BITSET_SIZE);
@@ -624,7 +672,7 @@ void ratr0_dump_copperlist(UINT16 *copperlist, int len, const char *path)
             if (i > 0) fprintf(fp, ", ");
             fprintf(fp, "0x%03x", copperlist[i]);
         }
-        fprintf(fp, "}\n");
+        fprintf(fp, "};\n");
         fclose(fp);
     } else {
 #ifdef DEBUG
