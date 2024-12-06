@@ -798,9 +798,6 @@ void main_stage_on_enter(struct Ratr0Stage *this_stage)
     fflush(debug_fp);
 #endif
     // set new copper list
-    ratr0_display_init_copper_list(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
-                                   &TETRIS_COPPER_INFO);
-
     ratr0_display_set_copperlist(tetris_copper, TETRIS_COPPER_SIZE_WORDS,
                                  &TETRIS_COPPER_INFO);
     this_stage->num_sprites = 0;

@@ -65,6 +65,7 @@ void copy_sprite(UINT16 *dst, UINT16 *src, UINT16 spr_height)
 }
 
 
+extern struct Ratr0CopperListInfo DEFAULT_COPPER_INFO;
 /**
  * We need to copy the alien sheet to a long strip of aliens
  */

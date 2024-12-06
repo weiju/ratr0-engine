@@ -150,7 +150,6 @@ struct Ratr0RenderingSystem {
  * Start up the display subsystem.
  *
  * @param engine pointer to engine instance
- * @param display_info configuration informatino for the display.
  * @return pointer to rendering subsystem object
  */
 struct Ratr0RenderingSystem *ratr0_display_startup(Ratr0Engine *eng);
@@ -180,7 +179,9 @@ struct Ratr0Surface {
  * is currently at the back an which one is at the front.
  */
 struct Ratr0DisplayBuffer {
+    /** \brief the display surface */
     struct Ratr0Surface surface;
+    /** \brief the logical number of this buffer  */
     int buffernum;
 };
 
@@ -216,36 +217,15 @@ extern void ratr0_display_swap_buffers(void);
  */
 extern void ratr0_display_set_palette(UINT16 *colors, UINT8 num_colors, UINT8 offset);
 
+/**
+ * Each copper list in RATR0 has certain common attributes.
+ * Those are the display attributes, and sprite pointers.
+ */
 struct Ratr0CopperListInfo {
     int ddfstrt_index, ddfstop_index, diwstrt_index, diwstop_index;
     int bplcon0_index, bpl1mod_index;
     int bpl1pth_index, spr0pth_index, color00_index;
 };
-extern struct Ratr0CopperListInfo DEFAULT_COPPER_INFO;
-
-/**
- * Points the specified sprite to the image data.
- *
- * @param sprite_num sprite number
- * @param coplist pointer to copper list
- * @param size copper list size
- * @param info copper list index info
- * @param data pointer to sprite data structure
- */
-extern void ratr0_display_set_sprite(UINT16 *coplist, int size,
-                                     struct Ratr0CopperListInfo *info,
-                                     int sprite_num, UINT16 *data);
-
-/**
- * Initialize copper list with the current display values. The info structure
- * is used to say where the basic display definitions are located
- *
- * @param coplist pointer to copper list
- * @param num_words length of list in words
- * @param info copper list index info
- */
-extern void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
-                                           struct Ratr0CopperListInfo *info);
 
 /**
  * Returns a pointer to the current front buffer.
@@ -498,6 +478,20 @@ extern struct Ratr0HWSprite *ratr0_create_sprite_from_sprite_sheet_frame(struct 
 extern struct Ratr0Bob *ratr0_create_bob(struct Ratr0TileSheet *tilesheet,
                                          UINT8 frames[], UINT8 num_frames,
                                          UINT8 speed);
+
+/**
+ * Points the specified sprite to the image data.
+ *
+ * @param sprite_num sprite number
+ * @param coplist pointer to copper list
+ * @param size copper list size
+ * @param info copper list index info
+ * @param data pointer to sprite data structure
+ */
+extern void ratr0_display_set_sprite(UINT16 *coplist, int size,
+                                     struct Ratr0CopperListInfo *info,
+                                     int sprite_num, UINT16 *data);
+
 
 /**
  * Debug helper function to write a copper list to a C source file.

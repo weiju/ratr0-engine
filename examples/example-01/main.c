@@ -37,8 +37,6 @@ int main(int argc, char **argv)
     Ratr0Engine *engine = ratr0_engine_startup(&mem_config,
                                                argc, argv);
     ratr0_display_init_buffers(&display_init);
-    ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
-                                   &DEFAULT_COPPER_INFO);
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
 

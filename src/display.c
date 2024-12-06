@@ -263,8 +263,12 @@ static void set_display_surface(UINT16 coplist[], int num_words,
 /**
  * Initialize the given copper list with the essential information about
  * the display.
+ *
+ * @param coplist pointer to copper list
+ * @param num_words length of list in words
+ * @param info copper list index info
  */
-void ratr0_display_init_copper_list(UINT16 coplist[], int num_words,
+void _ratr0_display_init_copperlist(UINT16 coplist[], int num_words,
                                     struct Ratr0CopperListInfo *info)
 {
     // set up the display and DMA windows (16 bytes)
@@ -463,6 +467,7 @@ void ratr0_display_init_buffers(struct Ratr0DisplayInit *init_data)
 void ratr0_display_set_copperlist(UINT16 *copperlist, int size,
                                   struct Ratr0CopperListInfo *info)
 {
+    _ratr0_display_init_copperlist(copperlist, size, info);
     WaitTOF();
     current_coplist = copperlist;
     current_copper_info = info;

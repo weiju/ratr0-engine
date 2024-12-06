@@ -49,8 +49,8 @@ struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
     struct Ratr0NodeFactory *node_factory = ratr0_stages_get_node_factory();
     struct Ratr0Stage *main_stage = node_factory->create_stage();
     main_stage->update = main_stage_update;
-    ratr0_display_init_copper_list(centi_copper, CENTI_COPPER_SIZE_WORDS,
-                                   &CENTI_COPPER_INFO);
+    ratr0_display_set_copperlist(centi_copper, CENTI_COPPER_SIZE_WORDS,
+                                 &CENTI_COPPER_INFO);
 
     // 1. Read animated sprites from sprite sheet
     ratr0_resources_read_spritesheet(CENTI_HEAD_LR_PATH, &centi_head_lr_sheet);
@@ -58,8 +58,6 @@ struct Ratr0Stage *setup_main_stage(Ratr0Engine *eng)
     // add this sprite to the stage
     centi->base_obj.bounds.x = 0;
     centi->base_obj.bounds.y = 40;
-    ratr0_display_set_copperlist(centi_copper, CENTI_COPPER_SIZE_WORDS,
-                                 &CENTI_COPPER_INFO);
 
     main_stage->sprites[main_stage->num_sprites++] = centi;
 

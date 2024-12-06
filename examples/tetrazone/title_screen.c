@@ -10,6 +10,7 @@
 
 static Ratr0Engine *engine = NULL;
 extern struct Ratr0Stage *main_stage, *title_screen, *hiscore_screen;
+extern struct Ratr0CopperListInfo DEFAULT_COPPER_INFO;
 
 extern RATR0_ACTION_ID action_quit, action_drop;
 
@@ -65,8 +66,6 @@ void title_screen_on_enter(struct Ratr0Stage *this_stage)
     fflush(debug_fp);
 #endif
     // set new copper list
-    ratr0_display_init_copper_list(default_copper, DEFAULT_COPPER_SIZE_WORDS,
-                                   &DEFAULT_COPPER_INFO);
     ratr0_display_set_copperlist(default_copper, DEFAULT_COPPER_SIZE_WORDS,
                                  &DEFAULT_COPPER_INFO);
 
