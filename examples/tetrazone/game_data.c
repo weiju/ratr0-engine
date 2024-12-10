@@ -944,7 +944,7 @@ void init_hiscore_list(void)
         hiscore_list[i].points = 1000 * (10 - i);
     }
 #ifndef TEST
-    num_hiscore_entries = display_info.is_pal ? 7 : 5;
+    num_hiscore_entries = ratr0_display_is_pal() ? 7 : 5;
 #endif
 }
 
@@ -1021,6 +1021,6 @@ void load_hiscore_list(void)
         fclose(fp);
     }
 #ifndef TEST
-    num_hiscore_entries = display_info.is_pal ? 7 : 5;
+    num_hiscore_entries = ratr0_display_is_pal() ? 7 : 5;
 #endif
 }

@@ -146,7 +146,7 @@ void hiscore_screen_on_enter(struct Ratr0Stage *this_stage)
 #ifdef TEST
     int display_height = 256;
 #else
-    int display_height = display_info.is_pal ? 256 : 200;
+    int display_height = ratr0_display_is_pal() ? 256 : 200;
 #endif
     ratr0_blit_clear16(&ratr0_display_get_front_buffer(0)->surface,
                        0, 0, 320, display_height);

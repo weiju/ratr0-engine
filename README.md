@@ -50,13 +50,15 @@ avoid using it. It allows for a great amount of control for sure, but
 it invites the introduction of a lot of hard to find errors, and typically
 it results in much more, much harder to understand code.
 
-## Why a library ?
+## Why a framework ?
 
-RATR0 is designed as a C library for the main reason that it is simple.
-I tried to avoid making it too much of a framework, because it's hard
-to predict what kind of games are supposed to be developed with it.
-So this will start as a small library and the idea is that genre specific
-enhancements can be built on top of it.
+RATR0 is designed as a C framework for the main reason that it is simple and
+gives the developer a great amount of flexibility. I tried to avoid making
+it too opinionated in the way to use it, because it is hard to predict what
+kind of games will be developed with it.
+
+So this will start as a small framework that provides some basic infrastructure
+and the idea is that genre specific enhancements can be built on top of it.
 
 ## Restrictions
 
@@ -142,11 +144,14 @@ of a game.
 A platform independent way to interactive with the operating system's file
 system to e.g. load game assets or load and store persistent data
 
-### Audio  subsystem
+### Audio subsystem
 
-A service to play background music and sound effects
+A service to play background music and sound effects. This subsystem is
+built on top of PTPlayer by Frank Wille.
 
 ### Input subsystem
+
+This maps user input information to game actions.
 
 Go [here](docs/INPUT.md) for more information
 
@@ -166,19 +171,25 @@ currently not even planned
 
 ## Building the system
 
+```
 $ make
+```
 
 ### Testing
 
 The unit tests are setup in a way that they can be run without
 an Amiga system.
 
+```
 $ make TESTONLY=1 check
+```
 
 ### Updating chibi_test
 
+```
 $ git submodule update --init --remote --recursive
 $ git submodule update --recursive
+```
 
 ## Closing words
 

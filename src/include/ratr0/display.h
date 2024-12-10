@@ -80,37 +80,6 @@ struct Ratr0PlayfieldInfo {
 };
 
 /**
- * Amiga specific information about the display, used both for
- * initialization and query information. This includes aspects of the
- * playfield hardware, sprites and the blitter.
- */
-struct Ratr0DisplayInfo {
-    /**
-     * \brief viewport width
-     *
-     * Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
-     * 256 for PAL. Smaller values will typically result in less memory consumption and faster
-     * refresh times.
-     * Sensible values for width can be { 320, 288 }
-     * Sensible values for height can be { 192, 208, 224, 240 }
-     */
-    UINT16 vp_width;
-    /** \brief viewport height */
-    UINT16 vp_height;
-
-    /** number of playfields used */
-    UINT16 num_playfields;
-
-    /** \brief playfield descriptions  */
-    struct Ratr0PlayfieldInfo playfield[MAX_PLAYFIELDS];
-
-    /** \brief if PAL, this is TRUE, if NTSC, this is FALSE */
-    BOOL is_pal;
-};
-
-extern struct Ratr0DisplayInfo display_info;
-
-/**
  * Surface is a rendering target, it is an abstract thing.
  */
 struct Ratr0Surface;
@@ -168,6 +137,13 @@ struct Ratr0DisplayBuffer {
  * Shut down the display subsystem.
  */
 extern void ratr0_display_shutdown(void);
+
+/**
+ * Determine whether we are PAL or NTSC.
+ *
+ * @return TRUE if PAL, FALSE if NTSC
+ */
+extern BOOL ratr0_display_is_pal(void);
 
 /**
  * Initializes the display using the information in the init struct.
@@ -241,15 +217,6 @@ extern struct Ratr0DisplayBuffer *ratr0_display_get_back_buffer(UINT16 playfield
 extern BOOL ratr0_display_blit_surface_to_buffers(struct Ratr0Surface *surface,
                                                   UINT16 playfield_num,
                                                   UINT16 dstx, UINT16 dsty);
-
-//
-// Current front and back buffer numbers, these are made global for efficiency,
-// never write directly and use with caution !
-//
-/** \brief index of the current back buffer */
-//extern UINT16 ratr0_back_buffer;
-/** \brief index of the current front buffer */
-//extern UINT16 ratr0_front_buffer;
 
 extern struct Ratr0CopperListInfo *current_copper_info;
 extern UINT16 *current_coplist;

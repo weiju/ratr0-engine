@@ -34,9 +34,12 @@ over the visual aspects of the game.
 
 ### Playfields
 
-RATR0 fully supports single and dual playfield modes, moreover since we
-have very flexible copper list design, it is possible to partition the screen
-into vertical slices and implement split screen and parallax effects with that.
+RATR0 fully supports single and dual playfield modes. RATR0 expands
+the base dual playfield by allowing the developer to define
+more than 2 playfields for each stage and use the copper list to
+assign them to different positions of the screen. With this, we can
+partition the screen into vertical portions and implement advanced
+split screen and parallax effects.
 
 ### Double buffering
 

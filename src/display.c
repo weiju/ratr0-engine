@@ -44,6 +44,36 @@ extern struct Custom custom;
 static Ratr0Engine *engine;
 
 /**
+ * Amiga specific information about the display. This includes aspects of the
+ * playfield hardware, sprites and the blitter.
+ */
+struct Ratr0DisplayInfo {
+    /**
+     * \brief viewport width
+     *
+     * Width is a multiple of 16 and should be <= 320. Height can be max 200 for NTSC and
+     * 256 for PAL. Smaller values will typically result in less memory consumption and faster
+     * refresh times.
+     * Sensible values for width can be { 320, 288 }
+     * Sensible values for height can be { 192, 208, 224, 240 }
+     */
+    UINT16 vp_width;
+    /** \brief viewport height */
+    UINT16 vp_height;
+
+    /** number of playfields used */
+    UINT16 num_playfields;
+
+    /** \brief playfield descriptions  */
+    struct Ratr0PlayfieldInfo playfield[MAX_PLAYFIELDS];
+
+    /** \brief if PAL, this is TRUE, if NTSC, this is FALSE */
+    BOOL is_pal;
+};
+
+struct Ratr0DisplayInfo display_info;
+
+/**
  * current active copper list
  */
 struct Ratr0CopperListInfo *current_copper_info;
@@ -92,6 +122,11 @@ struct Ratr0HWSprite hw_sprite_table[HW_SPRITE_TABLE_SIZE];
 UINT16 next_hw_sprite = 0;
 struct Ratr0Bob bob_table[20];
 UINT16 next_bob = 0;
+
+BOOL ratr0_display_is_pal(void)
+{
+    return display_info.is_pal;
+}
 
 void ratr0_display_add_dirty_rectangle(UINT16 playfield_num, UINT16 x, UINT16 y)
 {
@@ -166,8 +201,6 @@ void VertBServer()
     ratr0_timers_tick();
     set_zero_flag();
 }
-
-struct Ratr0DisplayInfo display_info;
 
 /* This is a bit of a trick: I pre-allocate dummy sprite data */
 UINT16 __chip NULL_SPRITE_DATA[] = {
