@@ -158,8 +158,6 @@ void write_dead_descriptor(FILE *fp, int num_qualifiers, char *addr)
     }
 }
 
-
-
 void write_keymap_entry(FILE *fp, struct KeyMap *keymap, int raw_code)
 {
     int typecode, offset = 0, mapped_value;
@@ -189,23 +187,24 @@ void write_keymap_entry(FILE *fp, struct KeyMap *keymap, int raw_code)
     }
     // Has qualifiers
     int num_qualifiers = get_num_qualifiers(typecode);
+    type_to_buffer(typecode);
 
     if (typecode & KCF_STRING) {
         // 1. STRING (e.g. TAB)
-        fprintf(fp, "0x%02x [STRING] (%d qualifiers) ->\n",
-                raw_code + offset, num_qualifiers);
+        fprintf(fp, "0x%02x [STRING] (%s)\n",
+                raw_code + offset, type_buffer);
         write_string_descriptor(fp, num_qualifiers, (char *) mapped_value);
     } else if (typecode & KCF_DEAD) {
         // 2. DEAD class
-        fprintf(fp, "0x%02x [DEAD] (%d qualifiers) ->\n",
-                raw_code + offset, num_qualifiers);
+        fprintf(fp, "0x%02x [DEAD] (%s)\n",
+                raw_code + offset, type_buffer);
         write_dead_descriptor(fp, num_qualifiers, (char *) mapped_value);
 
     } else  {
         // 4. It's a character code entry
         int bytes = mapped_value;
-        fprintf(fp, "0x%02x [KEY] 0x%04x (%d qualifiers) ->\n",
-                raw_code + offset, bytes, num_qualifiers);
+        fprintf(fp, "0x%02x [KEY] (%s)\n",
+                raw_code + offset, type_buffer);
         if ((typecode & KC_VANILLA) == KC_VANILLA) {
             fprintf(fp, "  '%c' [0x%02x] (shift + alt)\n",
                     (bytes >> 24) & 0x7f, (bytes >> 24) & 0x7f);
@@ -251,17 +250,20 @@ void write_keymap_entry(FILE *fp, struct KeyMap *keymap, int raw_code)
 void write_keymap_info(struct KeyMap *keymap)
 {
     FILE *fp = fopen("keymap_info.txt", "w");
-    write_lo_keymap_types(fp, keymap);
-    write_hi_keymap_types(fp, keymap);
 
-    fprintf(fp, "\nKeymap Entries:\n");
-    fprintf(fp, "----------------\n");
-    fprintf(fp, "\nLo Keymap Entries\n");
+    //write_lo_keymap_types(fp, keymap);
+    //write_hi_keymap_types(fp, keymap);
+    //fprintf(fp, "Keymap Entries:\n");
+    //fprintf(fp, "----------------\n");
+    //fprintf(fp, "\nLo Keymap Entries\n");
     for (int keycode = 0; keycode < 0x6c; keycode++) {
+        /*
         if (keycode == 0x40) {
             fprintf(fp, "\nHi Keymap Entries\n");
         }
+        */
         write_keymap_entry(fp, keymap, keycode);
+        fputs("\n---------------------------------------------------------------------\n", fp);
     }
     fclose(fp);
 }
