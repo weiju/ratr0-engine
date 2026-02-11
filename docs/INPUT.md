@@ -22,3 +22,14 @@ costly comparison or mapping functions.
   * The input system is updated once per frame and synchronized to the video beam
     to ensure stable low latency, that means for Amiga that the input system is
     updated in the vertical blank interrupt.
+
+### Keyboard input
+
+Keyboard input is performed through polling the keyboard.device in each
+iteration of the game loop. The status of the keyboard is obtained in
+a bit array called the keyboard matrix.
+The disadvantage is that only the raw keycode is available, and we would lose
+all the mapping information the user has provided to the operating system.
+Mapping is therefore performed by obtaining the current system keymap and
+obtaining the logical key through a lookup in the keymap, possibly
+incorporating one or more modifiers (shift, control, alt, etc.)

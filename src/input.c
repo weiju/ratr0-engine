@@ -52,6 +52,8 @@ static BYTE error;
 static struct MsgPort *kb_mp, *console_mp;
 static struct IOStdReq *kb_io, *console_io;
 
+// Default system keymap
+struct KeyMap keymap;
 static UBYTE *kb_matrix;
 #define MATRIX_SIZE (16L)
 
@@ -77,6 +79,12 @@ static volatile UINT16 *custom_joy1dat = (volatile UINT16 *) 0xdff00c;
 
  */
 
+/**
+ * Windowless console device input can be used to process the most OS-friendly
+ * keyboard input, including the user specified keyboard mappings.
+ * Most useful when we are making keyboard games or entering input
+ * in text-heavy parts of our game.
+ */
 static BOOL init_console_device(void)
 {
     console_mp = CreatePort(0, 0);
@@ -84,6 +92,24 @@ static BOOL init_console_device(void)
                                                  sizeof(struct IOStdReq));
     error = OpenDevice("console.device", CONU_LIBRARY,
                        (struct IORequest *) console_io, 0);
+
+    if (!error) {
+        // In library console devices, we only have the default keymap !!!
+        console_io->io_Command = CD_ASKDEFAULTKEYMAP;
+        console_io->io_Length = sizeof(struct KeyMap);
+        console_io->io_Data = (APTR) &keymap;
+        console_io->io_Flags = 0;
+        DoIO((struct IORequest *) console_io);
+        if(console_io->io_Error) {
+            //printf("Could not retrieve keymap !!!!\n");
+        } else {
+            //printf("YES THERE IS A KEYMAP\n");
+            // TODO: Read the keyboard map and build a simplified keymap
+            // ----
+        }
+    } else {
+        //printf("Could not open device with CONU_LIBRARY !!!!\n");
+    }
     return TRUE;
 }
 
@@ -288,6 +314,7 @@ struct Ratr0InputSystem *ratr0_input_startup(Ratr0Engine *eng)
 
     input_system.shutdown = &ratr0_input_shutdown;
     init_keyboard_device();
+    init_console_device();
 
     PRINT_DEBUG("Startup finished.");
     return &input_system;
@@ -295,6 +322,7 @@ struct Ratr0InputSystem *ratr0_input_startup(Ratr0Engine *eng)
 
 void ratr0_input_shutdown(void)
 {
+    cleanup_console_device();
     cleanup_keyboard_device();
     PRINT_DEBUG("Shutdown finished.");
 }
@@ -353,6 +381,9 @@ void poll_joystick(UINT8 device_num)
  * TODO:
  *   * we can't handle multiple simultaneous keypresses
  *   * We need a "catchall" for any key
+ * SOLUTION:
+ *   * We need to process the keyboard matrix array so
+ *     we can 1. see if any key is pressed and 2. which keys were pressed
  */
 void poll_keyboard(void)
 {

@@ -153,6 +153,13 @@ void write_dead_descriptor(FILE *fp, int num_qualifiers, char *addr)
         else if (flag == DPF_MOD) fs = "DPF_MOD";
         else fs = "UNKNOWN";
         unsigned char c = ((unsigned char *) addr)[2 * i + 1];
+        if (flag == DPF_MOD) {
+            // DPF_MOD has to be handled differently, the
+            // second byte of the descriptor is the offset of the
+            // characters that are modified
+            unsigned char soff = ((unsigned char *) addr)[2 * i + 1];
+            c = addr[soff];
+        }
         fprintf(fp, "  %d: [%s | '%c']\n", i,
                 fs, c);
     }
@@ -251,22 +258,133 @@ void write_keymap_info(struct KeyMap *keymap)
 {
     FILE *fp = fopen("keymap_info.txt", "w");
 
-    //write_lo_keymap_types(fp, keymap);
-    //write_hi_keymap_types(fp, keymap);
-    //fprintf(fp, "Keymap Entries:\n");
-    //fprintf(fp, "----------------\n");
-    //fprintf(fp, "\nLo Keymap Entries\n");
-    for (int keycode = 0; keycode < 0x6c; keycode++) {
-        /*
-        if (keycode == 0x40) {
-            fprintf(fp, "\nHi Keymap Entries\n");
-        }
-        */
+    // 0x60-0x6a are modifiers
+    // > 0x6b is undefined
+    for (int keycode = 0; keycode < 0x60; keycode++) {
         write_keymap_entry(fp, keymap, keycode);
         fputs("\n---------------------------------------------------------------------\n", fp);
     }
     fclose(fp);
 }
+
+
+// ------------------------------------------------------------------------
+// RATR0 KEYMAP SYSTEM
+// ------------------------------------------------------------------------
+
+typedef enum {
+    RATR0_KEYTYPE_NOP = 0,
+    RATR0_KEYTYPE_CONTROL, RATR0_KEYTYPE_ASCII
+} Ratr0KeyType;
+
+/**
+ * A simplified key mapping system that respects user defined keymaps
+ */
+struct Ratr0Key {
+    Ratr0KeyType key_type; // control key or character
+    char code;  // virtual code for control
+};
+
+struct Ratr0Key unshifted[0x60];
+struct Ratr0Key shifted[0x60];
+
+void set_keymap_entry(struct KeyMap *keymap, int raw_code,
+                      struct Ratr0Key *unshifted, struct Ratr0Key *shifted)
+{
+    int typecode, offset = 0, mapped_value;
+    if (raw_code < 0x40) {
+        // LO (is mapped to NOP)
+        // 0x0e, 0x1c, 0x2c, 0x3b
+        typecode = keymap->km_LoKeyMapTypes[raw_code];
+        mapped_value = keymap->km_LoKeyMap[raw_code];
+    } else if (raw_code < 0x6b) {
+        // HI
+        // 0x47-0x49, 0x4b (mapped to NOP)
+        typecode = keymap->km_HiKeyMapTypes[raw_code - 0x40];
+        raw_code -= 0x40;
+        offset = 0x40;
+        mapped_value = keymap->km_HiKeyMap[raw_code];
+    } else {
+       // 0x6b-0x7f are UNDEFINED, so don't even bother !!!
+        return;
+    }
+
+    // generic handling of typecode and raw_code
+    // 1. NOP -> quick exit
+    if (typecode & KCF_NOP) {
+        // set type to NOP
+        unshifted->key_type = shifted->key_type = RATR0_KEYTYPE_NOP;
+        return;
+    }
+    // Has qualifiers
+    int num_qualifiers = get_num_qualifiers(typecode);
+
+    if (typecode & KCF_STRING) {
+        // 1. STRING
+        // TODO
+        //write_string_descriptor(fp, num_qualifiers, (char *) mapped_value);
+    } else if (typecode & KCF_DEAD) {
+        // 2. DEAD class
+        // TODO
+        //write_dead_descriptor(fp, num_qualifiers, (char *) mapped_value);
+    } else  {
+        // 3. It's a character code entry
+        // TODO
+        int bytes = mapped_value;
+        if ((typecode & KC_VANILLA) == KC_VANILLA) {
+            /*
+            fprintf(fp, "  '%c' [0x%02x] (shift + alt)\n",
+                    (bytes >> 24) & 0x7f, (bytes >> 24) & 0x7f);
+            fprintf(fp, "  '%c' [0x%02x] (alt)\n",
+                    (bytes >> 16) & 0x7f, (bytes >> 16) & 0x7f);
+            fprintf(fp, "  '%c' [0x%02x] (shift)\n",
+                    (bytes >> 8) & 0x7f, (bytes >> 8) & 0x7f);
+            fprintf(fp, "  '%c' (0x%02x) (unqualified)\n",
+                    bytes & 0x7f, bytes & 0x7f);
+            // Bits 6 and 5 set to 0
+            fprintf(fp, "  '%c' (control + shift + alt)\n",
+                    (bytes & 0x7f) & 0x9f);
+            */
+        } else if (typecode & KCF_SHIFT && typecode & KCF_ALT) {
+            //fprintf(fp, "  '%c' (shift + alt)\n", (bytes >> 24) & 0x7f);
+            //fprintf(fp, "  '%c' (alt)\n", (bytes >> 16) & 0x7f);
+            //fprintf(fp, "  '%c' (shift)\n", (bytes >> 8) & 0x7f);
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        } else if (typecode & KCF_SHIFT && typecode & KCF_CONTROL) {
+            //fprintf(fp, "  '%c' (ctrl + shift)\n", (bytes >> 24) & 0x7f);
+            //fprintf(fp, "  '%c' (ctrl)\n", (bytes >> 16) & 0x7f);
+            //fprintf(fp, "  '%c' (shift)\n", (bytes >> 8) & 0x7f);
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        } else if (typecode & KCF_ALT && typecode & KCF_CONTROL) {
+            //fprintf(fp, "  '%c' (ctrl + alt)\n", (bytes >> 24) & 0x7f);
+            //fprintf(fp, "  '%c' (ctrl)\n", (bytes >> 16) & 0x7f);
+            //fprintf(fp, "  '%c' (alt)\n", (bytes >> 8) & 0x7f);
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        } else if (typecode & KCF_ALT) {
+            //fprintf(fp, "  '%c' (alt)\n", (bytes >> 8) & 0x7f);
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        } else if (typecode & KCF_CONTROL) {
+            //fprintf(fp, "  '%c' (control)\n", (bytes >> 8) & 0x7f);
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        } else if (typecode & KCF_SHIFT) {
+            //fprintf(fp, "  '%c' (shift)\n", (bytes >> 8) & 0x7f);
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        } else {
+            //fprintf(fp, "  '%c' (unqualified)\n", bytes & 0x7f);
+        }
+    }
+}
+
+void ratr0_make_keymap(struct KeyMap *keymap, struct Ratr0Key (*unshifted)[0x60],
+                       struct Ratr0Key (*shifted)[0x60])
+{
+    for (int keycode = 0; keycode < 0x60; keycode++) {
+        set_keymap_entry(keymap, keycode, unshifted[keycode],
+                         shifted[keycode]);
+    }
+}
+
+// ------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 {
@@ -276,7 +394,6 @@ int main(int argc, char *argv[])
     error = OpenDevice("console.device", CONU_LIBRARY,
                        (struct IORequest *) console_io, 0);
     if (!error) {
-        printf("YES WE CAN OPEN CONU_LIBRARY !!!!\n");
         // In library console devices, we only have the default keymap !!!
         console_io->io_Command = CD_ASKDEFAULTKEYMAP;
         //console_io->io_Command = CD_ASKKEYMAP;
@@ -286,8 +403,6 @@ int main(int argc, char *argv[])
         DoIO((struct IORequest *) console_io);
         if(console_io->io_Error) {
             printf("Could not retrieve keymap !!!!\n");
-        } else {
-            printf("YES THERE IS A KEYMAP\n");
         }
         write_keymap_info(&keymap);
     } else {

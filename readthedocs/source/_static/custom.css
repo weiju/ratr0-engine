@@ -1,0 +1,52 @@
+/* Increase spacing between member variables in structs */
+.breathe-sectiondef {
+    margin-bottom: 24px;
+}
+
+/* Style the function signatures to stand out */
+dl.cpp, dl.c {
+    background-color: #fcfcfc;
+    border-left: 4px solid #2980b9;
+    padding-left: 15px;
+}
+
+/* Make parameter names bold for better readability */
+.sig-param {
+    font-weight: bold;
+}
+
+/* Adjust Tip/Admonition colors to match your engine branding */
+.admonition.tip {
+    border-color: #27ae60;
+}
+.admonition-title {
+    background-color: #27ae60 !important;
+}
+
+/* Make the API names (signatures) look like code headers */
+.sig-name.descname {
+    color: #e74c3c; /* A nice 'speculative' red/orange */
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.2em;
+}
+
+/* Add a subtle background to API blocks to separate them from narrative text */
+dl.c {
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+/* Style the parameter list for better vertical scanning */
+.field-list.simple {
+    background: #ffffff;
+    border: 1px dashed #ccc;
+    padding: 10px;
+}
+
+/* Fix the Favicon alignment if it appears too small in some browsers */
+link[rel="shortcut icon"] {
+    background-color: transparent;
+}
