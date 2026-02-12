@@ -1,3 +1,23 @@
+/* docs/source/_static/custom.css */
+
+:root {
+    /* Workbench Blue example */
+    --wy-nav-side-background-color: #0055AA;
+    
+    /* Workbench Orange example for links/highlights */
+    --wy-link-color: #EE9900;
+    --wy-link-color-hover: #FFCC00;
+    
+    /* Global font (if you want to mimic Topaz or a cleaner sans-serif) */
+    --wy-font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Optional: Specific overrides for Breathe/Doxygen output */
+.breathe-sectiondef-title {
+    color: #0055AA;
+    border-bottom: 1px solid #EE9900;
+}
+
 /* Increase spacing between member variables in structs */
 .breathe-sectiondef {
     margin-bottom: 24px;

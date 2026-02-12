@@ -19,7 +19,11 @@ release = '0.1'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['breathe', 'myst_parser']
+extensions = [
+    'breathe', 'myst_parser',
+    'sphinx.ext.autodoc', # Pulls in docstrings from Python code
+    'sphinx.ext.napoleon' # Supports Google/NumPy style docstrings
+]
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -41,7 +45,7 @@ c_paren_attributes = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
-html_logo = "_static/logo.png"
+html_logo = "_static/ratr0_logo_only.png"
 
 # -- options for Breathe
 breathe_default_project = "ratr0-engine"
@@ -57,10 +61,19 @@ breathe_domain_by_extension = {
 
 # -- UI Tweaks for RTD Theme -------------------------------------------------
 html_theme_options = {
+    'logo_only': False,  # Set to True if you want ONLY the logo and no text title
     'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
     'titles_only': False
+}
+
+html_context = {
+    'display_github': False, # Set to True if you want a "View on GitHub" link
+    'menu_links': [
+        ('Download PDF', 'https://boxofrats.com/docs/ratr0-engine.pdf'),
+        ('GitHub Repository', 'https://github.com/weiju/ratr0-engine'),
+    ],
 }
 
 def setup(app):

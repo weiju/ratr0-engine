@@ -20,6 +20,12 @@ typical_bugs
 
 ```{toctree}
 :maxdepth: 2
+:caption: Utilities (ratr0-utils)
+utils/overview
+```
+
+```{toctree}
+:maxdepth: 2
 :caption: Technical Reference
 
 api_reference
