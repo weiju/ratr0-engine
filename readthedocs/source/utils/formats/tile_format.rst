@@ -13,7 +13,7 @@ atlasses in a similar fashion.
 The RATR0 tiles format in its current form simply defines a regular
 grid of rectangles on top of an image file. Since its initial and
 primary target platform is the Commodore Amiga OCS (**O**\ riginal **C**\ hip **S**\ et)
-hardware, the default settings of the :doc:`ratr0-maketiles <ratr0_maketiles>` utility
+hardware, the default settings of the :doc:`ratr0-maketiles <../commands/ratr0_maketiles>` utility
 will generate image information that can be easily used on this platform.
 
 However the file format was designed to be flexible enough to support a variety
