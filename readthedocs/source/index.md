@@ -7,14 +7,13 @@ Welcome to the documentation for the ratr0-engine.
 :caption: User Guide
 
 getting-started
-architecture
+introduction
 collisions
 display
 input
 memory
 sprites
 stages
-roadmap
 typical_bugs
 ```
 

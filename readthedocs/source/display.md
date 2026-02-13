@@ -1,4 +1,4 @@
-# Rendering Architecture (Amiga)
+# Rendering Architecture
 
 ## Motivation
 

@@ -65,14 +65,25 @@ html_theme_options = {
     'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
-    'titles_only': False
+    'titles_only': False,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': True,
+    'vcs_pageview_mode': '',
+    'includehidden': True,
+    'style_nav_header_background': '#2980b9', # Optional: matching your branding
 }
 
 html_context = {
-    'display_github': False, # Set to True if you want a "View on GitHub" link
+    'display_github': True,
+    'github_user': 'weiju',
+    'github_repo': 'ratr0-engine',
+    'github_version': 'main',
+    'conf_py_path': '/readthedocs/source/',
     'menu_links': [
         ('Download PDF', 'https://boxofrats.com/docs/ratr0-engine.pdf'),
         ('GitHub Repository', 'https://github.com/weiju/ratr0-engine'),
+        ('Utilities Toolset', 'https://github.com/weiju/ratr0-utils'),
+        ('Amiga Hardware Programming in C', 'https://www.youtube.com/playlist?list=PLF3LSwdkRB1DLYvsFJynIBnmlIXkuTwTZ'),
     ],
 }
 
