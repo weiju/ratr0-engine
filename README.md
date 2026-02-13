@@ -1,11 +1,22 @@
 # RATR0 Game Development Framework
 
 ![Build Status](https://github.com/weiju/ratr0-engine/actions/workflows/c-cpp.yml/badge.svg)
+[![Documentation Status](https://readthedocs.org/projects/ratr0-engine/badge/?version=latest)](https://ratr0-engine.readthedocs.io/en/latest/?badge=latest)
 
 ## Description
 
 A game development framework written in C for creating retro style 2D games on
 the Amiga.
+
+## Documentation
+
+Full documentation for the engine API and the `ratr0-utils` CLI can be found at:
+👉 **[ratr0-engine.readthedocs.io](https://ratr0-engine.readthedocs.io/)**
+
+### Sections
+* **Engine Reference:** Core C API and memory management.
+* **Tooling:** Documentation for the Python-based CLI utilities.
+* **Asset Formats:** Specifications for planar and sprite data.
 
 ## Disclaimer
 
