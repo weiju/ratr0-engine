@@ -4,6 +4,7 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.12"
+  # MUST be inside the build section
   apt_packages:
     - doxygen
   jobs:
@@ -12,10 +13,9 @@ build:
 
 python:
   install:
+    # Ensure this file exists at the root of /docs/
     - requirements: docs/requirements.txt
 
 sphinx:
+  # Since you confirmed it's in docs/source/
   configuration: docs/source/conf.py
-
-formats:
-  - html
